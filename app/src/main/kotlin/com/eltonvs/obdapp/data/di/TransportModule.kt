@@ -1,4 +1,4 @@
-package com.eltonvs.obdapp.di
+package com.eltonvs.obdapp.data.di
 
 import com.eltonvs.obdapp.data.connection.BluetoothTransport
 import com.eltonvs.obdapp.data.connection.ObdTransport
