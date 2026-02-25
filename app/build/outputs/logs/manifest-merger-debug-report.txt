@@ -1,0 +1,405 @@
+-- Merging decision tree log ---
+manifest
+ADDED from /Users/eltonviana/lab/kotlin-obd-sample-app/app/src/main/AndroidManifest.xml:2:1-32:12
+INJECTED from /Users/eltonviana/lab/kotlin-obd-sample-app/app/src/main/AndroidManifest.xml:2:1-32:12
+INJECTED from /Users/eltonviana/lab/kotlin-obd-sample-app/app/src/main/AndroidManifest.xml:2:1-32:12
+INJECTED from /Users/eltonviana/lab/kotlin-obd-sample-app/app/src/main/AndroidManifest.xml:2:1-32:12
+MERGED from [androidx.hilt:hilt-navigation-compose:1.1.0] /Users/eltonviana/.gradle/caches/transforms-3/c72ae9a83cef2c2d12a711af08ff2963/transformed/hilt-navigation-compose-1.1.0/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.hilt:hilt-navigation:1.1.0] /Users/eltonviana/.gradle/caches/transforms-3/d43f1435514277b5916785dd78d7eb76/transformed/hilt-navigation-1.1.0/AndroidManifest.xml:2:1-7:12
+MERGED from [com.google.dagger:hilt-android:2.50] /Users/eltonviana/.gradle/caches/transforms-3/745a7be7c73b20aaf97696ab512d1147/transformed/hilt-android-2.50/AndroidManifest.xml:16:1-19:12
+MERGED from [androidx.navigation:navigation-common:2.7.7] /Users/eltonviana/.gradle/caches/transforms-3/eb01612bd020c7875fb845c57e61b66d/transformed/navigation-common-2.7.7/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.navigation:navigation-runtime:2.7.7] /Users/eltonviana/.gradle/caches/transforms-3/2c810f0e00cf9468cd038346021aeee1/transformed/navigation-runtime-2.7.7/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.navigation:navigation-common-ktx:2.7.7] /Users/eltonviana/.gradle/caches/transforms-3/2fe5bba8e1cdd343bcdddbeaeaa6b7f3/transformed/navigation-common-ktx-2.7.7/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.navigation:navigation-runtime-ktx:2.7.7] /Users/eltonviana/.gradle/caches/transforms-3/d38b1504fce85eae6cb63a738ebfa1de/transformed/navigation-runtime-ktx-2.7.7/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.navigation:navigation-compose:2.7.7] /Users/eltonviana/.gradle/caches/transforms-3/dfdb2a103ade5b48dad93202afe67e41/transformed/navigation-compose-2.7.7/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.compose.material3:material3-android:1.2.0] /Users/eltonviana/.gradle/caches/transforms-3/c3794f3c2b053a4873389fe5dff16550/transformed/material3-release/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.compose.material:material-android:1.6.1] /Users/eltonviana/.gradle/caches/transforms-3/bf151fd6b91101162cd6761eadac631c/transformed/material-release/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.compose.material:material-icons-core-android:1.6.1] /Users/eltonviana/.gradle/caches/transforms-3/fe705a4344e509649041de1cee040650/transformed/material-icons-core-release/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.compose.material:material-icons-extended-android:1.6.1] /Users/eltonviana/.gradle/caches/transforms-3/c0e80dfa71ef2bcd5d2a70b547ecd1e3/transformed/material-icons-extended-release/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.compose.material:material-ripple-android:1.6.1] /Users/eltonviana/.gradle/caches/transforms-3/0b3b76c3bfd32e019b0498792a5e01d4/transformed/material-ripple-release/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.compose.foundation:foundation-android:1.6.1] /Users/eltonviana/.gradle/caches/transforms-3/d992ed65a5e97de7473ad3ced1430139/transformed/foundation-release/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.compose.foundation:foundation-layout-android:1.6.1] /Users/eltonviana/.gradle/caches/transforms-3/7a225eb417bf381dcda1585ba61b2113/transformed/foundation-layout-release/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.compose.animation:animation-core-android:1.6.1] /Users/eltonviana/.gradle/caches/transforms-3/447a0dadbbc7a91f61fc840c3c0f9d7f/transformed/animation-core-release/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.compose.animation:animation-android:1.6.1] /Users/eltonviana/.gradle/caches/transforms-3/b468f62681dc650b7628015b502f8996/transformed/animation-release/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.compose.ui:ui-tooling-data-android:1.6.1] /Users/eltonviana/.gradle/caches/transforms-3/f91798ac3ab3e5acbd19a44a343af400/transformed/ui-tooling-data-release/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.compose.ui:ui-unit-android:1.6.1] /Users/eltonviana/.gradle/caches/transforms-3/fefeee2541bbfbce067cbc18f61cc422/transformed/ui-unit-release/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.compose.ui:ui-geometry-android:1.6.1] /Users/eltonviana/.gradle/caches/transforms-3/a4651ab96921bf7486940c77e75b00e0/transformed/ui-geometry-release/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.compose.ui:ui-util-android:1.6.1] /Users/eltonviana/.gradle/caches/transforms-3/00170fd2d471b0b70b9fc8e3a9986ab0/transformed/ui-util-release/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.compose.ui:ui-text-android:1.6.1] /Users/eltonviana/.gradle/caches/transforms-3/cece9d9c7413c517fa39848a211733e9/transformed/ui-text-release/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.compose.ui:ui-tooling-preview-android:1.6.1] /Users/eltonviana/.gradle/caches/transforms-3/f09b3ef40e2e4bbc7c523215930f6aed/transformed/ui-tooling-preview-release/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.compose.ui:ui-tooling-android:1.6.1] /Users/eltonviana/.gradle/caches/transforms-3/7801b6573c14574d693c3257a1727f36/transformed/ui-tooling-release/AndroidManifest.xml:17:1-28:12
+MERGED from [androidx.compose.ui:ui-graphics-android:1.6.1] /Users/eltonviana/.gradle/caches/transforms-3/6366b0ec871e7f1d877332a6ff200abd/transformed/ui-graphics-release/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.compose.ui:ui-test-manifest:1.6.1] /Users/eltonviana/.gradle/caches/transforms-3/3e0be2ba0d67a18de607c282e8eb99c8/transformed/ui-test-manifest-1.6.1/AndroidManifest.xml:17:1-28:12
+MERGED from [androidx.fragment:fragment:1.5.1] /Users/eltonviana/.gradle/caches/transforms-3/0e0ce9ca3d97851903b9143c18680eca/transformed/fragment-1.5.1/AndroidManifest.xml:17:1-24:12
+MERGED from [androidx.activity:activity:1.8.2] /Users/eltonviana/.gradle/caches/transforms-3/b778010c0386afd217506c2437e0a4df/transformed/activity-1.8.2/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.activity:activity-ktx:1.8.2] /Users/eltonviana/.gradle/caches/transforms-3/5dd3851bb842d86144e65d6850f5ee70/transformed/activity-ktx-1.8.2/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.activity:activity-compose:1.8.2] /Users/eltonviana/.gradle/caches/transforms-3/8708dc5fd037a3a3a943e35874d87819/transformed/activity-compose-1.8.2/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.savedstate:savedstate-ktx:1.2.1] /Users/eltonviana/.gradle/caches/transforms-3/a37d90e3f97016565faf7ccea1c4d1d5/transformed/savedstate-ktx-1.2.1/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.savedstate:savedstate:1.2.1] /Users/eltonviana/.gradle/caches/transforms-3/7440320f35650731f9dfa9fd7db896fb/transformed/savedstate-1.2.1/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.loader:loader:1.0.0] /Users/eltonviana/.gradle/caches/transforms-3/6897c9597a29881e24b7f28aa1dbb6a2/transformed/loader-1.0.0/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.emoji2:emoji2:1.3.0] /Users/eltonviana/.gradle/caches/transforms-3/b724606b85cc4228f65df8d08255b5b3/transformed/emoji2-1.3.0/AndroidManifest.xml:17:1-35:12
+MERGED from [androidx.lifecycle:lifecycle-process:2.7.0] /Users/eltonviana/.gradle/caches/transforms-3/fe4b9b4dd215a4f324c26eb10f2060ba/transformed/lifecycle-process-2.7.0/AndroidManifest.xml:17:1-35:12
+MERGED from [androidx.lifecycle:lifecycle-livedata-core-ktx:2.7.0] /Users/eltonviana/.gradle/caches/transforms-3/ea0a546c61d85aabe25b92cbe02a4009/transformed/lifecycle-livedata-core-ktx-2.7.0/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.lifecycle:lifecycle-livedata:2.7.0] /Users/eltonviana/.gradle/caches/transforms-3/6bc75ffde9cb5c5efc2933159a22b213/transformed/lifecycle-livedata-2.7.0/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.lifecycle:lifecycle-livedata-core:2.7.0] /Users/eltonviana/.gradle/caches/transforms-3/0158975caecd15fb3b5656774fcbafe1/transformed/lifecycle-livedata-core-2.7.0/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.lifecycle:lifecycle-viewmodel:2.7.0] /Users/eltonviana/.gradle/caches/transforms-3/1d64d62a42a4fd1edb855ceff9441c6f/transformed/lifecycle-viewmodel-2.7.0/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.lifecycle:lifecycle-viewmodel-savedstate:2.7.0] /Users/eltonviana/.gradle/caches/transforms-3/3e3a51dabdfbfc1a972ec112ad608ebf/transformed/lifecycle-viewmodel-savedstate-2.7.0/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.lifecycle:lifecycle-viewmodel-ktx:2.7.0] /Users/eltonviana/.gradle/caches/transforms-3/34deb474f4e5cb9e1d76a30fd35b2047/transformed/lifecycle-viewmodel-ktx-2.7.0/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.lifecycle:lifecycle-runtime:2.7.0] /Users/eltonviana/.gradle/caches/transforms-3/3ef3515e7619caf4111dcf5e95b169cf/transformed/lifecycle-runtime-2.7.0/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.lifecycle:lifecycle-runtime-compose:2.7.0] /Users/eltonviana/.gradle/caches/transforms-3/4908caf3ca35cd5406d0d18a8cbbe853/transformed/lifecycle-runtime-compose-2.7.0/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.lifecycle:lifecycle-runtime-ktx:2.7.0] /Users/eltonviana/.gradle/caches/transforms-3/34f0694449a1c09b7c00953559bd9432/transformed/lifecycle-runtime-ktx-2.7.0/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0] /Users/eltonviana/.gradle/caches/transforms-3/3bb784a663844b35d4a32a9429e44b4a/transformed/lifecycle-viewmodel-compose-2.7.0/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.compose.ui:ui-android:1.6.1] /Users/eltonviana/.gradle/caches/transforms-3/52e2c1568cb4a415a7096b3a70e3832f/transformed/ui-release/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.viewpager:viewpager:1.0.0] /Users/eltonviana/.gradle/caches/transforms-3/b9c795b071743ec2bb030652fdd13303/transformed/viewpager-1.0.0/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.autofill:autofill:1.0.0] /Users/eltonviana/.gradle/caches/transforms-3/ecfbc10b1daa314df2ea79795493b90f/transformed/autofill-1.0.0/AndroidManifest.xml:17:1-24:12
+MERGED from [androidx.customview:customview:1.0.0] /Users/eltonviana/.gradle/caches/transforms-3/1fc1ca402b66c1b3721486c8f1ea00ac/transformed/customview-1.0.0/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.core:core:1.12.0] /Users/eltonviana/.gradle/caches/transforms-3/e1b2ee99c9859ef10a1634cbf44c3814/transformed/core-1.12.0/AndroidManifest.xml:17:1-30:12
+MERGED from [androidx.customview:customview-poolingcontainer:1.0.0] /Users/eltonviana/.gradle/caches/transforms-3/acf40c14273c1d7a9f6de38dcd6ad7b6/transformed/customview-poolingcontainer-1.0.0/AndroidManifest.xml:17:1-23:12
+MERGED from [androidx.core:core-ktx:1.12.0] /Users/eltonviana/.gradle/caches/transforms-3/6378d230651abf6a6237833643847fc0/transformed/core-ktx-1.12.0/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.datastore:datastore-preferences:1.0.0] /Users/eltonviana/.gradle/caches/transforms-3/8d48cc6e8b5219b6cc341d5c9e1a0cf7/transformed/datastore-preferences-1.0.0/AndroidManifest.xml:17:1-24:12
+MERGED from [androidx.datastore:datastore:1.0.0] /Users/eltonviana/.gradle/caches/transforms-3/35bf6f523a9558848c4fa9f1a702c1b9/transformed/datastore-1.0.0/AndroidManifest.xml:17:1-24:12
+MERGED from [androidx.compose.runtime:runtime-saveable-android:1.6.1] /Users/eltonviana/.gradle/caches/transforms-3/be269a2c6a9b8ffdb2b3c95fb470374a/transformed/runtime-saveable-release/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.compose.runtime:runtime-android:1.6.1] /Users/eltonviana/.gradle/caches/transforms-3/e89c69e5d6819adc75410582a5efffdc/transformed/runtime-release/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.annotation:annotation-experimental:1.4.0] /Users/eltonviana/.gradle/caches/transforms-3/daa9d44604db534d15f41086f4cfc663/transformed/annotation-experimental-1.4.0/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] /Users/eltonviana/.gradle/caches/transforms-3/ba2b65c22f399de0cf7c1838a7cda62c/transformed/versionedparcelable-1.1.1/AndroidManifest.xml:17:1-27:12
+MERGED from [androidx.interpolator:interpolator:1.0.0] /Users/eltonviana/.gradle/caches/transforms-3/468acb346ea63872ade68f74f55f9fe7/transformed/interpolator-1.0.0/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.arch.core:core-runtime:2.2.0] /Users/eltonviana/.gradle/caches/transforms-3/309b4e863bd905939688bbd1d80df5a8/transformed/core-runtime-2.2.0/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.profileinstaller:profileinstaller:1.3.0] /Users/eltonviana/.gradle/caches/transforms-3/f4c9496896eb9ef814506acf9c23f953/transformed/profileinstaller-1.3.0/AndroidManifest.xml:17:1-55:12
+MERGED from [androidx.startup:startup-runtime:1.1.1] /Users/eltonviana/.gradle/caches/transforms-3/af6c89f0b3ee419722137449ce2525c3/transformed/startup-runtime-1.1.1/AndroidManifest.xml:17:1-33:12
+MERGED from [androidx.tracing:tracing:1.0.0] /Users/eltonviana/.gradle/caches/transforms-3/a103572db62b39485daf15d4b95a08b1/transformed/tracing-1.0.0/AndroidManifest.xml:17:1-24:12
+MERGED from [com.google.dagger:dagger-lint-aar:2.50] /Users/eltonviana/.gradle/caches/transforms-3/930d7df24ac14629f4c10b5342cb0e73/transformed/dagger-lint-aar-2.50/AndroidManifest.xml:16:1-19:12
+	package
+		INJECTED from /Users/eltonviana/lab/kotlin-obd-sample-app/app/src/main/AndroidManifest.xml
+	android:versionName
+		INJECTED from /Users/eltonviana/lab/kotlin-obd-sample-app/app/src/main/AndroidManifest.xml
+	android:versionCode
+		INJECTED from /Users/eltonviana/lab/kotlin-obd-sample-app/app/src/main/AndroidManifest.xml
+	xmlns:android
+		ADDED from /Users/eltonviana/lab/kotlin-obd-sample-app/app/src/main/AndroidManifest.xml:2:11-69
+uses-permission#android.permission.BLUETOOTH
+ADDED from /Users/eltonviana/lab/kotlin-obd-sample-app/app/src/main/AndroidManifest.xml:4:5-95
+	android:maxSdkVersion
+		ADDED from /Users/eltonviana/lab/kotlin-obd-sample-app/app/src/main/AndroidManifest.xml:4:66-92
+	android:name
+		ADDED from /Users/eltonviana/lab/kotlin-obd-sample-app/app/src/main/AndroidManifest.xml:4:22-65
+uses-permission#android.permission.BLUETOOTH_ADMIN
+ADDED from /Users/eltonviana/lab/kotlin-obd-sample-app/app/src/main/AndroidManifest.xml:5:5-101
+	android:maxSdkVersion
+		ADDED from /Users/eltonviana/lab/kotlin-obd-sample-app/app/src/main/AndroidManifest.xml:5:72-98
+	android:name
+		ADDED from /Users/eltonviana/lab/kotlin-obd-sample-app/app/src/main/AndroidManifest.xml:5:22-71
+uses-permission#android.permission.BLUETOOTH_CONNECT
+ADDED from /Users/eltonviana/lab/kotlin-obd-sample-app/app/src/main/AndroidManifest.xml:6:5-76
+	android:name
+		ADDED from /Users/eltonviana/lab/kotlin-obd-sample-app/app/src/main/AndroidManifest.xml:6:22-73
+uses-permission#android.permission.BLUETOOTH_SCAN
+ADDED from /Users/eltonviana/lab/kotlin-obd-sample-app/app/src/main/AndroidManifest.xml:7:5-73
+	android:name
+		ADDED from /Users/eltonviana/lab/kotlin-obd-sample-app/app/src/main/AndroidManifest.xml:7:22-70
+uses-permission#android.permission.ACCESS_FINE_LOCATION
+ADDED from /Users/eltonviana/lab/kotlin-obd-sample-app/app/src/main/AndroidManifest.xml:8:5-79
+	android:name
+		ADDED from /Users/eltonviana/lab/kotlin-obd-sample-app/app/src/main/AndroidManifest.xml:8:22-76
+uses-permission#android.permission.ACCESS_COARSE_LOCATION
+ADDED from /Users/eltonviana/lab/kotlin-obd-sample-app/app/src/main/AndroidManifest.xml:9:5-81
+	android:name
+		ADDED from /Users/eltonviana/lab/kotlin-obd-sample-app/app/src/main/AndroidManifest.xml:9:22-78
+uses-feature#android.hardware.bluetooth
+ADDED from /Users/eltonviana/lab/kotlin-obd-sample-app/app/src/main/AndroidManifest.xml:11:5-88
+	android:required
+		ADDED from /Users/eltonviana/lab/kotlin-obd-sample-app/app/src/main/AndroidManifest.xml:11:61-85
+	android:name
+		ADDED from /Users/eltonviana/lab/kotlin-obd-sample-app/app/src/main/AndroidManifest.xml:11:19-60
+application
+ADDED from /Users/eltonviana/lab/kotlin-obd-sample-app/app/src/main/AndroidManifest.xml:13:5-30:19
+INJECTED from /Users/eltonviana/lab/kotlin-obd-sample-app/app/src/main/AndroidManifest.xml:13:5-30:19
+MERGED from [androidx.compose.ui:ui-tooling-android:1.6.1] /Users/eltonviana/.gradle/caches/transforms-3/7801b6573c14574d693c3257a1727f36/transformed/ui-tooling-release/AndroidManifest.xml:22:5-26:19
+MERGED from [androidx.compose.ui:ui-tooling-android:1.6.1] /Users/eltonviana/.gradle/caches/transforms-3/7801b6573c14574d693c3257a1727f36/transformed/ui-tooling-release/AndroidManifest.xml:22:5-26:19
+MERGED from [androidx.compose.ui:ui-test-manifest:1.6.1] /Users/eltonviana/.gradle/caches/transforms-3/3e0be2ba0d67a18de607c282e8eb99c8/transformed/ui-test-manifest-1.6.1/AndroidManifest.xml:22:5-26:19
+MERGED from [androidx.compose.ui:ui-test-manifest:1.6.1] /Users/eltonviana/.gradle/caches/transforms-3/3e0be2ba0d67a18de607c282e8eb99c8/transformed/ui-test-manifest-1.6.1/AndroidManifest.xml:22:5-26:19
+MERGED from [androidx.emoji2:emoji2:1.3.0] /Users/eltonviana/.gradle/caches/transforms-3/b724606b85cc4228f65df8d08255b5b3/transformed/emoji2-1.3.0/AndroidManifest.xml:23:5-33:19
+MERGED from [androidx.emoji2:emoji2:1.3.0] /Users/eltonviana/.gradle/caches/transforms-3/b724606b85cc4228f65df8d08255b5b3/transformed/emoji2-1.3.0/AndroidManifest.xml:23:5-33:19
+MERGED from [androidx.lifecycle:lifecycle-process:2.7.0] /Users/eltonviana/.gradle/caches/transforms-3/fe4b9b4dd215a4f324c26eb10f2060ba/transformed/lifecycle-process-2.7.0/AndroidManifest.xml:23:5-33:19
+MERGED from [androidx.lifecycle:lifecycle-process:2.7.0] /Users/eltonviana/.gradle/caches/transforms-3/fe4b9b4dd215a4f324c26eb10f2060ba/transformed/lifecycle-process-2.7.0/AndroidManifest.xml:23:5-33:19
+MERGED from [androidx.core:core:1.12.0] /Users/eltonviana/.gradle/caches/transforms-3/e1b2ee99c9859ef10a1634cbf44c3814/transformed/core-1.12.0/AndroidManifest.xml:28:5-89
+MERGED from [androidx.core:core:1.12.0] /Users/eltonviana/.gradle/caches/transforms-3/e1b2ee99c9859ef10a1634cbf44c3814/transformed/core-1.12.0/AndroidManifest.xml:28:5-89
+MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] /Users/eltonviana/.gradle/caches/transforms-3/ba2b65c22f399de0cf7c1838a7cda62c/transformed/versionedparcelable-1.1.1/AndroidManifest.xml:24:5-25:19
+MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] /Users/eltonviana/.gradle/caches/transforms-3/ba2b65c22f399de0cf7c1838a7cda62c/transformed/versionedparcelable-1.1.1/AndroidManifest.xml:24:5-25:19
+MERGED from [androidx.profileinstaller:profileinstaller:1.3.0] /Users/eltonviana/.gradle/caches/transforms-3/f4c9496896eb9ef814506acf9c23f953/transformed/profileinstaller-1.3.0/AndroidManifest.xml:23:5-53:19
+MERGED from [androidx.profileinstaller:profileinstaller:1.3.0] /Users/eltonviana/.gradle/caches/transforms-3/f4c9496896eb9ef814506acf9c23f953/transformed/profileinstaller-1.3.0/AndroidManifest.xml:23:5-53:19
+MERGED from [androidx.startup:startup-runtime:1.1.1] /Users/eltonviana/.gradle/caches/transforms-3/af6c89f0b3ee419722137449ce2525c3/transformed/startup-runtime-1.1.1/AndroidManifest.xml:25:5-31:19
+MERGED from [androidx.startup:startup-runtime:1.1.1] /Users/eltonviana/.gradle/caches/transforms-3/af6c89f0b3ee419722137449ce2525c3/transformed/startup-runtime-1.1.1/AndroidManifest.xml:25:5-31:19
+	android:extractNativeLibs
+		INJECTED from /Users/eltonviana/lab/kotlin-obd-sample-app/app/src/main/AndroidManifest.xml
+	android:appComponentFactory
+		ADDED from [androidx.core:core:1.12.0] /Users/eltonviana/.gradle/caches/transforms-3/e1b2ee99c9859ef10a1634cbf44c3814/transformed/core-1.12.0/AndroidManifest.xml:28:18-86
+	android:supportsRtl
+		ADDED from /Users/eltonviana/lab/kotlin-obd-sample-app/app/src/main/AndroidManifest.xml:19:9-35
+	android:label
+		ADDED from /Users/eltonviana/lab/kotlin-obd-sample-app/app/src/main/AndroidManifest.xml:17:9-41
+	android:roundIcon
+		ADDED from /Users/eltonviana/lab/kotlin-obd-sample-app/app/src/main/AndroidManifest.xml:18:9-54
+	android:icon
+		ADDED from /Users/eltonviana/lab/kotlin-obd-sample-app/app/src/main/AndroidManifest.xml:16:9-43
+	android:allowBackup
+		ADDED from /Users/eltonviana/lab/kotlin-obd-sample-app/app/src/main/AndroidManifest.xml:15:9-35
+	android:theme
+		ADDED from /Users/eltonviana/lab/kotlin-obd-sample-app/app/src/main/AndroidManifest.xml:20:9-50
+	android:name
+		ADDED from /Users/eltonviana/lab/kotlin-obd-sample-app/app/src/main/AndroidManifest.xml:14:9-37
+activity#com.example.obdapp.ui.MainActivity
+ADDED from /Users/eltonviana/lab/kotlin-obd-sample-app/app/src/main/AndroidManifest.xml:21:9-29:20
+	android:exported
+		ADDED from /Users/eltonviana/lab/kotlin-obd-sample-app/app/src/main/AndroidManifest.xml:23:13-36
+	android:theme
+		ADDED from /Users/eltonviana/lab/kotlin-obd-sample-app/app/src/main/AndroidManifest.xml:24:13-54
+	android:name
+		ADDED from /Users/eltonviana/lab/kotlin-obd-sample-app/app/src/main/AndroidManifest.xml:22:13-44
+intent-filter#action:name:android.intent.action.MAIN+category:name:android.intent.category.LAUNCHER
+ADDED from /Users/eltonviana/lab/kotlin-obd-sample-app/app/src/main/AndroidManifest.xml:25:13-28:29
+action#android.intent.action.MAIN
+ADDED from /Users/eltonviana/lab/kotlin-obd-sample-app/app/src/main/AndroidManifest.xml:26:17-69
+	android:name
+		ADDED from /Users/eltonviana/lab/kotlin-obd-sample-app/app/src/main/AndroidManifest.xml:26:25-66
+category#android.intent.category.LAUNCHER
+ADDED from /Users/eltonviana/lab/kotlin-obd-sample-app/app/src/main/AndroidManifest.xml:27:17-77
+	android:name
+		ADDED from /Users/eltonviana/lab/kotlin-obd-sample-app/app/src/main/AndroidManifest.xml:27:27-74
+uses-sdk
+INJECTED from /Users/eltonviana/lab/kotlin-obd-sample-app/app/src/main/AndroidManifest.xml reason: use-sdk injection requested
+INJECTED from /Users/eltonviana/lab/kotlin-obd-sample-app/app/src/main/AndroidManifest.xml
+INJECTED from /Users/eltonviana/lab/kotlin-obd-sample-app/app/src/main/AndroidManifest.xml
+MERGED from [androidx.hilt:hilt-navigation-compose:1.1.0] /Users/eltonviana/.gradle/caches/transforms-3/c72ae9a83cef2c2d12a711af08ff2963/transformed/hilt-navigation-compose-1.1.0/AndroidManifest.xml:5:5-44
+MERGED from [androidx.hilt:hilt-navigation-compose:1.1.0] /Users/eltonviana/.gradle/caches/transforms-3/c72ae9a83cef2c2d12a711af08ff2963/transformed/hilt-navigation-compose-1.1.0/AndroidManifest.xml:5:5-44
+MERGED from [androidx.hilt:hilt-navigation:1.1.0] /Users/eltonviana/.gradle/caches/transforms-3/d43f1435514277b5916785dd78d7eb76/transformed/hilt-navigation-1.1.0/AndroidManifest.xml:5:5-44
+MERGED from [androidx.hilt:hilt-navigation:1.1.0] /Users/eltonviana/.gradle/caches/transforms-3/d43f1435514277b5916785dd78d7eb76/transformed/hilt-navigation-1.1.0/AndroidManifest.xml:5:5-44
+MERGED from [com.google.dagger:hilt-android:2.50] /Users/eltonviana/.gradle/caches/transforms-3/745a7be7c73b20aaf97696ab512d1147/transformed/hilt-android-2.50/AndroidManifest.xml:18:3-42
+MERGED from [com.google.dagger:hilt-android:2.50] /Users/eltonviana/.gradle/caches/transforms-3/745a7be7c73b20aaf97696ab512d1147/transformed/hilt-android-2.50/AndroidManifest.xml:18:3-42
+MERGED from [androidx.navigation:navigation-common:2.7.7] /Users/eltonviana/.gradle/caches/transforms-3/eb01612bd020c7875fb845c57e61b66d/transformed/navigation-common-2.7.7/AndroidManifest.xml:20:5-44
+MERGED from [androidx.navigation:navigation-common:2.7.7] /Users/eltonviana/.gradle/caches/transforms-3/eb01612bd020c7875fb845c57e61b66d/transformed/navigation-common-2.7.7/AndroidManifest.xml:20:5-44
+MERGED from [androidx.navigation:navigation-runtime:2.7.7] /Users/eltonviana/.gradle/caches/transforms-3/2c810f0e00cf9468cd038346021aeee1/transformed/navigation-runtime-2.7.7/AndroidManifest.xml:20:5-44
+MERGED from [androidx.navigation:navigation-runtime:2.7.7] /Users/eltonviana/.gradle/caches/transforms-3/2c810f0e00cf9468cd038346021aeee1/transformed/navigation-runtime-2.7.7/AndroidManifest.xml:20:5-44
+MERGED from [androidx.navigation:navigation-common-ktx:2.7.7] /Users/eltonviana/.gradle/caches/transforms-3/2fe5bba8e1cdd343bcdddbeaeaa6b7f3/transformed/navigation-common-ktx-2.7.7/AndroidManifest.xml:5:5-44
+MERGED from [androidx.navigation:navigation-common-ktx:2.7.7] /Users/eltonviana/.gradle/caches/transforms-3/2fe5bba8e1cdd343bcdddbeaeaa6b7f3/transformed/navigation-common-ktx-2.7.7/AndroidManifest.xml:5:5-44
+MERGED from [androidx.navigation:navigation-runtime-ktx:2.7.7] /Users/eltonviana/.gradle/caches/transforms-3/d38b1504fce85eae6cb63a738ebfa1de/transformed/navigation-runtime-ktx-2.7.7/AndroidManifest.xml:5:5-44
+MERGED from [androidx.navigation:navigation-runtime-ktx:2.7.7] /Users/eltonviana/.gradle/caches/transforms-3/d38b1504fce85eae6cb63a738ebfa1de/transformed/navigation-runtime-ktx-2.7.7/AndroidManifest.xml:5:5-44
+MERGED from [androidx.navigation:navigation-compose:2.7.7] /Users/eltonviana/.gradle/caches/transforms-3/dfdb2a103ade5b48dad93202afe67e41/transformed/navigation-compose-2.7.7/AndroidManifest.xml:5:5-44
+MERGED from [androidx.navigation:navigation-compose:2.7.7] /Users/eltonviana/.gradle/caches/transforms-3/dfdb2a103ade5b48dad93202afe67e41/transformed/navigation-compose-2.7.7/AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.material3:material3-android:1.2.0] /Users/eltonviana/.gradle/caches/transforms-3/c3794f3c2b053a4873389fe5dff16550/transformed/material3-release/AndroidManifest.xml:20:5-44
+MERGED from [androidx.compose.material3:material3-android:1.2.0] /Users/eltonviana/.gradle/caches/transforms-3/c3794f3c2b053a4873389fe5dff16550/transformed/material3-release/AndroidManifest.xml:20:5-44
+MERGED from [androidx.compose.material:material-android:1.6.1] /Users/eltonviana/.gradle/caches/transforms-3/bf151fd6b91101162cd6761eadac631c/transformed/material-release/AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.material:material-android:1.6.1] /Users/eltonviana/.gradle/caches/transforms-3/bf151fd6b91101162cd6761eadac631c/transformed/material-release/AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.material:material-icons-core-android:1.6.1] /Users/eltonviana/.gradle/caches/transforms-3/fe705a4344e509649041de1cee040650/transformed/material-icons-core-release/AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.material:material-icons-core-android:1.6.1] /Users/eltonviana/.gradle/caches/transforms-3/fe705a4344e509649041de1cee040650/transformed/material-icons-core-release/AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.material:material-icons-extended-android:1.6.1] /Users/eltonviana/.gradle/caches/transforms-3/c0e80dfa71ef2bcd5d2a70b547ecd1e3/transformed/material-icons-extended-release/AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.material:material-icons-extended-android:1.6.1] /Users/eltonviana/.gradle/caches/transforms-3/c0e80dfa71ef2bcd5d2a70b547ecd1e3/transformed/material-icons-extended-release/AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.material:material-ripple-android:1.6.1] /Users/eltonviana/.gradle/caches/transforms-3/0b3b76c3bfd32e019b0498792a5e01d4/transformed/material-ripple-release/AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.material:material-ripple-android:1.6.1] /Users/eltonviana/.gradle/caches/transforms-3/0b3b76c3bfd32e019b0498792a5e01d4/transformed/material-ripple-release/AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.foundation:foundation-android:1.6.1] /Users/eltonviana/.gradle/caches/transforms-3/d992ed65a5e97de7473ad3ced1430139/transformed/foundation-release/AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.foundation:foundation-android:1.6.1] /Users/eltonviana/.gradle/caches/transforms-3/d992ed65a5e97de7473ad3ced1430139/transformed/foundation-release/AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.foundation:foundation-layout-android:1.6.1] /Users/eltonviana/.gradle/caches/transforms-3/7a225eb417bf381dcda1585ba61b2113/transformed/foundation-layout-release/AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.foundation:foundation-layout-android:1.6.1] /Users/eltonviana/.gradle/caches/transforms-3/7a225eb417bf381dcda1585ba61b2113/transformed/foundation-layout-release/AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.animation:animation-core-android:1.6.1] /Users/eltonviana/.gradle/caches/transforms-3/447a0dadbbc7a91f61fc840c3c0f9d7f/transformed/animation-core-release/AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.animation:animation-core-android:1.6.1] /Users/eltonviana/.gradle/caches/transforms-3/447a0dadbbc7a91f61fc840c3c0f9d7f/transformed/animation-core-release/AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.animation:animation-android:1.6.1] /Users/eltonviana/.gradle/caches/transforms-3/b468f62681dc650b7628015b502f8996/transformed/animation-release/AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.animation:animation-android:1.6.1] /Users/eltonviana/.gradle/caches/transforms-3/b468f62681dc650b7628015b502f8996/transformed/animation-release/AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.ui:ui-tooling-data-android:1.6.1] /Users/eltonviana/.gradle/caches/transforms-3/f91798ac3ab3e5acbd19a44a343af400/transformed/ui-tooling-data-release/AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.ui:ui-tooling-data-android:1.6.1] /Users/eltonviana/.gradle/caches/transforms-3/f91798ac3ab3e5acbd19a44a343af400/transformed/ui-tooling-data-release/AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.ui:ui-unit-android:1.6.1] /Users/eltonviana/.gradle/caches/transforms-3/fefeee2541bbfbce067cbc18f61cc422/transformed/ui-unit-release/AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.ui:ui-unit-android:1.6.1] /Users/eltonviana/.gradle/caches/transforms-3/fefeee2541bbfbce067cbc18f61cc422/transformed/ui-unit-release/AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.ui:ui-geometry-android:1.6.1] /Users/eltonviana/.gradle/caches/transforms-3/a4651ab96921bf7486940c77e75b00e0/transformed/ui-geometry-release/AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.ui:ui-geometry-android:1.6.1] /Users/eltonviana/.gradle/caches/transforms-3/a4651ab96921bf7486940c77e75b00e0/transformed/ui-geometry-release/AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.ui:ui-util-android:1.6.1] /Users/eltonviana/.gradle/caches/transforms-3/00170fd2d471b0b70b9fc8e3a9986ab0/transformed/ui-util-release/AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.ui:ui-util-android:1.6.1] /Users/eltonviana/.gradle/caches/transforms-3/00170fd2d471b0b70b9fc8e3a9986ab0/transformed/ui-util-release/AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.ui:ui-text-android:1.6.1] /Users/eltonviana/.gradle/caches/transforms-3/cece9d9c7413c517fa39848a211733e9/transformed/ui-text-release/AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.ui:ui-text-android:1.6.1] /Users/eltonviana/.gradle/caches/transforms-3/cece9d9c7413c517fa39848a211733e9/transformed/ui-text-release/AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.ui:ui-tooling-preview-android:1.6.1] /Users/eltonviana/.gradle/caches/transforms-3/f09b3ef40e2e4bbc7c523215930f6aed/transformed/ui-tooling-preview-release/AndroidManifest.xml:20:5-44
+MERGED from [androidx.compose.ui:ui-tooling-preview-android:1.6.1] /Users/eltonviana/.gradle/caches/transforms-3/f09b3ef40e2e4bbc7c523215930f6aed/transformed/ui-tooling-preview-release/AndroidManifest.xml:20:5-44
+MERGED from [androidx.compose.ui:ui-tooling-android:1.6.1] /Users/eltonviana/.gradle/caches/transforms-3/7801b6573c14574d693c3257a1727f36/transformed/ui-tooling-release/AndroidManifest.xml:20:5-44
+MERGED from [androidx.compose.ui:ui-tooling-android:1.6.1] /Users/eltonviana/.gradle/caches/transforms-3/7801b6573c14574d693c3257a1727f36/transformed/ui-tooling-release/AndroidManifest.xml:20:5-44
+MERGED from [androidx.compose.ui:ui-graphics-android:1.6.1] /Users/eltonviana/.gradle/caches/transforms-3/6366b0ec871e7f1d877332a6ff200abd/transformed/ui-graphics-release/AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.ui:ui-graphics-android:1.6.1] /Users/eltonviana/.gradle/caches/transforms-3/6366b0ec871e7f1d877332a6ff200abd/transformed/ui-graphics-release/AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.ui:ui-test-manifest:1.6.1] /Users/eltonviana/.gradle/caches/transforms-3/3e0be2ba0d67a18de607c282e8eb99c8/transformed/ui-test-manifest-1.6.1/AndroidManifest.xml:20:5-44
+MERGED from [androidx.compose.ui:ui-test-manifest:1.6.1] /Users/eltonviana/.gradle/caches/transforms-3/3e0be2ba0d67a18de607c282e8eb99c8/transformed/ui-test-manifest-1.6.1/AndroidManifest.xml:20:5-44
+MERGED from [androidx.fragment:fragment:1.5.1] /Users/eltonviana/.gradle/caches/transforms-3/0e0ce9ca3d97851903b9143c18680eca/transformed/fragment-1.5.1/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.fragment:fragment:1.5.1] /Users/eltonviana/.gradle/caches/transforms-3/0e0ce9ca3d97851903b9143c18680eca/transformed/fragment-1.5.1/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.activity:activity:1.8.2] /Users/eltonviana/.gradle/caches/transforms-3/b778010c0386afd217506c2437e0a4df/transformed/activity-1.8.2/AndroidManifest.xml:20:5-44
+MERGED from [androidx.activity:activity:1.8.2] /Users/eltonviana/.gradle/caches/transforms-3/b778010c0386afd217506c2437e0a4df/transformed/activity-1.8.2/AndroidManifest.xml:20:5-44
+MERGED from [androidx.activity:activity-ktx:1.8.2] /Users/eltonviana/.gradle/caches/transforms-3/5dd3851bb842d86144e65d6850f5ee70/transformed/activity-ktx-1.8.2/AndroidManifest.xml:5:5-44
+MERGED from [androidx.activity:activity-ktx:1.8.2] /Users/eltonviana/.gradle/caches/transforms-3/5dd3851bb842d86144e65d6850f5ee70/transformed/activity-ktx-1.8.2/AndroidManifest.xml:5:5-44
+MERGED from [androidx.activity:activity-compose:1.8.2] /Users/eltonviana/.gradle/caches/transforms-3/8708dc5fd037a3a3a943e35874d87819/transformed/activity-compose-1.8.2/AndroidManifest.xml:5:5-44
+MERGED from [androidx.activity:activity-compose:1.8.2] /Users/eltonviana/.gradle/caches/transforms-3/8708dc5fd037a3a3a943e35874d87819/transformed/activity-compose-1.8.2/AndroidManifest.xml:5:5-44
+MERGED from [androidx.savedstate:savedstate-ktx:1.2.1] /Users/eltonviana/.gradle/caches/transforms-3/a37d90e3f97016565faf7ccea1c4d1d5/transformed/savedstate-ktx-1.2.1/AndroidManifest.xml:20:5-44
+MERGED from [androidx.savedstate:savedstate-ktx:1.2.1] /Users/eltonviana/.gradle/caches/transforms-3/a37d90e3f97016565faf7ccea1c4d1d5/transformed/savedstate-ktx-1.2.1/AndroidManifest.xml:20:5-44
+MERGED from [androidx.savedstate:savedstate:1.2.1] /Users/eltonviana/.gradle/caches/transforms-3/7440320f35650731f9dfa9fd7db896fb/transformed/savedstate-1.2.1/AndroidManifest.xml:20:5-44
+MERGED from [androidx.savedstate:savedstate:1.2.1] /Users/eltonviana/.gradle/caches/transforms-3/7440320f35650731f9dfa9fd7db896fb/transformed/savedstate-1.2.1/AndroidManifest.xml:20:5-44
+MERGED from [androidx.loader:loader:1.0.0] /Users/eltonviana/.gradle/caches/transforms-3/6897c9597a29881e24b7f28aa1dbb6a2/transformed/loader-1.0.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.loader:loader:1.0.0] /Users/eltonviana/.gradle/caches/transforms-3/6897c9597a29881e24b7f28aa1dbb6a2/transformed/loader-1.0.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.emoji2:emoji2:1.3.0] /Users/eltonviana/.gradle/caches/transforms-3/b724606b85cc4228f65df8d08255b5b3/transformed/emoji2-1.3.0/AndroidManifest.xml:21:5-44
+MERGED from [androidx.emoji2:emoji2:1.3.0] /Users/eltonviana/.gradle/caches/transforms-3/b724606b85cc4228f65df8d08255b5b3/transformed/emoji2-1.3.0/AndroidManifest.xml:21:5-44
+MERGED from [androidx.lifecycle:lifecycle-process:2.7.0] /Users/eltonviana/.gradle/caches/transforms-3/fe4b9b4dd215a4f324c26eb10f2060ba/transformed/lifecycle-process-2.7.0/AndroidManifest.xml:21:5-44
+MERGED from [androidx.lifecycle:lifecycle-process:2.7.0] /Users/eltonviana/.gradle/caches/transforms-3/fe4b9b4dd215a4f324c26eb10f2060ba/transformed/lifecycle-process-2.7.0/AndroidManifest.xml:21:5-44
+MERGED from [androidx.lifecycle:lifecycle-livedata-core-ktx:2.7.0] /Users/eltonviana/.gradle/caches/transforms-3/ea0a546c61d85aabe25b92cbe02a4009/transformed/lifecycle-livedata-core-ktx-2.7.0/AndroidManifest.xml:5:5-44
+MERGED from [androidx.lifecycle:lifecycle-livedata-core-ktx:2.7.0] /Users/eltonviana/.gradle/caches/transforms-3/ea0a546c61d85aabe25b92cbe02a4009/transformed/lifecycle-livedata-core-ktx-2.7.0/AndroidManifest.xml:5:5-44
+MERGED from [androidx.lifecycle:lifecycle-livedata:2.7.0] /Users/eltonviana/.gradle/caches/transforms-3/6bc75ffde9cb5c5efc2933159a22b213/transformed/lifecycle-livedata-2.7.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.lifecycle:lifecycle-livedata:2.7.0] /Users/eltonviana/.gradle/caches/transforms-3/6bc75ffde9cb5c5efc2933159a22b213/transformed/lifecycle-livedata-2.7.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.lifecycle:lifecycle-livedata-core:2.7.0] /Users/eltonviana/.gradle/caches/transforms-3/0158975caecd15fb3b5656774fcbafe1/transformed/lifecycle-livedata-core-2.7.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.lifecycle:lifecycle-livedata-core:2.7.0] /Users/eltonviana/.gradle/caches/transforms-3/0158975caecd15fb3b5656774fcbafe1/transformed/lifecycle-livedata-core-2.7.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.lifecycle:lifecycle-viewmodel:2.7.0] /Users/eltonviana/.gradle/caches/transforms-3/1d64d62a42a4fd1edb855ceff9441c6f/transformed/lifecycle-viewmodel-2.7.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.lifecycle:lifecycle-viewmodel:2.7.0] /Users/eltonviana/.gradle/caches/transforms-3/1d64d62a42a4fd1edb855ceff9441c6f/transformed/lifecycle-viewmodel-2.7.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.lifecycle:lifecycle-viewmodel-savedstate:2.7.0] /Users/eltonviana/.gradle/caches/transforms-3/3e3a51dabdfbfc1a972ec112ad608ebf/transformed/lifecycle-viewmodel-savedstate-2.7.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.lifecycle:lifecycle-viewmodel-savedstate:2.7.0] /Users/eltonviana/.gradle/caches/transforms-3/3e3a51dabdfbfc1a972ec112ad608ebf/transformed/lifecycle-viewmodel-savedstate-2.7.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.lifecycle:lifecycle-viewmodel-ktx:2.7.0] /Users/eltonviana/.gradle/caches/transforms-3/34deb474f4e5cb9e1d76a30fd35b2047/transformed/lifecycle-viewmodel-ktx-2.7.0/AndroidManifest.xml:5:5-44
+MERGED from [androidx.lifecycle:lifecycle-viewmodel-ktx:2.7.0] /Users/eltonviana/.gradle/caches/transforms-3/34deb474f4e5cb9e1d76a30fd35b2047/transformed/lifecycle-viewmodel-ktx-2.7.0/AndroidManifest.xml:5:5-44
+MERGED from [androidx.lifecycle:lifecycle-runtime:2.7.0] /Users/eltonviana/.gradle/caches/transforms-3/3ef3515e7619caf4111dcf5e95b169cf/transformed/lifecycle-runtime-2.7.0/AndroidManifest.xml:5:5-44
+MERGED from [androidx.lifecycle:lifecycle-runtime:2.7.0] /Users/eltonviana/.gradle/caches/transforms-3/3ef3515e7619caf4111dcf5e95b169cf/transformed/lifecycle-runtime-2.7.0/AndroidManifest.xml:5:5-44
+MERGED from [androidx.lifecycle:lifecycle-runtime-compose:2.7.0] /Users/eltonviana/.gradle/caches/transforms-3/4908caf3ca35cd5406d0d18a8cbbe853/transformed/lifecycle-runtime-compose-2.7.0/AndroidManifest.xml:5:5-44
+MERGED from [androidx.lifecycle:lifecycle-runtime-compose:2.7.0] /Users/eltonviana/.gradle/caches/transforms-3/4908caf3ca35cd5406d0d18a8cbbe853/transformed/lifecycle-runtime-compose-2.7.0/AndroidManifest.xml:5:5-44
+MERGED from [androidx.lifecycle:lifecycle-runtime-ktx:2.7.0] /Users/eltonviana/.gradle/caches/transforms-3/34f0694449a1c09b7c00953559bd9432/transformed/lifecycle-runtime-ktx-2.7.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.lifecycle:lifecycle-runtime-ktx:2.7.0] /Users/eltonviana/.gradle/caches/transforms-3/34f0694449a1c09b7c00953559bd9432/transformed/lifecycle-runtime-ktx-2.7.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0] /Users/eltonviana/.gradle/caches/transforms-3/3bb784a663844b35d4a32a9429e44b4a/transformed/lifecycle-viewmodel-compose-2.7.0/AndroidManifest.xml:5:5-44
+MERGED from [androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0] /Users/eltonviana/.gradle/caches/transforms-3/3bb784a663844b35d4a32a9429e44b4a/transformed/lifecycle-viewmodel-compose-2.7.0/AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.ui:ui-android:1.6.1] /Users/eltonviana/.gradle/caches/transforms-3/52e2c1568cb4a415a7096b3a70e3832f/transformed/ui-release/AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.ui:ui-android:1.6.1] /Users/eltonviana/.gradle/caches/transforms-3/52e2c1568cb4a415a7096b3a70e3832f/transformed/ui-release/AndroidManifest.xml:5:5-44
+MERGED from [androidx.viewpager:viewpager:1.0.0] /Users/eltonviana/.gradle/caches/transforms-3/b9c795b071743ec2bb030652fdd13303/transformed/viewpager-1.0.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.viewpager:viewpager:1.0.0] /Users/eltonviana/.gradle/caches/transforms-3/b9c795b071743ec2bb030652fdd13303/transformed/viewpager-1.0.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.autofill:autofill:1.0.0] /Users/eltonviana/.gradle/caches/transforms-3/ecfbc10b1daa314df2ea79795493b90f/transformed/autofill-1.0.0/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.autofill:autofill:1.0.0] /Users/eltonviana/.gradle/caches/transforms-3/ecfbc10b1daa314df2ea79795493b90f/transformed/autofill-1.0.0/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.customview:customview:1.0.0] /Users/eltonviana/.gradle/caches/transforms-3/1fc1ca402b66c1b3721486c8f1ea00ac/transformed/customview-1.0.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.customview:customview:1.0.0] /Users/eltonviana/.gradle/caches/transforms-3/1fc1ca402b66c1b3721486c8f1ea00ac/transformed/customview-1.0.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.core:core:1.12.0] /Users/eltonviana/.gradle/caches/transforms-3/e1b2ee99c9859ef10a1634cbf44c3814/transformed/core-1.12.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.core:core:1.12.0] /Users/eltonviana/.gradle/caches/transforms-3/e1b2ee99c9859ef10a1634cbf44c3814/transformed/core-1.12.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.customview:customview-poolingcontainer:1.0.0] /Users/eltonviana/.gradle/caches/transforms-3/acf40c14273c1d7a9f6de38dcd6ad7b6/transformed/customview-poolingcontainer-1.0.0/AndroidManifest.xml:20:5-21:38
+MERGED from [androidx.customview:customview-poolingcontainer:1.0.0] /Users/eltonviana/.gradle/caches/transforms-3/acf40c14273c1d7a9f6de38dcd6ad7b6/transformed/customview-poolingcontainer-1.0.0/AndroidManifest.xml:20:5-21:38
+MERGED from [androidx.core:core-ktx:1.12.0] /Users/eltonviana/.gradle/caches/transforms-3/6378d230651abf6a6237833643847fc0/transformed/core-ktx-1.12.0/AndroidManifest.xml:5:5-44
+MERGED from [androidx.core:core-ktx:1.12.0] /Users/eltonviana/.gradle/caches/transforms-3/6378d230651abf6a6237833643847fc0/transformed/core-ktx-1.12.0/AndroidManifest.xml:5:5-44
+MERGED from [androidx.datastore:datastore-preferences:1.0.0] /Users/eltonviana/.gradle/caches/transforms-3/8d48cc6e8b5219b6cc341d5c9e1a0cf7/transformed/datastore-preferences-1.0.0/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.datastore:datastore-preferences:1.0.0] /Users/eltonviana/.gradle/caches/transforms-3/8d48cc6e8b5219b6cc341d5c9e1a0cf7/transformed/datastore-preferences-1.0.0/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.datastore:datastore:1.0.0] /Users/eltonviana/.gradle/caches/transforms-3/35bf6f523a9558848c4fa9f1a702c1b9/transformed/datastore-1.0.0/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.datastore:datastore:1.0.0] /Users/eltonviana/.gradle/caches/transforms-3/35bf6f523a9558848c4fa9f1a702c1b9/transformed/datastore-1.0.0/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.compose.runtime:runtime-saveable-android:1.6.1] /Users/eltonviana/.gradle/caches/transforms-3/be269a2c6a9b8ffdb2b3c95fb470374a/transformed/runtime-saveable-release/AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.runtime:runtime-saveable-android:1.6.1] /Users/eltonviana/.gradle/caches/transforms-3/be269a2c6a9b8ffdb2b3c95fb470374a/transformed/runtime-saveable-release/AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.runtime:runtime-android:1.6.1] /Users/eltonviana/.gradle/caches/transforms-3/e89c69e5d6819adc75410582a5efffdc/transformed/runtime-release/AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.runtime:runtime-android:1.6.1] /Users/eltonviana/.gradle/caches/transforms-3/e89c69e5d6819adc75410582a5efffdc/transformed/runtime-release/AndroidManifest.xml:5:5-44
+MERGED from [androidx.annotation:annotation-experimental:1.4.0] /Users/eltonviana/.gradle/caches/transforms-3/daa9d44604db534d15f41086f4cfc663/transformed/annotation-experimental-1.4.0/AndroidManifest.xml:5:5-44
+MERGED from [androidx.annotation:annotation-experimental:1.4.0] /Users/eltonviana/.gradle/caches/transforms-3/daa9d44604db534d15f41086f4cfc663/transformed/annotation-experimental-1.4.0/AndroidManifest.xml:5:5-44
+MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] /Users/eltonviana/.gradle/caches/transforms-3/ba2b65c22f399de0cf7c1838a7cda62c/transformed/versionedparcelable-1.1.1/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] /Users/eltonviana/.gradle/caches/transforms-3/ba2b65c22f399de0cf7c1838a7cda62c/transformed/versionedparcelable-1.1.1/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.interpolator:interpolator:1.0.0] /Users/eltonviana/.gradle/caches/transforms-3/468acb346ea63872ade68f74f55f9fe7/transformed/interpolator-1.0.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.interpolator:interpolator:1.0.0] /Users/eltonviana/.gradle/caches/transforms-3/468acb346ea63872ade68f74f55f9fe7/transformed/interpolator-1.0.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.arch.core:core-runtime:2.2.0] /Users/eltonviana/.gradle/caches/transforms-3/309b4e863bd905939688bbd1d80df5a8/transformed/core-runtime-2.2.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.arch.core:core-runtime:2.2.0] /Users/eltonviana/.gradle/caches/transforms-3/309b4e863bd905939688bbd1d80df5a8/transformed/core-runtime-2.2.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.profileinstaller:profileinstaller:1.3.0] /Users/eltonviana/.gradle/caches/transforms-3/f4c9496896eb9ef814506acf9c23f953/transformed/profileinstaller-1.3.0/AndroidManifest.xml:21:5-44
+MERGED from [androidx.profileinstaller:profileinstaller:1.3.0] /Users/eltonviana/.gradle/caches/transforms-3/f4c9496896eb9ef814506acf9c23f953/transformed/profileinstaller-1.3.0/AndroidManifest.xml:21:5-44
+MERGED from [androidx.startup:startup-runtime:1.1.1] /Users/eltonviana/.gradle/caches/transforms-3/af6c89f0b3ee419722137449ce2525c3/transformed/startup-runtime-1.1.1/AndroidManifest.xml:21:5-23:41
+MERGED from [androidx.startup:startup-runtime:1.1.1] /Users/eltonviana/.gradle/caches/transforms-3/af6c89f0b3ee419722137449ce2525c3/transformed/startup-runtime-1.1.1/AndroidManifest.xml:21:5-23:41
+MERGED from [androidx.tracing:tracing:1.0.0] /Users/eltonviana/.gradle/caches/transforms-3/a103572db62b39485daf15d4b95a08b1/transformed/tracing-1.0.0/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.tracing:tracing:1.0.0] /Users/eltonviana/.gradle/caches/transforms-3/a103572db62b39485daf15d4b95a08b1/transformed/tracing-1.0.0/AndroidManifest.xml:20:5-22:41
+MERGED from [com.google.dagger:dagger-lint-aar:2.50] /Users/eltonviana/.gradle/caches/transforms-3/930d7df24ac14629f4c10b5342cb0e73/transformed/dagger-lint-aar-2.50/AndroidManifest.xml:18:3-42
+MERGED from [com.google.dagger:dagger-lint-aar:2.50] /Users/eltonviana/.gradle/caches/transforms-3/930d7df24ac14629f4c10b5342cb0e73/transformed/dagger-lint-aar-2.50/AndroidManifest.xml:18:3-42
+	android:targetSdkVersion
+		INJECTED from /Users/eltonviana/lab/kotlin-obd-sample-app/app/src/main/AndroidManifest.xml
+	android:minSdkVersion
+		INJECTED from /Users/eltonviana/lab/kotlin-obd-sample-app/app/src/main/AndroidManifest.xml
+activity#androidx.compose.ui.tooling.PreviewActivity
+ADDED from [androidx.compose.ui:ui-tooling-android:1.6.1] /Users/eltonviana/.gradle/caches/transforms-3/7801b6573c14574d693c3257a1727f36/transformed/ui-tooling-release/AndroidManifest.xml:23:9-25:39
+	android:exported
+		ADDED from [androidx.compose.ui:ui-tooling-android:1.6.1] /Users/eltonviana/.gradle/caches/transforms-3/7801b6573c14574d693c3257a1727f36/transformed/ui-tooling-release/AndroidManifest.xml:25:13-36
+	android:name
+		ADDED from [androidx.compose.ui:ui-tooling-android:1.6.1] /Users/eltonviana/.gradle/caches/transforms-3/7801b6573c14574d693c3257a1727f36/transformed/ui-tooling-release/AndroidManifest.xml:24:13-71
+activity#androidx.activity.ComponentActivity
+ADDED from [androidx.compose.ui:ui-test-manifest:1.6.1] /Users/eltonviana/.gradle/caches/transforms-3/3e0be2ba0d67a18de607c282e8eb99c8/transformed/ui-test-manifest-1.6.1/AndroidManifest.xml:23:9-25:39
+	android:exported
+		ADDED from [androidx.compose.ui:ui-test-manifest:1.6.1] /Users/eltonviana/.gradle/caches/transforms-3/3e0be2ba0d67a18de607c282e8eb99c8/transformed/ui-test-manifest-1.6.1/AndroidManifest.xml:25:13-36
+	android:name
+		ADDED from [androidx.compose.ui:ui-test-manifest:1.6.1] /Users/eltonviana/.gradle/caches/transforms-3/3e0be2ba0d67a18de607c282e8eb99c8/transformed/ui-test-manifest-1.6.1/AndroidManifest.xml:24:13-63
+provider#androidx.startup.InitializationProvider
+ADDED from [androidx.emoji2:emoji2:1.3.0] /Users/eltonviana/.gradle/caches/transforms-3/b724606b85cc4228f65df8d08255b5b3/transformed/emoji2-1.3.0/AndroidManifest.xml:24:9-32:20
+MERGED from [androidx.lifecycle:lifecycle-process:2.7.0] /Users/eltonviana/.gradle/caches/transforms-3/fe4b9b4dd215a4f324c26eb10f2060ba/transformed/lifecycle-process-2.7.0/AndroidManifest.xml:24:9-32:20
+MERGED from [androidx.lifecycle:lifecycle-process:2.7.0] /Users/eltonviana/.gradle/caches/transforms-3/fe4b9b4dd215a4f324c26eb10f2060ba/transformed/lifecycle-process-2.7.0/AndroidManifest.xml:24:9-32:20
+MERGED from [androidx.profileinstaller:profileinstaller:1.3.0] /Users/eltonviana/.gradle/caches/transforms-3/f4c9496896eb9ef814506acf9c23f953/transformed/profileinstaller-1.3.0/AndroidManifest.xml:24:9-32:20
+MERGED from [androidx.profileinstaller:profileinstaller:1.3.0] /Users/eltonviana/.gradle/caches/transforms-3/f4c9496896eb9ef814506acf9c23f953/transformed/profileinstaller-1.3.0/AndroidManifest.xml:24:9-32:20
+MERGED from [androidx.startup:startup-runtime:1.1.1] /Users/eltonviana/.gradle/caches/transforms-3/af6c89f0b3ee419722137449ce2525c3/transformed/startup-runtime-1.1.1/AndroidManifest.xml:26:9-30:34
+MERGED from [androidx.startup:startup-runtime:1.1.1] /Users/eltonviana/.gradle/caches/transforms-3/af6c89f0b3ee419722137449ce2525c3/transformed/startup-runtime-1.1.1/AndroidManifest.xml:26:9-30:34
+	tools:node
+		ADDED from [androidx.emoji2:emoji2:1.3.0] /Users/eltonviana/.gradle/caches/transforms-3/b724606b85cc4228f65df8d08255b5b3/transformed/emoji2-1.3.0/AndroidManifest.xml:28:13-31
+	android:authorities
+		ADDED from [androidx.emoji2:emoji2:1.3.0] /Users/eltonviana/.gradle/caches/transforms-3/b724606b85cc4228f65df8d08255b5b3/transformed/emoji2-1.3.0/AndroidManifest.xml:26:13-68
+	android:exported
+		ADDED from [androidx.emoji2:emoji2:1.3.0] /Users/eltonviana/.gradle/caches/transforms-3/b724606b85cc4228f65df8d08255b5b3/transformed/emoji2-1.3.0/AndroidManifest.xml:27:13-37
+	android:name
+		ADDED from [androidx.emoji2:emoji2:1.3.0] /Users/eltonviana/.gradle/caches/transforms-3/b724606b85cc4228f65df8d08255b5b3/transformed/emoji2-1.3.0/AndroidManifest.xml:25:13-67
+meta-data#androidx.emoji2.text.EmojiCompatInitializer
+ADDED from [androidx.emoji2:emoji2:1.3.0] /Users/eltonviana/.gradle/caches/transforms-3/b724606b85cc4228f65df8d08255b5b3/transformed/emoji2-1.3.0/AndroidManifest.xml:29:13-31:52
+	android:value
+		ADDED from [androidx.emoji2:emoji2:1.3.0] /Users/eltonviana/.gradle/caches/transforms-3/b724606b85cc4228f65df8d08255b5b3/transformed/emoji2-1.3.0/AndroidManifest.xml:31:17-49
+	android:name
+		ADDED from [androidx.emoji2:emoji2:1.3.0] /Users/eltonviana/.gradle/caches/transforms-3/b724606b85cc4228f65df8d08255b5b3/transformed/emoji2-1.3.0/AndroidManifest.xml:30:17-75
+meta-data#androidx.lifecycle.ProcessLifecycleInitializer
+ADDED from [androidx.lifecycle:lifecycle-process:2.7.0] /Users/eltonviana/.gradle/caches/transforms-3/fe4b9b4dd215a4f324c26eb10f2060ba/transformed/lifecycle-process-2.7.0/AndroidManifest.xml:29:13-31:52
+	android:value
+		ADDED from [androidx.lifecycle:lifecycle-process:2.7.0] /Users/eltonviana/.gradle/caches/transforms-3/fe4b9b4dd215a4f324c26eb10f2060ba/transformed/lifecycle-process-2.7.0/AndroidManifest.xml:31:17-49
+	android:name
+		ADDED from [androidx.lifecycle:lifecycle-process:2.7.0] /Users/eltonviana/.gradle/caches/transforms-3/fe4b9b4dd215a4f324c26eb10f2060ba/transformed/lifecycle-process-2.7.0/AndroidManifest.xml:30:17-78
+permission#${applicationId}.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
+ADDED from [androidx.core:core:1.12.0] /Users/eltonviana/.gradle/caches/transforms-3/e1b2ee99c9859ef10a1634cbf44c3814/transformed/core-1.12.0/AndroidManifest.xml:22:5-24:47
+	android:protectionLevel
+		ADDED from [androidx.core:core:1.12.0] /Users/eltonviana/.gradle/caches/transforms-3/e1b2ee99c9859ef10a1634cbf44c3814/transformed/core-1.12.0/AndroidManifest.xml:24:9-44
+	android:name
+		ADDED from [androidx.core:core:1.12.0] /Users/eltonviana/.gradle/caches/transforms-3/e1b2ee99c9859ef10a1634cbf44c3814/transformed/core-1.12.0/AndroidManifest.xml:23:9-81
+permission#com.example.obdapp.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
+ADDED from [androidx.core:core:1.12.0] /Users/eltonviana/.gradle/caches/transforms-3/e1b2ee99c9859ef10a1634cbf44c3814/transformed/core-1.12.0/AndroidManifest.xml:22:5-24:47
+	android:protectionLevel
+		ADDED from [androidx.core:core:1.12.0] /Users/eltonviana/.gradle/caches/transforms-3/e1b2ee99c9859ef10a1634cbf44c3814/transformed/core-1.12.0/AndroidManifest.xml:24:9-44
+	android:name
+		ADDED from [androidx.core:core:1.12.0] /Users/eltonviana/.gradle/caches/transforms-3/e1b2ee99c9859ef10a1634cbf44c3814/transformed/core-1.12.0/AndroidManifest.xml:23:9-81
+uses-permission#${applicationId}.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
+ADDED from [androidx.core:core:1.12.0] /Users/eltonviana/.gradle/caches/transforms-3/e1b2ee99c9859ef10a1634cbf44c3814/transformed/core-1.12.0/AndroidManifest.xml:26:5-97
+	android:name
+		ADDED from [androidx.core:core:1.12.0] /Users/eltonviana/.gradle/caches/transforms-3/e1b2ee99c9859ef10a1634cbf44c3814/transformed/core-1.12.0/AndroidManifest.xml:26:22-94
+uses-permission#com.example.obdapp.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
+ADDED from [androidx.core:core:1.12.0] /Users/eltonviana/.gradle/caches/transforms-3/e1b2ee99c9859ef10a1634cbf44c3814/transformed/core-1.12.0/AndroidManifest.xml:26:5-97
+	android:name
+		ADDED from [androidx.core:core:1.12.0] /Users/eltonviana/.gradle/caches/transforms-3/e1b2ee99c9859ef10a1634cbf44c3814/transformed/core-1.12.0/AndroidManifest.xml:26:22-94
+meta-data#androidx.profileinstaller.ProfileInstallerInitializer
+ADDED from [androidx.profileinstaller:profileinstaller:1.3.0] /Users/eltonviana/.gradle/caches/transforms-3/f4c9496896eb9ef814506acf9c23f953/transformed/profileinstaller-1.3.0/AndroidManifest.xml:29:13-31:52
+	android:value
+		ADDED from [androidx.profileinstaller:profileinstaller:1.3.0] /Users/eltonviana/.gradle/caches/transforms-3/f4c9496896eb9ef814506acf9c23f953/transformed/profileinstaller-1.3.0/AndroidManifest.xml:31:17-49
+	android:name
+		ADDED from [androidx.profileinstaller:profileinstaller:1.3.0] /Users/eltonviana/.gradle/caches/transforms-3/f4c9496896eb9ef814506acf9c23f953/transformed/profileinstaller-1.3.0/AndroidManifest.xml:30:17-85
+receiver#androidx.profileinstaller.ProfileInstallReceiver
+ADDED from [androidx.profileinstaller:profileinstaller:1.3.0] /Users/eltonviana/.gradle/caches/transforms-3/f4c9496896eb9ef814506acf9c23f953/transformed/profileinstaller-1.3.0/AndroidManifest.xml:34:9-52:20
+	android:enabled
+		ADDED from [androidx.profileinstaller:profileinstaller:1.3.0] /Users/eltonviana/.gradle/caches/transforms-3/f4c9496896eb9ef814506acf9c23f953/transformed/profileinstaller-1.3.0/AndroidManifest.xml:37:13-35
+	android:exported
+		ADDED from [androidx.profileinstaller:profileinstaller:1.3.0] /Users/eltonviana/.gradle/caches/transforms-3/f4c9496896eb9ef814506acf9c23f953/transformed/profileinstaller-1.3.0/AndroidManifest.xml:38:13-36
+	android:permission
+		ADDED from [androidx.profileinstaller:profileinstaller:1.3.0] /Users/eltonviana/.gradle/caches/transforms-3/f4c9496896eb9ef814506acf9c23f953/transformed/profileinstaller-1.3.0/AndroidManifest.xml:39:13-57
+	android:directBootAware
+		ADDED from [androidx.profileinstaller:profileinstaller:1.3.0] /Users/eltonviana/.gradle/caches/transforms-3/f4c9496896eb9ef814506acf9c23f953/transformed/profileinstaller-1.3.0/AndroidManifest.xml:36:13-44
+	android:name
+		ADDED from [androidx.profileinstaller:profileinstaller:1.3.0] /Users/eltonviana/.gradle/caches/transforms-3/f4c9496896eb9ef814506acf9c23f953/transformed/profileinstaller-1.3.0/AndroidManifest.xml:35:13-76
+intent-filter#action:name:androidx.profileinstaller.action.INSTALL_PROFILE
+ADDED from [androidx.profileinstaller:profileinstaller:1.3.0] /Users/eltonviana/.gradle/caches/transforms-3/f4c9496896eb9ef814506acf9c23f953/transformed/profileinstaller-1.3.0/AndroidManifest.xml:40:13-42:29
+action#androidx.profileinstaller.action.INSTALL_PROFILE
+ADDED from [androidx.profileinstaller:profileinstaller:1.3.0] /Users/eltonviana/.gradle/caches/transforms-3/f4c9496896eb9ef814506acf9c23f953/transformed/profileinstaller-1.3.0/AndroidManifest.xml:41:17-91
+	android:name
+		ADDED from [androidx.profileinstaller:profileinstaller:1.3.0] /Users/eltonviana/.gradle/caches/transforms-3/f4c9496896eb9ef814506acf9c23f953/transformed/profileinstaller-1.3.0/AndroidManifest.xml:41:25-88
+intent-filter#action:name:androidx.profileinstaller.action.SKIP_FILE
+ADDED from [androidx.profileinstaller:profileinstaller:1.3.0] /Users/eltonviana/.gradle/caches/transforms-3/f4c9496896eb9ef814506acf9c23f953/transformed/profileinstaller-1.3.0/AndroidManifest.xml:43:13-45:29
+action#androidx.profileinstaller.action.SKIP_FILE
+ADDED from [androidx.profileinstaller:profileinstaller:1.3.0] /Users/eltonviana/.gradle/caches/transforms-3/f4c9496896eb9ef814506acf9c23f953/transformed/profileinstaller-1.3.0/AndroidManifest.xml:44:17-85
+	android:name
+		ADDED from [androidx.profileinstaller:profileinstaller:1.3.0] /Users/eltonviana/.gradle/caches/transforms-3/f4c9496896eb9ef814506acf9c23f953/transformed/profileinstaller-1.3.0/AndroidManifest.xml:44:25-82
+intent-filter#action:name:androidx.profileinstaller.action.SAVE_PROFILE
+ADDED from [androidx.profileinstaller:profileinstaller:1.3.0] /Users/eltonviana/.gradle/caches/transforms-3/f4c9496896eb9ef814506acf9c23f953/transformed/profileinstaller-1.3.0/AndroidManifest.xml:46:13-48:29
+action#androidx.profileinstaller.action.SAVE_PROFILE
+ADDED from [androidx.profileinstaller:profileinstaller:1.3.0] /Users/eltonviana/.gradle/caches/transforms-3/f4c9496896eb9ef814506acf9c23f953/transformed/profileinstaller-1.3.0/AndroidManifest.xml:47:17-88
+	android:name
+		ADDED from [androidx.profileinstaller:profileinstaller:1.3.0] /Users/eltonviana/.gradle/caches/transforms-3/f4c9496896eb9ef814506acf9c23f953/transformed/profileinstaller-1.3.0/AndroidManifest.xml:47:25-85
+intent-filter#action:name:androidx.profileinstaller.action.BENCHMARK_OPERATION
+ADDED from [androidx.profileinstaller:profileinstaller:1.3.0] /Users/eltonviana/.gradle/caches/transforms-3/f4c9496896eb9ef814506acf9c23f953/transformed/profileinstaller-1.3.0/AndroidManifest.xml:49:13-51:29
+action#androidx.profileinstaller.action.BENCHMARK_OPERATION
+ADDED from [androidx.profileinstaller:profileinstaller:1.3.0] /Users/eltonviana/.gradle/caches/transforms-3/f4c9496896eb9ef814506acf9c23f953/transformed/profileinstaller-1.3.0/AndroidManifest.xml:50:17-95
+	android:name
+		ADDED from [androidx.profileinstaller:profileinstaller:1.3.0] /Users/eltonviana/.gradle/caches/transforms-3/f4c9496896eb9ef814506acf9c23f953/transformed/profileinstaller-1.3.0/AndroidManifest.xml:50:25-92

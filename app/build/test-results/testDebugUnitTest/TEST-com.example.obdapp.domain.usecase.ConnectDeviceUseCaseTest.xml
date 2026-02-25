@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.obdapp.domain.usecase.ConnectDeviceUseCaseTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-02-25T15:12:59" hostname="enterprise" time="0.008">
+  <properties/>
+  <testcase name="invoke calls repository connect" classname="com.example.obdapp.domain.usecase.ConnectDeviceUseCaseTest" time="0.005"/>
+  <testcase name="invoke returns failure when repository fails" classname="com.example.obdapp.domain.usecase.ConnectDeviceUseCaseTest" time="0.003"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
