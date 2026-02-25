@@ -3,7 +3,10 @@ package com.eltonvs.obdapp.ui.feature.dashboard
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.eltonvs.obdapp.domain.model.ConnectionState
+import com.eltonvs.obdapp.domain.model.DeviceInfo
+import com.eltonvs.obdapp.domain.model.DeviceType
 import com.eltonvs.obdapp.domain.repository.ObdRepository
+import com.eltonvs.obdapp.domain.usecase.ConnectDeviceUseCase
 import com.eltonvs.obdapp.domain.usecase.DisconnectUseCase
 import com.eltonvs.obdapp.domain.usecase.ReadMetricsUseCase
 import com.eltonvs.obdapp.util.PreferencesManager
@@ -26,6 +29,7 @@ data class DashboardUiState(
     val fuel: String = "--",
     val connectionState: ConnectionState = ConnectionState.Disconnected,
     val isPolling: Boolean = false,
+    val autoConnectEnabled: Boolean = true,
 )
 
 @HiltViewModel
@@ -34,6 +38,7 @@ class DashboardViewModel
     constructor(
         private val readMetricsUseCase: ReadMetricsUseCase,
         private val disconnectUseCase: DisconnectUseCase,
+        private val connectDeviceUseCase: ConnectDeviceUseCase,
         private val repository: ObdRepository,
         private val preferencesManager: PreferencesManager,
     ) : ViewModel() {
@@ -43,6 +48,23 @@ class DashboardViewModel
         init {
             observeConnectionState()
             observeMetrics()
+            checkAutoConnect()
+        }
+
+        private fun checkAutoConnect() {
+            viewModelScope.launch {
+                val autoConnect = preferencesManager.autoConnect.first()
+                val wasConnected = preferencesManager.wasConnected.first()
+                val lastDeviceAddress = preferencesManager.lastDeviceAddress.first()
+                val lastDeviceName = preferencesManager.lastDeviceName.first()
+
+                _uiState.update { it.copy(autoConnectEnabled = autoConnect) }
+
+                if (autoConnect && wasConnected && lastDeviceAddress != null && lastDeviceName != null) {
+                    val device = DeviceInfo(lastDeviceAddress, lastDeviceName, DeviceType.CLASSIC)
+                    connectDeviceUseCase(device)
+                }
+            }
         }
 
         private fun observeConnectionState() {

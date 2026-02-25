@@ -48,6 +48,11 @@ class ConnectionViewModel
             viewModelScope.launch {
                 repository.connectionState.collect { state ->
                     _uiState.update { it.copy(connectionState = state) }
+                    if (state is ConnectionState.Connected) {
+                        preferencesManager.setWasConnected(true)
+                    } else if (state is ConnectionState.Disconnected) {
+                        preferencesManager.setWasConnected(false)
+                    }
                 }
             }
         }
