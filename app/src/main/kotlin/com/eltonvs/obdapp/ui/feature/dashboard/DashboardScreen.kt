@@ -44,7 +44,6 @@ import com.eltonvs.obdapp.ui.components.MetricIcon
 import com.eltonvs.obdapp.ui.theme.ConnectionStatusConnected
 import com.eltonvs.obdapp.ui.theme.ConnectionStatusDisconnected
 import com.eltonvs.obdapp.ui.theme.ConnectionStatusError
-import com.eltonvs.obdapp.ui.theme.DashboardBackground
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -60,7 +59,7 @@ fun DashboardScreen(
                 title = { Text("Dashboard") },
                 colors =
                     TopAppBarDefaults.topAppBarColors(
-                        containerColor = DashboardBackground,
+                        containerColor = MaterialTheme.colorScheme.background,
                     ),
                 actions = {
                     ConnectionIndicator(
@@ -70,7 +69,7 @@ fun DashboardScreen(
                 },
             )
         },
-        containerColor = DashboardBackground,
+        containerColor = MaterialTheme.colorScheme.background,
     ) { padding ->
         Column(
             modifier =

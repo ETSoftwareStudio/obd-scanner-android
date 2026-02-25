@@ -53,7 +53,6 @@ import com.eltonvs.obdapp.domain.model.ConnectionState
 import com.eltonvs.obdapp.domain.model.DiagnosticInfo
 import com.eltonvs.obdapp.domain.model.TroubleCode
 import com.eltonvs.obdapp.domain.model.TroubleCodeType
-import com.eltonvs.obdapp.ui.theme.DashboardBackground
 import com.eltonvs.obdapp.ui.theme.GaugeGreen
 import com.eltonvs.obdapp.ui.theme.GaugeRed
 import com.eltonvs.obdapp.ui.theme.GaugeYellow
@@ -80,7 +79,7 @@ fun DiagnosticsScreen(
                 title = { Text("Diagnostics") },
                 colors =
                     TopAppBarDefaults.topAppBarColors(
-                        containerColor = DashboardBackground,
+                        containerColor = MaterialTheme.colorScheme.background,
                     ),
                 actions = {
                     IconButton(
@@ -93,7 +92,7 @@ fun DiagnosticsScreen(
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        containerColor = DashboardBackground,
+        containerColor = MaterialTheme.colorScheme.background,
     ) { padding ->
         Column(
             modifier =

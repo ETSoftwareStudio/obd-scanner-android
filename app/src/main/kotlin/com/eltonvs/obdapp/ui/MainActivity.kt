@@ -26,7 +26,6 @@ import androidx.navigation.compose.rememberNavController
 import com.eltonvs.obdapp.ui.navigation.NavGraph
 import com.eltonvs.obdapp.ui.navigation.Screen
 import com.eltonvs.obdapp.ui.theme.ConnectionStatusConnected
-import com.eltonvs.obdapp.ui.theme.DashboardBackground
 import com.eltonvs.obdapp.ui.theme.ObdSampleAppTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -64,7 +63,7 @@ fun MainApp(
             Scaffold(
                 bottomBar = {
                     NavigationBar(
-                        containerColor = DashboardBackground,
+                        containerColor = MaterialTheme.colorScheme.background,
                     ) {
                         Screen.bottomNavItems.forEach { screen ->
                             val selected =
