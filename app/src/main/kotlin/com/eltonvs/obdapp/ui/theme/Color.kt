@@ -10,10 +10,15 @@ val Purple40 = Color(0xFF6750A4)
 val PurpleGrey40 = Color(0xFF625B71)
 val Pink40 = Color(0xFF7D5260)
 
-// Automotive Dashboard Colors
-val DashboardBackground = Color(0xFF121212)
-val DashboardSurface = Color(0xFF1E1E1E)
-val DashboardSurfaceVariant = Color(0xFF2D2D2D)
+// Automotive Dashboard Colors - Dark
+val DashboardBackgroundDark = Color(0xFF121212)
+val DashboardSurfaceDark = Color(0xFF1E1E1E)
+val DashboardSurfaceVariantDark = Color(0xFF2D2D2D)
+
+// Automotive Dashboard Colors - Light
+val DashboardBackgroundLight = Color(0xFFFFFBFE)
+val DashboardSurfaceLight = Color(0xFFFFFFFF)
+val DashboardSurfaceVariantLight = Color(0xFFE7E0EC)
 
 val GaugeGreen = Color(0xFF4CAF50)
 val GaugeYellow = Color(0xFFFFC107)
