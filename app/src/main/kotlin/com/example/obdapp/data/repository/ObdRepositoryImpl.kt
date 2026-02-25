@@ -54,6 +54,7 @@ class ObdRepositoryImpl @Inject constructor(
         }
     }
 
+    @Suppress("DEPRECATION")
     override suspend fun getPairedDevices(): List<DeviceInfo> = withContext(Dispatchers.IO) {
         val adapter = BluetoothAdapter.getDefaultAdapter() ?: return@withContext emptyList()
         

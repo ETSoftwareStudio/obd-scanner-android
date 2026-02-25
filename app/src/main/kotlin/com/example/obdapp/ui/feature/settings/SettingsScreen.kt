@@ -149,6 +149,7 @@ fun SettingsScreen(
     }
 }
 
+@Suppress("UNUSED_PARAMETER")
 @Composable
 private fun SettingsSection(
     title: String,
