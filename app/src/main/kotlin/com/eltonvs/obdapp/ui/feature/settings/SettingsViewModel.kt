@@ -15,43 +15,44 @@ data class SettingsUiState(
     val pollingInterval: Long = 1000L,
     val theme: String = "dark",
     val availableIntervals: List<Long> = listOf(500L, 1000L, 2000L, 5000L),
-    val availableThemes: List<String> = listOf("system", "light", "dark")
+    val availableThemes: List<String> = listOf("system", "light", "dark"),
 )
 
 @HiltViewModel
-class SettingsViewModel @Inject constructor(
-    private val preferencesManager: PreferencesManager
-) : ViewModel() {
+class SettingsViewModel
+    @Inject
+    constructor(
+        private val preferencesManager: PreferencesManager,
+    ) : ViewModel() {
+        private val _uiState = MutableStateFlow(SettingsUiState())
+        val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
 
-    private val _uiState = MutableStateFlow(SettingsUiState())
-    val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
+        init {
+            loadSettings()
+        }
 
-    init {
-        loadSettings()
-    }
-
-    private fun loadSettings() {
-        viewModelScope.launch {
-            preferencesManager.pollingInterval.collect { interval ->
-                _uiState.update { it.copy(pollingInterval = interval) }
+        private fun loadSettings() {
+            viewModelScope.launch {
+                preferencesManager.pollingInterval.collect { interval ->
+                    _uiState.update { it.copy(pollingInterval = interval) }
+                }
+            }
+            viewModelScope.launch {
+                preferencesManager.theme.collect { theme ->
+                    _uiState.update { it.copy(theme = theme) }
+                }
             }
         }
-        viewModelScope.launch {
-            preferencesManager.theme.collect { theme ->
-                _uiState.update { it.copy(theme = theme) }
+
+        fun setPollingInterval(interval: Long) {
+            viewModelScope.launch {
+                preferencesManager.setPollingInterval(interval)
+            }
+        }
+
+        fun setTheme(theme: String) {
+            viewModelScope.launch {
+                preferencesManager.setTheme(theme)
             }
         }
     }
-
-    fun setPollingInterval(interval: Long) {
-        viewModelScope.launch {
-            preferencesManager.setPollingInterval(interval)
-        }
-    }
-
-    fun setTheme(theme: String) {
-        viewModelScope.launch {
-            preferencesManager.setTheme(theme)
-        }
-    }
-}

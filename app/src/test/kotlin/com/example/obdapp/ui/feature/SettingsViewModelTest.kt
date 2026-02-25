@@ -7,7 +7,6 @@ import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -19,7 +18,6 @@ import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SettingsViewModelTest {
-
     private val testDispatcher = StandardTestDispatcher()
 
     private val preferencesManager: PreferencesManager = mockk(relaxed = true)
@@ -29,7 +27,7 @@ class SettingsViewModelTest {
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
-        
+
         coEvery { preferencesManager.pollingInterval } returns MutableStateFlow(1000L)
         coEvery { preferencesManager.theme } returns MutableStateFlow("dark")
 
@@ -48,24 +46,26 @@ class SettingsViewModelTest {
     }
 
     @Test
-    fun `setPollingInterval calls preferences manager`() = runTest {
-        coEvery { preferencesManager.setPollingInterval(any()) } returns Unit
+    fun `setPollingInterval calls preferences manager`() =
+        runTest {
+            coEvery { preferencesManager.setPollingInterval(any()) } returns Unit
 
-        viewModel.setPollingInterval(2000L)
-        testDispatcher.scheduler.advanceUntilIdle()
+            viewModel.setPollingInterval(2000L)
+            testDispatcher.scheduler.advanceUntilIdle()
 
-        coVerify { preferencesManager.setPollingInterval(2000L) }
-    }
+            coVerify { preferencesManager.setPollingInterval(2000L) }
+        }
 
     @Test
-    fun `setTheme calls preferences manager`() = runTest {
-        coEvery { preferencesManager.setTheme(any()) } returns Unit
+    fun `setTheme calls preferences manager`() =
+        runTest {
+            coEvery { preferencesManager.setTheme(any()) } returns Unit
 
-        viewModel.setTheme("light")
-        testDispatcher.scheduler.advanceUntilIdle()
+            viewModel.setTheme("light")
+            testDispatcher.scheduler.advanceUntilIdle()
 
-        coVerify { preferencesManager.setTheme("light") }
-    }
+            coVerify { preferencesManager.setTheme("light") }
+        }
 
     @Test
     fun `available intervals contains expected values`() {

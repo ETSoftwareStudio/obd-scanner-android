@@ -27,7 +27,6 @@ import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ConnectionViewModelTest {
-
     private val testDispatcher = StandardTestDispatcher()
 
     private val getPairedDevicesUseCase: GetPairedDevicesUseCase = mockk(relaxed = true)
@@ -37,25 +36,27 @@ class ConnectionViewModelTest {
 
     private lateinit var viewModel: ConnectionViewModel
 
-    private val testDevices = listOf(
-        DeviceInfo("AA:BB:CC:DD:EE:FF", "OBD Device 1", DeviceType.CLASSIC),
-        DeviceInfo("11:22:33:44:55:66", "OBD Device 2", DeviceType.CLASSIC)
-    )
+    private val testDevices =
+        listOf(
+            DeviceInfo("AA:BB:CC:DD:EE:FF", "OBD Device 1", DeviceType.CLASSIC),
+            DeviceInfo("11:22:33:44:55:66", "OBD Device 2", DeviceType.CLASSIC),
+        )
 
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
-        
+
         every { repository.connectionState } returns MutableStateFlow(ConnectionState.Disconnected)
         coEvery { preferencesManager.lastDeviceAddress } returns flowOf(null)
         coEvery { preferencesManager.lastDeviceName } returns flowOf(null)
 
-        viewModel = ConnectionViewModel(
-            getPairedDevicesUseCase,
-            connectDeviceUseCase,
-            repository,
-            preferencesManager
-        )
+        viewModel =
+            ConnectionViewModel(
+                getPairedDevicesUseCase,
+                connectDeviceUseCase,
+                repository,
+                preferencesManager,
+            )
     }
 
     @After
@@ -64,14 +65,15 @@ class ConnectionViewModelTest {
     }
 
     @Test
-    fun `loadPairedDevices updates device list`() = runTest {
-        coEvery { getPairedDevicesUseCase() } returns testDevices
+    fun `loadPairedDevices updates device list`() =
+        runTest {
+            coEvery { getPairedDevicesUseCase() } returns testDevices
 
-        viewModel.loadPairedDevices()
-        testDispatcher.scheduler.advanceUntilIdle()
+            viewModel.loadPairedDevices()
+            testDispatcher.scheduler.advanceUntilIdle()
 
-        assertEquals(testDevices, viewModel.uiState.value.devices)
-    }
+            assertEquals(testDevices, viewModel.uiState.value.devices)
+        }
 
     @Test
     fun `selectDevice updates selected device`() {
@@ -83,30 +85,32 @@ class ConnectionViewModelTest {
     }
 
     @Test
-    fun `connect with selected device calls connect use case`() = runTest {
-        val device = testDevices.first()
-        viewModel.selectDevice(device)
+    fun `connect with selected device calls connect use case`() =
+        runTest {
+            val device = testDevices.first()
+            viewModel.selectDevice(device)
 
-        coEvery { connectDeviceUseCase(device) } returns Result.success(Unit)
+            coEvery { connectDeviceUseCase(device) } returns Result.success(Unit)
 
-        viewModel.connect()
-        testDispatcher.scheduler.advanceUntilIdle()
+            viewModel.connect()
+            testDispatcher.scheduler.advanceUntilIdle()
 
-        coVerify { connectDeviceUseCase(device) }
-    }
+            coVerify { connectDeviceUseCase(device) }
+        }
 
     @Test
-    fun `connect failure updates error state`() = runTest {
-        val device = testDevices.first()
-        viewModel.selectDevice(device)
+    fun `connect failure updates error state`() =
+        runTest {
+            val device = testDevices.first()
+            viewModel.selectDevice(device)
 
-        coEvery { connectDeviceUseCase(device) } returns Result.failure(Exception("Connection failed"))
+            coEvery { connectDeviceUseCase(device) } returns Result.failure(Exception("Connection failed"))
 
-        viewModel.connect()
-        testDispatcher.scheduler.advanceUntilIdle()
+            viewModel.connect()
+            testDispatcher.scheduler.advanceUntilIdle()
 
-        assertTrue(viewModel.uiState.value.error != null)
-    }
+            assertTrue(viewModel.uiState.value.error != null)
+        }
 
     @Test
     fun `clearError clears error state`() {

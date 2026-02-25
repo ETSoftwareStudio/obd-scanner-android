@@ -38,28 +38,29 @@ fun GaugeCard(
     modifier: Modifier = Modifier,
     size: Dp = 150.dp,
     startAngle: Float = 135f,
-    sweepAngle: Float = 270f
+    sweepAngle: Float = 270f,
 ) {
     val normalizedValue = (value / maxValue).coerceIn(0f, 1f)
     val animatedValue by animateFloatAsState(
         targetValue = normalizedValue,
         animationSpec = tween(durationMillis = 500),
-        label = "gauge_value"
+        label = "gauge_value",
     )
 
-    val gaugeColor = when {
-        normalizedValue > 0.8f -> GaugeRed
-        normalizedValue > 0.6f -> GaugeYellow
-        else -> GaugeGreen
-    }
+    val gaugeColor =
+        when {
+            normalizedValue > 0.8f -> GaugeRed
+            normalizedValue > 0.6f -> GaugeYellow
+            else -> GaugeGreen
+        }
 
     Column(
         modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Box(
             contentAlignment = Alignment.Center,
-            modifier = Modifier.size(size)
+            modifier = Modifier.size(size),
         ) {
             Canvas(modifier = Modifier.size(size)) {
                 val strokeWidth = 20.dp.toPx()
@@ -74,7 +75,7 @@ fun GaugeCard(
                     useCenter = false,
                     topLeft = Offset(center.x - radius, center.y - radius),
                     size = Size(radius * 2, radius * 2),
-                    style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+                    style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
                 )
 
                 // Value arc
@@ -85,7 +86,7 @@ fun GaugeCard(
                     useCenter = false,
                     topLeft = Offset(center.x - radius, center.y - radius),
                     size = Size(radius * 2, radius * 2),
-                    style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+                    style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
                 )
 
                 // Needle indicator
@@ -93,39 +94,40 @@ fun GaugeCard(
                 val needleLength = radius * 0.7f
                 val needleEndX = center.x + needleLength * cos(needleAngle).toFloat()
                 val needleEndY = center.y + needleLength * sin(needleAngle).toFloat()
-                
+
                 drawLine(
                     color = gaugeColor,
                     start = center,
                     end = Offset(needleEndX, needleEndY),
                     strokeWidth = 4.dp.toPx(),
-                    cap = StrokeCap.Round
+                    cap = StrokeCap.Round,
                 )
             }
 
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     text = value.toInt().toString(),
-                    style = MaterialTheme.typography.headlineLarge.copy(
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 32.sp
-                    ),
-                    color = MaterialTheme.colorScheme.onSurface
+                    style =
+                        MaterialTheme.typography.headlineLarge.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 32.sp,
+                        ),
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
                 Text(
                     text = unit,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
 
         Spacer(modifier = Modifier.height(8.dp))
-        
+
         Text(
             text = label,
             style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }

@@ -14,12 +14,12 @@ import com.eltonvs.obdapp.ui.feature.settings.SettingsScreen
 fun NavGraph(
     navController: NavHostController,
     startDestination: String = Screen.Dashboard.route,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     NavHost(
         navController = navController,
         startDestination = startDestination,
-        modifier = modifier
+        modifier = modifier,
     ) {
         composable(Screen.Connection.route) {
             ConnectionScreen(
@@ -27,7 +27,7 @@ fun NavGraph(
                     navController.navigate(Screen.Dashboard.route) {
                         popUpTo(Screen.Connection.route) { inclusive = true }
                     }
-                }
+                },
             )
         }
 

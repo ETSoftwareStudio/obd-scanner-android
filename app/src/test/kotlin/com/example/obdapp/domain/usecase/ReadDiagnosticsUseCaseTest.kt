@@ -14,18 +14,19 @@ import org.junit.Before
 import org.junit.Test
 
 class ReadDiagnosticsUseCaseTest {
-
     private val repository: ObdRepository = mockk()
     private lateinit var useCase: ReadDiagnosticsUseCase
 
-    private val testDiagnosticInfo = DiagnosticInfo(
-        vin = "1HGBH41JXMN109186",
-        troubleCodes = listOf(
-            TroubleCode("P0301", "Cylinder 1 Misfire Detected", TroubleCodeType.CURRENT)
-        ),
-        milStatus = true,
-        dtcCount = 1
-    )
+    private val testDiagnosticInfo =
+        DiagnosticInfo(
+            vin = "1HGBH41JXMN109186",
+            troubleCodes =
+                listOf(
+                    TroubleCode("P0301", "Cylinder 1 Misfire Detected", TroubleCodeType.CURRENT),
+                ),
+            milStatus = true,
+            dtcCount = 1,
+        )
 
     @Before
     fun setup() {
@@ -33,22 +34,24 @@ class ReadDiagnosticsUseCaseTest {
     }
 
     @Test
-    fun `invoke returns diagnostic info on success`() = runTest {
-        coEvery { repository.readDiagnosticInfo() } returns Result.success(testDiagnosticInfo)
+    fun `invoke returns diagnostic info on success`() =
+        runTest {
+            coEvery { repository.readDiagnosticInfo() } returns Result.success(testDiagnosticInfo)
 
-        val result = useCase()
+            val result = useCase()
 
-        coVerify { repository.readDiagnosticInfo() }
-        assertTrue(result.isSuccess)
-        assertEquals(testDiagnosticInfo, result.getOrNull())
-    }
+            coVerify { repository.readDiagnosticInfo() }
+            assertTrue(result.isSuccess)
+            assertEquals(testDiagnosticInfo, result.getOrNull())
+        }
 
     @Test
-    fun `invoke returns failure when repository fails`() = runTest {
-        coEvery { repository.readDiagnosticInfo() } returns Result.failure(Exception("Not connected"))
+    fun `invoke returns failure when repository fails`() =
+        runTest {
+            coEvery { repository.readDiagnosticInfo() } returns Result.failure(Exception("Not connected"))
 
-        val result = useCase()
+            val result = useCase()
 
-        assertTrue(result.isFailure)
-    }
+            assertTrue(result.isFailure)
+        }
 }

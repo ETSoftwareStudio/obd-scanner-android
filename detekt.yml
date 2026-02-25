@@ -1,0 +1,75 @@
+# https://detekt.dev/config/
+
+build:
+  maxIssues: 10
+  excludeCorrectable: false
+  weights:
+    # Complexity: 2
+    # LongParameterList: 3
+    # style: 1
+    # comments: 1
+
+config:
+  validation: true
+  excludes: ''
+
+processors:
+  exclude:
+    - '**/detekt/api/ApiStatusClassificationModule'
+  active: true
+
+console-reports:
+  active: true
+  exclude:
+     - 'DetektReportWriter'
+     - 'FileBasedFindingsReport'
+     - 'ProjectStatisticsReport'
+     - 'RuleViolationReport'
+
+output-reports:
+  exclude:
+    - 'TxtOutputReport'
+    - 'XmlOutputReport'
+    - 'SarifOutputReport'
+
+comments:
+  active: true
+  excludes:
+    - '**/test/**'
+    - '**/androidTest/**'
+  CommentOverPrivateFunction:
+    active: false
+  UndocumentedPublicClass:
+    active: false
+  UndocumentedPublicFunction:
+    active: false
+
+complexity:
+  active: true
+  LongMethod:
+    threshold: 50
+  LongParameterList:
+    threshold: 8
+  TooManyFunctions:
+    threshold: 20
+  ComplexCondition:
+    threshold: 5
+
+style:
+  active: true
+  MagicNumber:
+    ignorePropertyDeclaration: true
+    ignoreAnnotation: true
+    excludes: ['**/test/**', '**/androidTest/**']
+  UnusedImports:
+    active: true
+  WildcardImport:
+    active: false
+
+exclusions:
+  - '**/test/**'
+  - '**/androidTest/**'
+  - '**/.gradle/**'
+  - '**/build/**'
+  - '**/.idea/**'
+  - '**/generated/**'

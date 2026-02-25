@@ -12,9 +12,14 @@ interface ObdRepository {
     val vehicleMetrics: Flow<VehicleMetric>
 
     suspend fun getPairedDevices(): List<DeviceInfo>
+
     suspend fun connect(device: DeviceInfo): Result<Unit>
+
     suspend fun disconnect()
+
     suspend fun readDiagnosticInfo(): Result<DiagnosticInfo>
+
     suspend fun startPolling(intervalMs: Long)
+
     suspend fun stopPolling()
 }

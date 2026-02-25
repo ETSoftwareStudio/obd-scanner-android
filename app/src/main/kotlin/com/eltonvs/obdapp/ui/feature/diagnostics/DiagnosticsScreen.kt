@@ -31,7 +31,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -53,8 +52,6 @@ import com.eltonvs.obdapp.domain.model.ConnectionState
 import com.eltonvs.obdapp.domain.model.DiagnosticInfo
 import com.eltonvs.obdapp.domain.model.TroubleCode
 import com.eltonvs.obdapp.domain.model.TroubleCodeType
-import com.eltonvs.obdapp.ui.theme.ConnectionStatusConnected
-import com.eltonvs.obdapp.ui.theme.ConnectionStatusDisconnected
 import com.eltonvs.obdapp.ui.theme.DashboardBackground
 import com.eltonvs.obdapp.ui.theme.GaugeGreen
 import com.eltonvs.obdapp.ui.theme.GaugeRed
@@ -62,9 +59,7 @@ import com.eltonvs.obdapp.ui.theme.GaugeYellow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DiagnosticsScreen(
-    viewModel: DiagnosticsViewModel = hiltViewModel()
-) {
+fun DiagnosticsScreen(viewModel: DiagnosticsViewModel = hiltViewModel()) {
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -79,43 +74,46 @@ fun DiagnosticsScreen(
         topBar = {
             TopAppBar(
                 title = { Text("Diagnostics") },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = DashboardBackground
-                ),
+                colors =
+                    TopAppBarDefaults.topAppBarColors(
+                        containerColor = DashboardBackground,
+                    ),
                 actions = {
                     IconButton(
                         onClick = { viewModel.readDiagnostics() },
-                        enabled = uiState.connectionState is ConnectionState.Connected
+                        enabled = uiState.connectionState is ConnectionState.Connected,
                     ) {
                         Icon(Icons.Default.Refresh, contentDescription = "Refresh")
                     }
-                }
+                },
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        containerColor = DashboardBackground
+        containerColor = DashboardBackground,
     ) { padding ->
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(16.dp)
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(16.dp),
         ) {
             if (uiState.connectionState !is ConnectionState.Connected) {
                 NotConnectedCard()
             } else {
                 Button(
                     onClick = { viewModel.readDiagnostics() },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .height(48.dp),
                     enabled = !uiState.isLoading,
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(12.dp),
                 ) {
                     if (uiState.isLoading) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(24.dp),
-                            color = MaterialTheme.colorScheme.onPrimary
+                            color = MaterialTheme.colorScheme.onPrimary,
                         )
                     } else {
                         Text("Read Diagnostics")
@@ -139,7 +137,7 @@ fun DiagnosticsScreen(
 @Composable
 private fun DiagnosticContent(info: DiagnosticInfo) {
     LazyColumn(
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         // VIN Card
         item {
@@ -157,7 +155,7 @@ private fun DiagnosticContent(info: DiagnosticInfo) {
                 Text(
                     text = "Trouble Codes (${info.dtcCount})",
                     style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             items(info.troubleCodes) { dtc ->
@@ -171,30 +169,34 @@ private fun DiagnosticContent(info: DiagnosticInfo) {
 private fun VinCard(vin: String) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        ),
-        shape = RoundedCornerShape(16.dp)
+        colors =
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+            ),
+        shape = RoundedCornerShape(16.dp),
     ) {
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(16.dp),
         ) {
             Text(
                 text = "Vehicle Identification Number",
                 style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = vin.ifBlank { "N/A" },
-                style = MaterialTheme.typography.titleLarge.copy(
-                    fontFamily = FontFamily.Monospace,
-                    fontWeight = FontWeight.Bold
-                ),
-                color = if (vin.isNotBlank()) 
-                    MaterialTheme.colorScheme.onSurface 
-                else 
-                    MaterialTheme.colorScheme.onSurfaceVariant
+                style =
+                    MaterialTheme.typography.titleLarge.copy(
+                        fontFamily = FontFamily.Monospace,
+                        fontWeight = FontWeight.Bold,
+                    ),
+                color =
+                    if (vin.isNotBlank()) {
+                        MaterialTheme.colorScheme.onSurface
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
             )
         }
     }
@@ -202,30 +204,33 @@ private fun VinCard(vin: String) {
 
 @Composable
 private fun StatusCard(info: DiagnosticInfo) {
-    val (icon, color, text) = if (info.milStatus) {
-        Triple(Icons.Default.Warning, GaugeRed, "Malfunction Indicator Lamp ON")
-    } else {
-        Triple(Icons.Default.CheckCircle, GaugeGreen, "No Issues Detected")
-    }
+    val (icon, color, text) =
+        if (info.milStatus) {
+            Triple(Icons.Default.Warning, GaugeRed, "Malfunction Indicator Lamp ON")
+        } else {
+            Triple(Icons.Default.CheckCircle, GaugeGreen, "No Issues Detected")
+        }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = color.copy(alpha = 0.1f)
-        ),
-        shape = RoundedCornerShape(16.dp)
+        colors =
+            CardDefaults.cardColors(
+                containerColor = color.copy(alpha = 0.1f),
+            ),
+        shape = RoundedCornerShape(16.dp),
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
                 tint = color,
-                modifier = Modifier.size(32.dp)
+                modifier = Modifier.size(32.dp),
             )
             Spacer(modifier = Modifier.width(16.dp))
             Column {
@@ -233,12 +238,12 @@ private fun StatusCard(info: DiagnosticInfo) {
                     text = text,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = color
+                    color = color,
                 )
                 Text(
                     text = "${info.dtcCount} trouble code(s) found",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
@@ -247,58 +252,64 @@ private fun StatusCard(info: DiagnosticInfo) {
 
 @Composable
 private fun DtcCard(dtc: TroubleCode) {
-    val typeColor = when (dtc.type) {
-        TroubleCodeType.CURRENT -> GaugeRed
-        TroubleCodeType.PENDING -> GaugeYellow
-        TroubleCodeType.PERMANENT -> GaugeRed
-    }
+    val typeColor =
+        when (dtc.type) {
+            TroubleCodeType.CURRENT -> GaugeRed
+            TroubleCodeType.PENDING -> GaugeYellow
+            TroubleCodeType.PERMANENT -> GaugeRed
+        }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        shape = RoundedCornerShape(12.dp)
+        colors =
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface,
+            ),
+        shape = RoundedCornerShape(12.dp),
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(
-                modifier = Modifier
-                    .size(8.dp)
-                    .clip(CircleShape)
-                    .background(typeColor)
+                modifier =
+                    Modifier
+                        .size(8.dp)
+                        .clip(CircleShape)
+                        .background(typeColor),
             )
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = dtc.code,
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontFamily = FontFamily.Monospace,
-                        fontWeight = FontWeight.Bold
-                    )
+                    style =
+                        MaterialTheme.typography.titleMedium.copy(
+                            fontFamily = FontFamily.Monospace,
+                            fontWeight = FontWeight.Bold,
+                        ),
                 )
                 Text(
                     text = dtc.description,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             Box(
-                modifier = Modifier
-                    .background(
-                        color = typeColor.copy(alpha = 0.2f),
-                        shape = RoundedCornerShape(8.dp)
-                    )
-                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                modifier =
+                    Modifier
+                        .background(
+                            color = typeColor.copy(alpha = 0.2f),
+                            shape = RoundedCornerShape(8.dp),
+                        )
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
             ) {
                 Text(
                     text = dtc.type.name,
                     style = MaterialTheme.typography.labelSmall,
-                    color = typeColor
+                    color = typeColor,
                 )
             }
         }
@@ -309,33 +320,35 @@ private fun DtcCard(dtc: TroubleCode) {
 private fun InfoCard() {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        ),
-        shape = RoundedCornerShape(16.dp)
+        colors =
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+            ),
+        shape = RoundedCornerShape(16.dp),
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(32.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Icon(
                 imageVector = Icons.Default.Info,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(48.dp)
+                modifier = Modifier.size(48.dp),
             )
             Spacer(modifier = Modifier.height(16.dp))
             Text(
                 text = "Ready to Read",
                 style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
             )
             Text(
                 text = "Tap 'Read Diagnostics' to retrieve vehicle information",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
@@ -345,33 +358,35 @@ private fun InfoCard() {
 private fun NotConnectedCard() {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        ),
-        shape = RoundedCornerShape(16.dp)
+        colors =
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+            ),
+        shape = RoundedCornerShape(16.dp),
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(32.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Icon(
                 imageVector = Icons.Default.Error,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(48.dp)
+                modifier = Modifier.size(48.dp),
             )
             Spacer(modifier = Modifier.height(16.dp))
             Text(
                 text = "Not Connected",
                 style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
             )
             Text(
                 text = "Connect to an OBD device to read diagnostics",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }

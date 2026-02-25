@@ -35,7 +35,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -63,35 +62,37 @@ import com.eltonvs.obdapp.ui.theme.ConnectionStatusDisconnected
 @Composable
 fun ConnectionScreen(
     viewModel: ConnectionViewModel = hiltViewModel(),
-    onDeviceConnected: () -> Unit
+    onDeviceConnected: () -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
     var hasPermissions by remember { mutableStateOf(false) }
 
-    val permissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-        arrayOf(
-            Manifest.permission.BLUETOOTH_CONNECT,
-            Manifest.permission.BLUETOOTH_SCAN,
-            Manifest.permission.ACCESS_FINE_LOCATION
-        )
-    } else {
-        arrayOf(
-            Manifest.permission.BLUETOOTH,
-            Manifest.permission.BLUETOOTH_ADMIN,
-            Manifest.permission.ACCESS_FINE_LOCATION
-        )
-    }
-
-    val permissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestMultiplePermissions()
-    ) { permissionsMap ->
-        hasPermissions = permissionsMap.values.all { it }
-        if (hasPermissions) {
-            viewModel.loadPairedDevices()
+    val permissions =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            arrayOf(
+                Manifest.permission.BLUETOOTH_CONNECT,
+                Manifest.permission.BLUETOOTH_SCAN,
+                Manifest.permission.ACCESS_FINE_LOCATION,
+            )
+        } else {
+            arrayOf(
+                Manifest.permission.BLUETOOTH,
+                Manifest.permission.BLUETOOTH_ADMIN,
+                Manifest.permission.ACCESS_FINE_LOCATION,
+            )
         }
-    }
+
+    val permissionLauncher =
+        rememberLauncherForActivityResult(
+            ActivityResultContracts.RequestMultiplePermissions(),
+        ) { permissionsMap ->
+            hasPermissions = permissionsMap.values.all { it }
+            if (hasPermissions) {
+                viewModel.loadPairedDevices()
+            }
+        }
 
     LaunchedEffect(Unit) {
         permissionLauncher.launch(permissions)
@@ -114,28 +115,30 @@ fun ConnectionScreen(
         topBar = {
             TopAppBar(
                 title = { Text("Connect to OBD") },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                ),
+                colors =
+                    TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                    ),
                 actions = {
                     IconButton(onClick = { viewModel.loadPairedDevices() }) {
                         Icon(Icons.Default.Refresh, contentDescription = "Refresh")
                     }
-                }
+                },
             )
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) }
+        snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(16.dp)
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(16.dp),
         ) {
             // Status Card
             ConnectionStatusCard(
                 connectionState = uiState.connectionState,
-                selectedDevice = uiState.selectedDevice
+                selectedDevice = uiState.selectedDevice,
             )
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -144,7 +147,7 @@ fun ConnectionScreen(
             Text(
                 text = "Paired Devices",
                 style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -152,30 +155,30 @@ fun ConnectionScreen(
             if (uiState.isScanning) {
                 Box(
                     modifier = Modifier.fillMaxWidth(),
-                    contentAlignment = Alignment.Center
+                    contentAlignment = Alignment.Center,
                 ) {
                     CircularProgressIndicator()
                 }
             } else if (uiState.devices.isEmpty()) {
                 Box(
                     modifier = Modifier.fillMaxWidth(),
-                    contentAlignment = Alignment.Center
+                    contentAlignment = Alignment.Center,
                 ) {
                     Text(
                         text = "No paired devices found.\nPair your OBD adapter in system settings.",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(32.dp)
+                        modifier = Modifier.padding(32.dp),
                     )
                 }
             } else {
                 LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     items(uiState.devices) { device ->
                         DeviceItem(
                             device = device,
                             isSelected = device == uiState.selectedDevice,
-                            onClick = { viewModel.selectDevice(device) }
+                            onClick = { viewModel.selectDevice(device) },
                         )
                     }
                 }
@@ -186,27 +189,28 @@ fun ConnectionScreen(
             // Connect Button
             Button(
                 onClick = { viewModel.connect() },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
                 enabled = uiState.selectedDevice != null && !uiState.isLoading,
-                shape = RoundedCornerShape(16.dp)
+                shape = RoundedCornerShape(16.dp),
             ) {
                 if (uiState.isLoading) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(24.dp),
-                        color = MaterialTheme.colorScheme.onPrimary
+                        color = MaterialTheme.colorScheme.onPrimary,
                     )
                 } else {
                     Icon(
                         imageVector = Icons.Default.Bluetooth,
                         contentDescription = null,
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(24.dp),
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = "Connect",
-                        style = MaterialTheme.typography.titleMedium
+                        style = MaterialTheme.typography.titleMedium,
                     )
                 }
             }
@@ -217,39 +221,44 @@ fun ConnectionScreen(
 @Composable
 private fun ConnectionStatusCard(
     connectionState: ConnectionState,
-    selectedDevice: DeviceInfo?
+    selectedDevice: DeviceInfo?,
 ) {
-    val statusColor = when (connectionState) {
-        is ConnectionState.Connected -> ConnectionStatusConnected
-        is ConnectionState.Error -> MaterialTheme.colorScheme.error
-        else -> ConnectionStatusDisconnected
-    }
+    val statusColor =
+        when (connectionState) {
+            is ConnectionState.Connected -> ConnectionStatusConnected
+            is ConnectionState.Error -> MaterialTheme.colorScheme.error
+            else -> ConnectionStatusDisconnected
+        }
 
-    val statusText = when (connectionState) {
-        is ConnectionState.Connected -> "Connected"
-        is ConnectionState.Connecting -> "Connecting..."
-        is ConnectionState.Error -> connectionState.message
-        else -> "Disconnected"
-    }
+    val statusText =
+        when (connectionState) {
+            is ConnectionState.Connected -> "Connected"
+            is ConnectionState.Connecting -> "Connecting..."
+            is ConnectionState.Error -> connectionState.message
+            else -> "Disconnected"
+        }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        ),
-        shape = RoundedCornerShape(16.dp)
+        colors =
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+            ),
+        shape = RoundedCornerShape(16.dp),
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(
-                modifier = Modifier
-                    .size(12.dp)
-                    .clip(CircleShape)
-                    .background(statusColor)
+                modifier =
+                    Modifier
+                        .size(12.dp)
+                        .clip(CircleShape)
+                        .background(statusColor),
             )
 
             Spacer(modifier = Modifier.width(12.dp))
@@ -258,13 +267,13 @@ private fun ConnectionStatusCard(
                 Text(
                     text = statusText,
                     style = MaterialTheme.typography.titleMedium,
-                    color = statusColor
+                    color = statusColor,
                 )
                 if (selectedDevice != null) {
                     Text(
                         text = selectedDevice.name,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
@@ -273,7 +282,7 @@ private fun ConnectionStatusCard(
                 Icon(
                     imageVector = Icons.Default.BluetoothConnected,
                     contentDescription = null,
-                    tint = statusColor
+                    tint = statusColor,
                 )
             }
         }
@@ -284,34 +293,41 @@ private fun ConnectionStatusCard(
 private fun DeviceItem(
     device: DeviceInfo,
     isSelected: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() },
-        colors = CardDefaults.cardColors(
-            containerColor = if (isSelected)
-                MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
-            else
-                MaterialTheme.colorScheme.surface
-        ),
-        shape = RoundedCornerShape(12.dp)
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable { onClick() },
+        colors =
+            CardDefaults.cardColors(
+                containerColor =
+                    if (isSelected) {
+                        MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                    } else {
+                        MaterialTheme.colorScheme.surface
+                    },
+            ),
+        shape = RoundedCornerShape(12.dp),
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
                 imageVector = Icons.Default.Bluetooth,
                 contentDescription = null,
-                tint = if (isSelected)
-                    MaterialTheme.colorScheme.primary
-                else
-                    MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(24.dp)
+                tint =
+                    if (isSelected) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+                modifier = Modifier.size(24.dp),
             )
 
             Spacer(modifier = Modifier.width(16.dp))
@@ -320,28 +336,29 @@ private fun DeviceItem(
                 Text(
                     text = device.name,
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Medium,
                 )
                 Text(
                     text = device.address,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
 
             if (isSelected) {
                 Box(
-                    modifier = Modifier
-                        .size(24.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primary),
-                    contentAlignment = Alignment.Center
+                    modifier =
+                        Modifier
+                            .size(24.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primary),
+                    contentAlignment = Alignment.Center,
                 ) {
                     Icon(
                         imageVector = Icons.Default.Check,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(16.dp),
                     )
                 }
             }
