@@ -25,7 +25,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bluetooth
 import androidx.compose.material.icons.filled.BluetoothConnected
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -38,6 +41,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -50,7 +54,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.eltonvs.obdapp.domain.model.ConnectionState
@@ -66,8 +72,11 @@ fun ConnectionScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
 
     var hasPermissions by remember { mutableStateOf(false) }
+    var showRationale by remember { mutableStateOf(false) }
+    var permissionDenied by remember { mutableStateOf(false) }
 
     val permissions =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -89,7 +98,9 @@ fun ConnectionScreen(
             ActivityResultContracts.RequestMultiplePermissions(),
         ) { permissionsMap ->
             hasPermissions = permissionsMap.values.all { it }
-            if (hasPermissions) {
+            if (!hasPermissions) {
+                permissionDenied = true
+            } else {
                 viewModel.loadPairedDevices()
             }
         }
@@ -109,6 +120,74 @@ fun ConnectionScreen(
             snackbarHostState.showSnackbar(error)
             viewModel.clearError()
         }
+    }
+
+    // Permission Rationale Dialog
+    if (showRationale) {
+        AlertDialog(
+            onDismissRequest = { showRationale = false },
+            icon = { Icon(Icons.Default.Bluetooth, contentDescription = null) },
+            title = { Text("Bluetooth Permission Required") },
+            text = {
+                Text(
+                    "This app needs Bluetooth permissions to scan for and connect to your OBD-II adapter. " +
+                        "Location permission is required for Bluetooth device discovery on Android.",
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showRationale = false
+                        permissionLauncher.launch(permissions)
+                    },
+                ) {
+                    Text("Grant Permission")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showRationale = false }) {
+                    Text("Cancel")
+                }
+            },
+        )
+    }
+
+    // Permission Denied Dialog
+    if (permissionDenied) {
+        AlertDialog(
+            onDismissRequest = { },
+            icon = { Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
+            title = { Text("Permissions Required") },
+            text = {
+                Text(
+                    "Bluetooth permissions are required to use this app. Please enable them in Settings. " +
+                        "Without these permissions, the app cannot scan for or connect to OBD-II adapters.",
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val intent = android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                            data = android.net.Uri.fromParts("package", context.packageName, null)
+                        }
+                        context.startActivity(intent)
+                        permissionDenied = false
+                    },
+                ) {
+                    Text("Open Settings")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        permissionDenied = false
+                        showRationale = true
+                    },
+                ) {
+                    Text("Ask Again")
+                }
+            },
+        )
     }
 
     Scaffold(
@@ -144,42 +223,86 @@ fun ConnectionScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             // Devices List
-            Text(
-                text = "Paired Devices",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            if (uiState.isScanning) {
-                Box(
+            if (!hasPermissions) {
+                // Show permission required message
+                Card(
                     modifier = Modifier.fillMaxWidth(),
-                    contentAlignment = Alignment.Center,
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                    ),
+                    shape = RoundedCornerShape(16.dp),
                 ) {
-                    CircularProgressIndicator()
-                }
-            } else if (uiState.devices.isEmpty()) {
-                Box(
-                    modifier = Modifier.fillMaxWidth(),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = "No paired devices found.\nPair your OBD adapter in system settings.",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(32.dp),
-                    )
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Warning,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onErrorContainer,
+                            modifier = Modifier.size(48.dp),
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "Permissions Required",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onErrorContainer,
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Please grant Bluetooth permissions to scan for devices",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onErrorContainer,
+                            textAlign = TextAlign.Center,
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(
+                            onClick = { showRationale = true },
+                        ) {
+                            Text("Grant Permissions")
+                        }
+                    }
                 }
             } else {
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    items(uiState.devices) { device ->
-                        DeviceItem(
-                            device = device,
-                            isSelected = device == uiState.selectedDevice,
-                            onClick = { viewModel.selectDevice(device) },
+                Text(
+                    text = "Paired Devices",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                if (uiState.isScanning) {
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                } else if (uiState.devices.isEmpty()) {
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = "No paired devices found.\nPair your OBD adapter in system settings.",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(32.dp),
                         )
+                    }
+                } else {
+                    LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        items(uiState.devices) { device ->
+                            DeviceItem(
+                                device = device,
+                                isSelected = device == uiState.selectedDevice,
+                                onClick = { viewModel.selectDevice(device) },
+                            )
+                        }
                     }
                 }
             }
