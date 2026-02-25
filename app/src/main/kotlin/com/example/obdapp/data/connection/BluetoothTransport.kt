@@ -21,6 +21,7 @@ class BluetoothTransport @Inject constructor() : ObdTransport {
 
     private val uuid: UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
 
+    @Suppress("DEPRECATION")
     override suspend fun connect(device: DeviceInfo): Result<Unit> = withContext(Dispatchers.IO) {
         try {
             val bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
