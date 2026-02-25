@@ -15,14 +15,23 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
+// Export background colors for use in screens
+val DashboardBackground: Color
+    @Composable
+    get() = if (MaterialTheme.colorScheme.background == Color(0xFFFFFBFE)) {
+        DashboardBackgroundLight
+    } else {
+        DashboardBackgroundDark
+    }
+
 private val DarkColorScheme =
     darkColorScheme(
         primary = Purple80,
         secondary = PurpleGrey80,
         tertiary = Pink80,
-        background = DashboardBackground,
-        surface = DashboardSurface,
-        surfaceVariant = DashboardSurfaceVariant,
+        background = DashboardBackgroundDark,
+        surface = DashboardSurfaceDark,
+        surfaceVariant = DashboardSurfaceVariantDark,
         onPrimary = Color.Black,
         onSecondary = Color.Black,
         onTertiary = Color.Black,
@@ -36,13 +45,15 @@ private val LightColorScheme =
         primary = Purple40,
         secondary = PurpleGrey40,
         tertiary = Pink40,
-        background = Color(0xFFFFFBFE),
-        surface = Color(0xFFFFFBFE),
+        background = DashboardBackgroundLight,
+        surface = DashboardSurfaceLight,
+        surfaceVariant = DashboardSurfaceVariantLight,
         onPrimary = Color.White,
         onSecondary = Color.White,
         onTertiary = Color.White,
         onBackground = Color(0xFF1C1B1F),
         onSurface = Color(0xFF1C1B1F),
+        onSurfaceVariant = Color(0xFF49454F),
     )
 
 @Composable
