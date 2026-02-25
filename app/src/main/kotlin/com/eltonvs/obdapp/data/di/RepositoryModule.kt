@@ -1,4 +1,4 @@
-package com.eltonvs.obdapp.di
+package com.eltonvs.obdapp.data.di
 
 import com.eltonvs.obdapp.data.repository.ObdRepositoryImpl
 import com.eltonvs.obdapp.domain.repository.ObdRepository
