@@ -1,8 +1,8 @@
-package com.example.obdapp.domain.usecase
+package com.eltonvs.obdapp.domain.usecase
 
-import com.example.obdapp.domain.model.DeviceInfo
-import com.example.obdapp.domain.model.DeviceType
-import com.example.obdapp.domain.repository.ObdRepository
+import com.eltonvs.obdapp.domain.model.DeviceInfo
+import com.eltonvs.obdapp.domain.model.DeviceType
+import com.eltonvs.obdapp.domain.repository.ObdRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk

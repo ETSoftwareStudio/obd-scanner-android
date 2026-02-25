@@ -1,12 +1,12 @@
-package com.example.obdapp.ui.feature.connection
+package com.eltonvs.obdapp.ui.feature.connection
 
-import com.example.obdapp.domain.model.ConnectionState
-import com.example.obdapp.domain.model.DeviceInfo
-import com.example.obdapp.domain.model.DeviceType
-import com.example.obdapp.domain.repository.ObdRepository
-import com.example.obdapp.domain.usecase.ConnectDeviceUseCase
-import com.example.obdapp.domain.usecase.GetPairedDevicesUseCase
-import com.example.obdapp.util.PreferencesManager
+import com.eltonvs.obdapp.domain.model.ConnectionState
+import com.eltonvs.obdapp.domain.model.DeviceInfo
+import com.eltonvs.obdapp.domain.model.DeviceType
+import com.eltonvs.obdapp.domain.repository.ObdRepository
+import com.eltonvs.obdapp.domain.usecase.ConnectDeviceUseCase
+import com.eltonvs.obdapp.domain.usecase.GetPairedDevicesUseCase
+import com.eltonvs.obdapp.util.PreferencesManager
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
