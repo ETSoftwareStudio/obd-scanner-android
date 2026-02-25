@@ -1,6 +1,6 @@
-package com.example.obdapp.ui.feature.settings
+package com.eltonvs.obdapp.ui.feature.settings
 
-import com.example.obdapp.util.PreferencesManager
+import com.eltonvs.obdapp.util.PreferencesManager
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
