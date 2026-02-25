@@ -1,6 +1,7 @@
 package com.eltonvs.obdapp.ui.feature.dashboard
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -47,7 +48,10 @@ import com.eltonvs.obdapp.ui.theme.DashboardBackground
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DashboardScreen(viewModel: DashboardViewModel = hiltViewModel()) {
+fun DashboardScreen(
+    viewModel: DashboardViewModel = hiltViewModel(),
+    onConnectClick: () -> Unit = {},
+) {
     val uiState by viewModel.uiState.collectAsState()
 
     Scaffold(
@@ -59,7 +63,10 @@ fun DashboardScreen(viewModel: DashboardViewModel = hiltViewModel()) {
                         containerColor = DashboardBackground,
                     ),
                 actions = {
-                    ConnectionIndicator(connectionState = uiState.connectionState)
+                    ConnectionIndicator(
+                        connectionState = uiState.connectionState,
+                        onConnectClick = onConnectClick,
+                    )
                 },
             )
         },
@@ -74,7 +81,7 @@ fun DashboardScreen(viewModel: DashboardViewModel = hiltViewModel()) {
                     .padding(16.dp),
         ) {
             if (uiState.connectionState !is ConnectionState.Connected) {
-                NotConnectedCard()
+                NotConnectedCard(onConnectClick = onConnectClick)
             } else {
                 // Gauges Row
                 Row(
@@ -170,7 +177,10 @@ fun DashboardScreen(viewModel: DashboardViewModel = hiltViewModel()) {
 }
 
 @Composable
-private fun ConnectionIndicator(connectionState: ConnectionState) {
+private fun ConnectionIndicator(
+    connectionState: ConnectionState,
+    onConnectClick: () -> Unit,
+) {
     val (color, text) =
         when (connectionState) {
             is ConnectionState.Connected -> ConnectionStatusConnected to "Connected"
@@ -179,9 +189,20 @@ private fun ConnectionIndicator(connectionState: ConnectionState) {
             else -> ConnectionStatusDisconnected to "Disconnected"
         }
 
+    val isClickable = connectionState !is ConnectionState.Connected
+
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.padding(end = 8.dp),
+        modifier =
+            Modifier
+                .padding(end = 8.dp)
+                .then(
+                    if (isClickable) {
+                        Modifier.clickable { onConnectClick() }
+                    } else {
+                        Modifier
+                    },
+                ),
     ) {
         Box(
             modifier =
@@ -200,9 +221,11 @@ private fun ConnectionIndicator(connectionState: ConnectionState) {
 }
 
 @Composable
-private fun NotConnectedCard() {
+private fun NotConnectedCard(onConnectClick: () -> Unit) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onConnectClick() },
         colors =
             CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceVariant,

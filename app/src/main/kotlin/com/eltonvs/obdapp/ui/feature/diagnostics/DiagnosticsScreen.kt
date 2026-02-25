@@ -1,6 +1,7 @@
 package com.eltonvs.obdapp.ui.feature.diagnostics
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -59,7 +60,10 @@ import com.eltonvs.obdapp.ui.theme.GaugeYellow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DiagnosticsScreen(viewModel: DiagnosticsViewModel = hiltViewModel()) {
+fun DiagnosticsScreen(
+    viewModel: DiagnosticsViewModel = hiltViewModel(),
+    onConnectClick: () -> Unit = {},
+) {
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -99,7 +103,7 @@ fun DiagnosticsScreen(viewModel: DiagnosticsViewModel = hiltViewModel()) {
                     .padding(16.dp),
         ) {
             if (uiState.connectionState !is ConnectionState.Connected) {
-                NotConnectedCard()
+                NotConnectedCard(onConnectClick = onConnectClick)
             } else {
                 Button(
                     onClick = { viewModel.readDiagnostics() },
@@ -355,9 +359,11 @@ private fun InfoCard() {
 }
 
 @Composable
-private fun NotConnectedCard() {
+private fun NotConnectedCard(onConnectClick: () -> Unit) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onConnectClick() },
         colors =
             CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceVariant,

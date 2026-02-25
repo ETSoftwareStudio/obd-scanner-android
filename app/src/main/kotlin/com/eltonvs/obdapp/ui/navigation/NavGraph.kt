@@ -32,11 +32,19 @@ fun NavGraph(
         }
 
         composable(Screen.Dashboard.route) {
-            DashboardScreen()
+            DashboardScreen(
+                onConnectClick = {
+                    navController.navigate(Screen.Connection.route)
+                },
+            )
         }
 
         composable(Screen.Diagnostics.route) {
-            DiagnosticsScreen()
+            DiagnosticsScreen(
+                onConnectClick = {
+                    navController.navigate(Screen.Connection.route)
+                },
+            )
         }
 
         composable(Screen.Settings.route) {
