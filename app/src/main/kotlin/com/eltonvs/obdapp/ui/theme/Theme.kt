@@ -15,15 +15,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
-// Export background colors for use in screens
-val DashboardBackground: Color
-    @Composable
-    get() = if (MaterialTheme.colorScheme.background == Color(0xFFFFFBFE)) {
-        DashboardBackgroundLight
-    } else {
-        DashboardBackgroundDark
-    }
-
 private val DarkColorScheme =
     darkColorScheme(
         primary = Purple80,
@@ -59,7 +50,7 @@ private val LightColorScheme =
 @Composable
 fun ObdSampleAppTheme(
     darkTheme: Boolean = true,
-    dynamicColor: Boolean = true,
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     val colorScheme =

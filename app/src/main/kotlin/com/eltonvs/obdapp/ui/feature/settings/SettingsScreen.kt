@@ -37,7 +37,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.eltonvs.obdapp.BuildConfig
-import com.eltonvs.obdapp.ui.theme.DashboardBackground
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -50,11 +49,11 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                 title = { Text("Settings") },
                 colors =
                     TopAppBarDefaults.topAppBarColors(
-                        containerColor = DashboardBackground,
+                        containerColor = MaterialTheme.colorScheme.background,
                     ),
             )
         },
-        containerColor = DashboardBackground,
+        containerColor = MaterialTheme.colorScheme.background,
     ) { padding ->
         Column(
             modifier =
