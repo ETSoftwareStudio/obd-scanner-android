@@ -15,8 +15,10 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -40,12 +42,21 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun MainApp() {
+fun MainApp(
+    settingsViewModel: com.eltonvs.obdapp.ui.feature.settings.SettingsViewModel = hiltViewModel(),
+) {
+    val settingsState by settingsViewModel.uiState.collectAsState()
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
 
-    ObdSampleAppTheme {
+    val isDarkTheme = when (settingsState.theme) {
+        "light" -> false
+        "dark" -> true
+        else -> true // system default - default to dark
+    }
+
+    ObdSampleAppTheme(darkTheme = isDarkTheme) {
         Surface(
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colorScheme.background,
