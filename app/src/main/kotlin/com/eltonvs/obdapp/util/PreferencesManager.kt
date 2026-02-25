@@ -3,6 +3,7 @@ package com.eltonvs.obdapp.util
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -28,6 +29,8 @@ class PreferencesManager
             private val THEME_KEY = stringPreferencesKey("theme")
             private val LAST_DEVICE_ADDRESS_KEY = stringPreferencesKey("last_device_address")
             private val LAST_DEVICE_NAME_KEY = stringPreferencesKey("last_device_name")
+            private val WAS_CONNECTED_KEY = booleanPreferencesKey("was_connected")
+            private val AUTO_CONNECT_KEY = booleanPreferencesKey("auto_connect")
 
             const val DEFAULT_POLLING_INTERVAL = 1000L
             const val DEFAULT_THEME = "dark"
@@ -53,6 +56,16 @@ class PreferencesManager
                 preferences[LAST_DEVICE_NAME_KEY]
             }
 
+        val wasConnected: Flow<Boolean> =
+            dataStore.data.map { preferences ->
+                preferences[WAS_CONNECTED_KEY] ?: false
+            }
+
+        val autoConnect: Flow<Boolean> =
+            dataStore.data.map { preferences ->
+                preferences[AUTO_CONNECT_KEY] ?: true
+            }
+
         suspend fun setPollingInterval(intervalMs: Long) {
             dataStore.edit { preferences ->
                 preferences[POLLING_INTERVAL_KEY] = intervalMs
@@ -72,6 +85,18 @@ class PreferencesManager
             dataStore.edit { preferences ->
                 preferences[LAST_DEVICE_ADDRESS_KEY] = address
                 preferences[LAST_DEVICE_NAME_KEY] = name
+            }
+        }
+
+        suspend fun setWasConnected(connected: Boolean) {
+            dataStore.edit { preferences ->
+                preferences[WAS_CONNECTED_KEY] = connected
+            }
+        }
+
+        suspend fun setAutoConnect(enabled: Boolean) {
+            dataStore.edit { preferences ->
+                preferences[AUTO_CONNECT_KEY] = enabled
             }
         }
     }

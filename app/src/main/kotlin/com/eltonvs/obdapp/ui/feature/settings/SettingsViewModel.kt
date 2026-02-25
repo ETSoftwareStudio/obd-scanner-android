@@ -14,6 +14,7 @@ import javax.inject.Inject
 data class SettingsUiState(
     val pollingInterval: Long = 1000L,
     val theme: String = "dark",
+    val autoConnect: Boolean = true,
     val availableIntervals: List<Long> = listOf(500L, 1000L, 2000L, 5000L),
     val availableThemes: List<String> = listOf("system", "light", "dark"),
 )
@@ -42,6 +43,11 @@ class SettingsViewModel
                     _uiState.update { it.copy(theme = theme) }
                 }
             }
+            viewModelScope.launch {
+                preferencesManager.autoConnect.collect { autoConnect ->
+                    _uiState.update { it.copy(autoConnect = autoConnect) }
+                }
+            }
         }
 
         fun setPollingInterval(interval: Long) {
@@ -53,6 +59,12 @@ class SettingsViewModel
         fun setTheme(theme: String) {
             viewModelScope.launch {
                 preferencesManager.setTheme(theme)
+            }
+        }
+
+        fun setAutoConnect(enabled: Boolean) {
+            viewModelScope.launch {
+                preferencesManager.setAutoConnect(enabled)
             }
         }
     }
