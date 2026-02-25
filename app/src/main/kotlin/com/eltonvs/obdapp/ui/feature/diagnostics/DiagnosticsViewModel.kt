@@ -18,46 +18,47 @@ data class DiagnosticsUiState(
     val diagnosticInfo: DiagnosticInfo? = null,
     val isLoading: Boolean = false,
     val error: String? = null,
-    val connectionState: ConnectionState = ConnectionState.Disconnected
+    val connectionState: ConnectionState = ConnectionState.Disconnected,
 )
 
 @HiltViewModel
-class DiagnosticsViewModel @Inject constructor(
-    private val readDiagnosticsUseCase: ReadDiagnosticsUseCase,
-    private val repository: ObdRepository
-) : ViewModel() {
+class DiagnosticsViewModel
+    @Inject
+    constructor(
+        private val readDiagnosticsUseCase: ReadDiagnosticsUseCase,
+        private val repository: ObdRepository,
+    ) : ViewModel() {
+        private val _uiState = MutableStateFlow(DiagnosticsUiState())
+        val uiState: StateFlow<DiagnosticsUiState> = _uiState.asStateFlow()
 
-    private val _uiState = MutableStateFlow(DiagnosticsUiState())
-    val uiState: StateFlow<DiagnosticsUiState> = _uiState.asStateFlow()
+        init {
+            observeConnectionState()
+        }
 
-    init {
-        observeConnectionState()
-    }
-
-    private fun observeConnectionState() {
-        viewModelScope.launch {
-            repository.connectionState.collect { state ->
-                _uiState.update { it.copy(connectionState = state) }
+        private fun observeConnectionState() {
+            viewModelScope.launch {
+                repository.connectionState.collect { state ->
+                    _uiState.update { it.copy(connectionState = state) }
+                }
             }
         }
-    }
 
-    fun readDiagnostics() {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, error = null) }
+        fun readDiagnostics() {
+            viewModelScope.launch {
+                _uiState.update { it.copy(isLoading = true, error = null) }
 
-            readDiagnosticsUseCase().fold(
-                onSuccess = { info ->
-                    _uiState.update { it.copy(diagnosticInfo = info, isLoading = false) }
-                },
-                onFailure = { e ->
-                    _uiState.update { it.copy(error = e.message, isLoading = false) }
-                }
-            )
+                readDiagnosticsUseCase().fold(
+                    onSuccess = { info ->
+                        _uiState.update { it.copy(diagnosticInfo = info, isLoading = false) }
+                    },
+                    onFailure = { e ->
+                        _uiState.update { it.copy(error = e.message, isLoading = false) }
+                    },
+                )
+            }
+        }
+
+        fun clearError() {
+            _uiState.update { it.copy(error = null) }
         }
     }
-
-    fun clearError() {
-        _uiState.update { it.copy(error = null) }
-    }
-}

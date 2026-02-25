@@ -15,21 +15,17 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.eltonvs.obdapp.domain.model.ConnectionState
-import com.eltonvs.obdapp.ui.feature.connection.ConnectionScreen
 import com.eltonvs.obdapp.ui.navigation.NavGraph
 import com.eltonvs.obdapp.ui.navigation.Screen
+import com.eltonvs.obdapp.ui.theme.ConnectionStatusConnected
 import com.eltonvs.obdapp.ui.theme.DashboardBackground
 import com.eltonvs.obdapp.ui.theme.ObdSampleAppTheme
-import com.eltonvs.obdapp.ui.theme.ConnectionStatusConnected
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -52,23 +48,24 @@ fun MainApp() {
     ObdSampleAppTheme {
         Surface(
             modifier = Modifier.fillMaxSize(),
-            color = MaterialTheme.colorScheme.background
+            color = MaterialTheme.colorScheme.background,
         ) {
             Scaffold(
                 bottomBar = {
                     NavigationBar(
-                        containerColor = DashboardBackground
+                        containerColor = DashboardBackground,
                     ) {
                         Screen.bottomNavItems.forEach { screen ->
-                            val selected = currentDestination?.hierarchy?.any { 
-                                it.route == screen.route 
-                            } == true
+                            val selected =
+                                currentDestination?.hierarchy?.any {
+                                    it.route == screen.route
+                                } == true
 
                             NavigationBarItem(
                                 icon = {
                                     Icon(
                                         imageVector = if (selected) screen.selectedIcon else screen.unselectedIcon,
-                                        contentDescription = screen.title
+                                        contentDescription = screen.title,
                                     )
                                 },
                                 label = { Text(screen.title) },
@@ -82,20 +79,21 @@ fun MainApp() {
                                         restoreState = true
                                     }
                                 },
-                                colors = NavigationBarItemDefaults.colors(
-                                    selectedIconColor = ConnectionStatusConnected,
-                                    selectedTextColor = ConnectionStatusConnected,
-                                    indicatorColor = ConnectionStatusConnected.copy(alpha = 0.2f)
-                                )
+                                colors =
+                                    NavigationBarItemDefaults.colors(
+                                        selectedIconColor = ConnectionStatusConnected,
+                                        selectedTextColor = ConnectionStatusConnected,
+                                        indicatorColor = ConnectionStatusConnected.copy(alpha = 0.2f),
+                                    ),
                             )
                         }
                     }
-                }
+                },
             ) { innerPadding ->
                 NavGraph(
                     navController = navController,
                     startDestination = Screen.Connection.route,
-                    modifier = Modifier.padding(innerPadding)
+                    modifier = Modifier.padding(innerPadding),
                 )
             }
         }

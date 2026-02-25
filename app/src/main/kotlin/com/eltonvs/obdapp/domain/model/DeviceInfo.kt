@@ -3,18 +3,21 @@ package com.eltonvs.obdapp.domain.model
 data class DeviceInfo(
     val address: String,
     val name: String,
-    val type: DeviceType
+    val type: DeviceType,
 )
 
 enum class DeviceType {
     CLASSIC,
     BLE,
-    UNKNOWN
+    UNKNOWN,
 }
 
 sealed class ConnectionState {
     data object Disconnected : ConnectionState()
+
     data object Connecting : ConnectionState()
+
     data object Connected : ConnectionState()
+
     data class Error(val message: String) : ConnectionState()
 }

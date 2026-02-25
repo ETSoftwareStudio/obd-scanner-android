@@ -23,81 +23,82 @@ data class ConnectionUiState(
     val isLoading: Boolean = false,
     val isScanning: Boolean = false,
     val error: String? = null,
-    val connectionState: ConnectionState = ConnectionState.Disconnected
+    val connectionState: ConnectionState = ConnectionState.Disconnected,
 )
 
 @HiltViewModel
-class ConnectionViewModel @Inject constructor(
-    private val getPairedDevicesUseCase: GetPairedDevicesUseCase,
-    private val connectDeviceUseCase: ConnectDeviceUseCase,
-    private val repository: ObdRepository,
-    private val preferencesManager: PreferencesManager
-) : ViewModel() {
+class ConnectionViewModel
+    @Inject
+    constructor(
+        private val getPairedDevicesUseCase: GetPairedDevicesUseCase,
+        private val connectDeviceUseCase: ConnectDeviceUseCase,
+        private val repository: ObdRepository,
+        private val preferencesManager: PreferencesManager,
+    ) : ViewModel() {
+        private val _uiState = MutableStateFlow(ConnectionUiState())
+        val uiState: StateFlow<ConnectionUiState> = _uiState.asStateFlow()
 
-    private val _uiState = MutableStateFlow(ConnectionUiState())
-    val uiState: StateFlow<ConnectionUiState> = _uiState.asStateFlow()
-
-    init {
-        loadPairedDevices()
-        observeConnectionState()
-        loadLastDevice()
-    }
-
-    private fun observeConnectionState() {
-        viewModelScope.launch {
-            repository.connectionState.collect { state ->
-                _uiState.update { it.copy(connectionState = state) }
-            }
+        init {
+            loadPairedDevices()
+            observeConnectionState()
+            loadLastDevice()
         }
-    }
 
-    private fun loadLastDevice() {
-        viewModelScope.launch {
-            val address = preferencesManager.lastDeviceAddress.first()
-            val name = preferencesManager.lastDeviceName.first()
-            if (address != null && name != null) {
-                _uiState.update {
-                    it.copy(selectedDevice = DeviceInfo(address, name, com.eltonvs.obdapp.domain.model.DeviceType.CLASSIC))
+        private fun observeConnectionState() {
+            viewModelScope.launch {
+                repository.connectionState.collect { state ->
+                    _uiState.update { it.copy(connectionState = state) }
                 }
             }
         }
-    }
 
-    fun loadPairedDevices() {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isScanning = true) }
-            try {
-                val devices = getPairedDevicesUseCase()
-                _uiState.update { it.copy(devices = devices, isScanning = false) }
-            } catch (e: Exception) {
-                _uiState.update { it.copy(error = e.message, isScanning = false) }
+        private fun loadLastDevice() {
+            viewModelScope.launch {
+                val address = preferencesManager.lastDeviceAddress.first()
+                val name = preferencesManager.lastDeviceName.first()
+                if (address != null && name != null) {
+                    _uiState.update {
+                        it.copy(selectedDevice = DeviceInfo(address, name, com.eltonvs.obdapp.domain.model.DeviceType.CLASSIC))
+                    }
+                }
             }
         }
-    }
 
-    fun selectDevice(device: DeviceInfo) {
-        _uiState.update { it.copy(selectedDevice = device) }
-    }
-
-    fun connect() {
-        val device = _uiState.value.selectedDevice ?: return
-
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, error = null) }
-
-            connectDeviceUseCase(device).fold(
-                onSuccess = {
-                    preferencesManager.setLastDevice(device.address, device.name)
-                    _uiState.update { it.copy(isLoading = false) }
-                },
-                onFailure = { e ->
-                    _uiState.update { it.copy(error = e.message, isLoading = false) }
+        fun loadPairedDevices() {
+            viewModelScope.launch {
+                _uiState.update { it.copy(isScanning = true) }
+                try {
+                    val devices = getPairedDevicesUseCase()
+                    _uiState.update { it.copy(devices = devices, isScanning = false) }
+                } catch (e: Exception) {
+                    _uiState.update { it.copy(error = e.message, isScanning = false) }
                 }
-            )
+            }
+        }
+
+        fun selectDevice(device: DeviceInfo) {
+            _uiState.update { it.copy(selectedDevice = device) }
+        }
+
+        fun connect() {
+            val device = _uiState.value.selectedDevice ?: return
+
+            viewModelScope.launch {
+                _uiState.update { it.copy(isLoading = true, error = null) }
+
+                connectDeviceUseCase(device).fold(
+                    onSuccess = {
+                        preferencesManager.setLastDevice(device.address, device.name)
+                        _uiState.update { it.copy(isLoading = false) }
+                    },
+                    onFailure = { e ->
+                        _uiState.update { it.copy(error = e.message, isLoading = false) }
+                    },
+                )
+            }
+        }
+
+        fun clearError() {
+            _uiState.update { it.copy(error = null) }
         }
     }
-
-    fun clearError() {
-        _uiState.update { it.copy(error = null) }
-    }
-}

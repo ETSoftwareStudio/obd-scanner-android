@@ -41,39 +41,39 @@ import com.eltonvs.obdapp.ui.theme.DashboardBackground
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(
-    viewModel: SettingsViewModel = hiltViewModel()
-) {
+fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
     val uiState by viewModel.uiState.collectAsState()
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Settings") },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = DashboardBackground
-                )
+                colors =
+                    TopAppBarDefaults.topAppBarColors(
+                        containerColor = DashboardBackground,
+                    ),
             )
         },
-        containerColor = DashboardBackground
+        containerColor = DashboardBackground,
     ) { padding ->
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp)
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp),
         ) {
             // Polling Interval Section
             SettingsSection(
                 title = "Data Refresh Rate",
-                icon = Icons.Default.Speed
+                icon = Icons.Default.Speed,
             ) {
                 uiState.availableIntervals.forEach { interval ->
                     IntervalOption(
                         label = formatInterval(interval),
                         isSelected = interval == uiState.pollingInterval,
-                        onClick = { viewModel.setPollingInterval(interval) }
+                        onClick = { viewModel.setPollingInterval(interval) },
                     )
                 }
             }
@@ -83,22 +83,22 @@ fun SettingsScreen(
             // Theme Section
             SettingsSection(
                 title = "Theme",
-                icon = Icons.Default.DarkMode
+                icon = Icons.Default.DarkMode,
             ) {
                 ThemeOption(
                     label = "System Default",
                     isSelected = uiState.theme == "system",
-                    onClick = { viewModel.setTheme("system") }
+                    onClick = { viewModel.setTheme("system") },
                 )
                 ThemeOption(
                     label = "Light",
                     isSelected = uiState.theme == "light",
-                    onClick = { viewModel.setTheme("light") }
+                    onClick = { viewModel.setTheme("light") },
                 )
                 ThemeOption(
                     label = "Dark",
                     isSelected = uiState.theme == "dark",
-                    onClick = { viewModel.setTheme("dark") }
+                    onClick = { viewModel.setTheme("dark") },
                 )
             }
 
@@ -107,40 +107,41 @@ fun SettingsScreen(
             // About Section
             SettingsSection(
                 title = "About",
-                icon = Icons.Default.Info
+                icon = Icons.Default.Info,
             ) {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant
-                    ),
-                    shape = RoundedCornerShape(12.dp)
+                    colors =
+                        CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        ),
+                    shape = RoundedCornerShape(12.dp),
                 ) {
                     Column(
-                        modifier = Modifier.padding(16.dp)
+                        modifier = Modifier.padding(16.dp),
                     ) {
                         Text(
                             text = "OBD Reader",
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = "Version ${BuildConfig.VERSION_NAME}",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                         Text(
                             text = "A sample Android app for reading OBD-II vehicle data using the kotlin-obd-api library.",
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             text = "Powered by kotlin-obd-api v1.4.0",
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.primary
+                            color = MaterialTheme.colorScheme.primary,
                         )
                     }
                 }
@@ -154,21 +155,22 @@ fun SettingsScreen(
 private fun SettingsSection(
     title: String,
     icon: ImageVector,
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
     Text(
         text = title,
         style = MaterialTheme.typography.titleMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(bottom = 12.dp)
+        modifier = Modifier.padding(bottom = 12.dp),
     )
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        ),
-        shape = RoundedCornerShape(16.dp)
+        colors =
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+            ),
+        shape = RoundedCornerShape(16.dp),
     ) {
         Column(modifier = Modifier.padding(8.dp)) {
             content()
@@ -180,23 +182,24 @@ private fun SettingsSection(
 private fun IntervalOption(
     label: String,
     isSelected: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() }
-            .padding(horizontal = 8.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable { onClick() }
+                .padding(horizontal = 8.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         RadioButton(
             selected = isSelected,
-            onClick = onClick
+            onClick = onClick,
         )
         Spacer(modifier = Modifier.width(12.dp))
         Text(
             text = label,
-            style = MaterialTheme.typography.bodyLarge
+            style = MaterialTheme.typography.bodyLarge,
         )
     }
 }
@@ -205,30 +208,31 @@ private fun IntervalOption(
 private fun ThemeOption(
     label: String,
     isSelected: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() }
-            .padding(horizontal = 8.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable { onClick() }
+                .padding(horizontal = 8.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         RadioButton(
             selected = isSelected,
-            onClick = onClick
+            onClick = onClick,
         )
         Spacer(modifier = Modifier.width(12.dp))
         Text(
             text = label,
-            style = MaterialTheme.typography.bodyLarge
+            style = MaterialTheme.typography.bodyLarge,
         )
         if (isSelected) {
             Spacer(modifier = Modifier.weight(1f))
             Icon(
                 imageVector = Icons.Default.Check,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary
+                tint = MaterialTheme.colorScheme.primary,
             )
         }
     }
