@@ -23,7 +23,6 @@ import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -66,6 +65,12 @@ fun DiagnosticsScreen(
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
+    LaunchedEffect(uiState.connectionState) {
+        if (uiState.connectionState is ConnectionState.Connected && uiState.diagnosticInfo == null) {
+            viewModel.readDiagnostics()
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -97,31 +102,17 @@ fun DiagnosticsScreen(
             if (uiState.connectionState !is ConnectionState.Connected) {
                 NotConnectedCard(onConnectClick = onConnectClick)
             } else {
-                Button(
-                    onClick = { viewModel.readDiagnostics() },
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .height(48.dp),
-                    enabled = !uiState.isLoading,
-                    shape = RoundedCornerShape(12.dp),
-                ) {
-                    if (uiState.isLoading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(24.dp),
-                            color = MaterialTheme.colorScheme.onPrimary,
-                        )
-                    } else {
-                        Text("Read Diagnostics")
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
                 uiState.diagnosticInfo?.let { info ->
                     DiagnosticContent(info = info)
                 } ?: run {
-                    if (!uiState.isLoading) {
+                    if (uiState.isLoading) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            CircularProgressIndicator()
+                        }
+                    } else {
                         InfoCard()
                     }
                 }
@@ -337,12 +328,12 @@ private fun InfoCard() {
             )
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "Ready to Read",
+                text = "No Diagnostics Available",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
             )
             Text(
-                text = "Tap 'Read Diagnostics' to retrieve vehicle information",
+                text = "Diagnostics will be retrieved automatically when connected",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
