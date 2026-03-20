@@ -10,6 +10,7 @@ import com.eltonvs.obdapp.domain.model.TroubleCode
 import com.eltonvs.obdapp.domain.model.TroubleCodeType
 import com.eltonvs.obdapp.domain.model.VehicleMetric
 import com.eltonvs.obdapp.domain.repository.ObdRepository
+import com.eltonvs.obdapp.util.LogManager
 import com.github.eltonvs.obd.command.Switcher
 import com.github.eltonvs.obd.command.at.ResetAdapterCommand
 import com.github.eltonvs.obd.command.at.SetEchoCommand
@@ -39,6 +40,7 @@ class ObdRepositoryImpl
     @Inject
     constructor(
         private val transport: ObdTransport,
+        private val logManager: LogManager,
     ) : ObdRepository {
         private var obdConnection: ObdDeviceConnection? = null
         private val scope = CoroutineScope(Dispatchers.IO)
@@ -72,11 +74,14 @@ class ObdRepositoryImpl
 
         override suspend fun connect(device: DeviceInfo): Result<Unit> {
             _connectionState.value = ConnectionState.Connecting
+            logManager.info("Connecting to ${device.name} (${device.address})...")
 
             val connectionResult = transport.connect(device)
 
             if (connectionResult.isFailure) {
-                _connectionState.value = ConnectionState.Error(connectionResult.exceptionOrNull()?.message ?: "Connection failed")
+                val errorMsg = connectionResult.exceptionOrNull()?.message ?: "Connection failed"
+                _connectionState.value = ConnectionState.Error(errorMsg)
+                logManager.error("Connection failed: $errorMsg")
                 return Result.failure(connectionResult.exceptionOrNull() ?: Exception("Connection failed"))
             }
 
@@ -86,28 +91,35 @@ class ObdRepositoryImpl
             if (inputStream == null || outputStream == null) {
                 val error = Exception("Failed to get streams")
                 _connectionState.value = ConnectionState.Error(error.message ?: "Failed to get streams")
+                logManager.error("Failed to get Bluetooth streams")
                 return Result.failure(error)
             }
 
             obdConnection = ObdDeviceConnection(inputStream, outputStream)
 
             try {
+                logManager.command("ATZ (Reset adapter)")
                 obdConnection?.run(ResetAdapterCommand())
+                logManager.command("ATE0 (Echo off)")
                 obdConnection?.run(SetEchoCommand(Switcher.OFF))
                 _connectionState.value = ConnectionState.Connected
+                logManager.success("Connected to ${device.name}")
                 return Result.success(Unit)
             } catch (e: Exception) {
                 _connectionState.value = ConnectionState.Error(e.message ?: "Failed to initialize OBD")
+                logManager.error("OBD initialization failed: ${e.message}")
                 return Result.failure(e)
             }
         }
 
         override suspend fun disconnect() {
+            logManager.info("Disconnecting...")
             pollingJob?.cancel()
             pollingJob = null
             obdConnection = null
             transport.disconnect()
             _connectionState.value = ConnectionState.Disconnected
+            logManager.info("Disconnected")
         }
 
         override suspend fun readDiagnosticInfo(): Result<DiagnosticInfo> =
@@ -156,9 +168,17 @@ class ObdRepositoryImpl
             val connection = obdConnection ?: return
 
             try {
+                logManager.command("010C (RPM)")
                 val rpm = connection.run(RPMCommand())
+                logManager.response("010C: ${rpm.value}")
+
+                logManager.command("0111 (Throttle)")
                 val throttle = connection.run(ThrottlePositionCommand())
+                logManager.response("0111: ${throttle.value}")
+
+                logManager.command("012F (Fuel Level)")
                 val fuel = connection.run(FuelLevelCommand())
+                logManager.response("012F: ${fuel.value}")
 
                 _metricsFlow.value =
                     VehicleMetric(
@@ -187,7 +207,7 @@ class ObdRepositoryImpl
                         maxValue = 100f,
                     )
             } catch (e: Exception) {
-                // Ignore individual command failures
+                logManager.error("Read error: ${e.message}")
             }
         }
 
