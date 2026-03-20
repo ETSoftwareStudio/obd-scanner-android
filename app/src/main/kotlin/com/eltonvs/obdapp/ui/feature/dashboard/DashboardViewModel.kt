@@ -47,6 +47,8 @@ class DashboardViewModel
         private val _uiState = MutableStateFlow(DashboardUiState())
         val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
 
+        private var hasCheckedAutoConnect = false
+
         init {
             observeConnectionState()
             observeMetrics()
@@ -54,13 +56,22 @@ class DashboardViewModel
         }
 
         private fun checkAutoConnect() {
+            if (hasCheckedAutoConnect) return
+            hasCheckedAutoConnect = true
+
             viewModelScope.launch {
                 val autoConnect = preferencesManager.autoConnect.first()
                 val wasConnected = preferencesManager.wasConnected.first()
                 val lastDeviceAddress = preferencesManager.lastDeviceAddress.first()
                 val lastDeviceName = preferencesManager.lastDeviceName.first()
+                val currentState = repository.connectionState.value
 
                 _uiState.update { it.copy(autoConnectEnabled = autoConnect) }
+
+                if (currentState is ConnectionState.Connected) {
+                    startPollingIfNeeded()
+                    return@launch
+                }
 
                 if (autoConnect && wasConnected && lastDeviceAddress != null && lastDeviceName != null) {
                     val device = DeviceInfo(lastDeviceAddress, lastDeviceName, DeviceType.CLASSIC)
@@ -73,8 +84,8 @@ class DashboardViewModel
             viewModelScope.launch {
                 repository.connectionState.collect { state ->
                     _uiState.update { it.copy(connectionState = state) }
-                    if (state is ConnectionState.Connected && !_uiState.value.isPolling) {
-                        startPolling()
+                    if (state is ConnectionState.Connected) {
+                        startPollingIfNeeded()
                     }
                 }
             }
@@ -96,7 +107,8 @@ class DashboardViewModel
             }
         }
 
-        private fun startPolling() {
+        private fun startPollingIfNeeded() {
+            if (_uiState.value.isPolling) return
             viewModelScope.launch {
                 val interval = preferencesManager.pollingInterval.first()
                 readMetricsUseCase.startPolling(interval)

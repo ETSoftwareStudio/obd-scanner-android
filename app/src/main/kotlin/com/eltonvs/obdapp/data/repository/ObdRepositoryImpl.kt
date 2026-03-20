@@ -153,7 +153,12 @@ class ObdRepositoryImpl
             pollingJob =
                 scope.launch {
                     while (isActive) {
-                        readMetrics()
+                        if (obdConnection != null && transport.isConnected()) {
+                            readMetrics()
+                        } else {
+                            _connectionState.value = ConnectionState.Disconnected
+                            break
+                        }
                         delay(intervalMs)
                     }
                 }
@@ -207,7 +212,8 @@ class ObdRepositoryImpl
                         maxValue = 100f,
                     )
             } catch (e: Exception) {
-                logManager.error("Read error: ${e.message}")
+                val errorMsg = e.message?.takeIf { it.isNotBlank() } ?: e::class.simpleName?.toString() ?: "Unknown error"
+                logManager.error("Read error: $errorMsg")
             }
         }
 
