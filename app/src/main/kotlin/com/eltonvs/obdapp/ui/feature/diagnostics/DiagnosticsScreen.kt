@@ -81,11 +81,11 @@ fun DiagnosticsScreen(
                         containerColor = MaterialTheme.colorScheme.background,
                     ),
                 actions = {
-                    if (uiState.isLoading) {
+                    if (uiState.isLoading && uiState.diagnosticInfo != null) {
                         CircularProgressIndicator(
                             modifier = Modifier
                                 .size(24.dp)
-                                .padding(8.dp),
+                                .padding(end = 12.dp),
                             strokeWidth = 2.dp,
                         )
                     } else {
