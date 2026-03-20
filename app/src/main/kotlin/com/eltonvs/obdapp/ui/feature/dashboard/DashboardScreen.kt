@@ -113,7 +113,7 @@ fun DashboardScreen(
                         size = 140.dp,
                     )
                     GaugeCard(
-                        value = (uiState.rpm.toFloatOrNull() ?: 0f) / 60f,
+                        value = (uiState.rpm.toFloatOrNull() ?: 0f) / 100f,
                         maxValue = 100f,
                         label = "RPM",
                         unit = "x100",

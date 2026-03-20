@@ -17,6 +17,7 @@ import com.github.eltonvs.obd.command.at.SetEchoCommand
 import com.github.eltonvs.obd.command.control.TroubleCodesCommand
 import com.github.eltonvs.obd.command.control.VINCommand
 import com.github.eltonvs.obd.command.engine.RPMCommand
+import com.github.eltonvs.obd.command.engine.SpeedCommand
 import com.github.eltonvs.obd.command.engine.ThrottlePositionCommand
 import com.github.eltonvs.obd.command.fuel.FuelLevelCommand
 import com.github.eltonvs.obd.connection.ObdDeviceConnection
@@ -169,6 +170,10 @@ class ObdRepositoryImpl
             val connection = obdConnection ?: return
 
             try {
+                logManager.command("010D (Speed)")
+                val speed = connection.run(SpeedCommand())
+                logManager.response("010D: ${speed.value}")
+
                 logManager.command("010C (RPM)")
                 val rpm = connection.run(RPMCommand())
                 logManager.response("010C: ${rpm.value}")
@@ -180,6 +185,16 @@ class ObdRepositoryImpl
                 logManager.command("012F (Fuel Level)")
                 val fuel = connection.run(FuelLevelCommand())
                 logManager.response("012F: ${fuel.value}")
+
+                _metricsFlow.emit(
+                    VehicleMetric(
+                        name = "Speed",
+                        value = speed.value,
+                        unit = speed.unit,
+                        minValue = 0f,
+                        maxValue = 200f,
+                    ),
+                )
 
                 _metricsFlow.emit(
                     VehicleMetric(
