@@ -209,7 +209,10 @@ fun ConnectionScreen(
                         containerColor = MaterialTheme.colorScheme.surface,
                     ),
                 actions = {
-                    IconButton(onClick = { viewModel.loadPairedDevices() }) {
+                    IconButton(
+                        onClick = { viewModel.loadPairedDevices() },
+                        enabled = !uiState.isLoading,
+                    ) {
                         Icon(Icons.Default.Refresh, contentDescription = "Refresh")
                     }
                 },
@@ -310,7 +313,7 @@ fun ConnectionScreen(
                             DeviceItem(
                                 device = device,
                                 isSelected = device == uiState.selectedDevice,
-                                onClick = { viewModel.selectDevice(device) },
+                                onClick = { if (!uiState.isLoading) viewModel.selectDevice(device) },
                             )
                         }
                     }
@@ -333,6 +336,11 @@ fun ConnectionScreen(
                     CircularProgressIndicator(
                         modifier = Modifier.size(24.dp),
                         color = MaterialTheme.colorScheme.onPrimary,
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Connecting...",
+                        style = MaterialTheme.typography.titleMedium,
                     )
                 } else {
                     Icon(
