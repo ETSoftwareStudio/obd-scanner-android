@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -80,11 +81,20 @@ fun DiagnosticsScreen(
                         containerColor = MaterialTheme.colorScheme.background,
                     ),
                 actions = {
-                    IconButton(
-                        onClick = { viewModel.readDiagnostics() },
-                        enabled = uiState.connectionState is ConnectionState.Connected,
-                    ) {
-                        Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+                    if (uiState.isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier
+                                .size(24.dp)
+                                .padding(8.dp),
+                            strokeWidth = 2.dp,
+                        )
+                    } else {
+                        IconButton(
+                            onClick = { viewModel.readDiagnostics() },
+                            enabled = uiState.connectionState is ConnectionState.Connected,
+                        ) {
+                            Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+                        }
                     }
                 },
             )
