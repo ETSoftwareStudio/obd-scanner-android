@@ -81,19 +81,21 @@ fun DiagnosticsScreen(
                         containerColor = MaterialTheme.colorScheme.background,
                     ),
                 actions = {
-                    if (uiState.isLoading && uiState.diagnosticInfo != null) {
-                        CircularProgressIndicator(
-                            modifier = Modifier
-                                .size(24.dp)
-                                .padding(end = 12.dp),
-                            strokeWidth = 2.dp,
-                        )
-                    } else {
-                        IconButton(
-                            onClick = { viewModel.readDiagnostics() },
-                            enabled = uiState.connectionState is ConnectionState.Connected,
-                        ) {
-                            Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+                    if (uiState.diagnosticInfo != null) {
+                        if (uiState.isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier
+                                    .size(24.dp)
+                                    .padding(end = 12.dp),
+                                strokeWidth = 2.dp,
+                            )
+                        } else {
+                            IconButton(
+                                onClick = { viewModel.readDiagnostics() },
+                                enabled = uiState.connectionState is ConnectionState.Connected,
+                            ) {
+                                Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+                            }
                         }
                     }
                 },
