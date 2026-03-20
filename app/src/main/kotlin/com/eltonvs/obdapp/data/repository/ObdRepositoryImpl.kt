@@ -16,10 +16,13 @@ import com.github.eltonvs.obd.command.at.ResetAdapterCommand
 import com.github.eltonvs.obd.command.at.SetEchoCommand
 import com.github.eltonvs.obd.command.control.TroubleCodesCommand
 import com.github.eltonvs.obd.command.control.VINCommand
+import com.github.eltonvs.obd.command.engine.MassAirFlowCommand
 import com.github.eltonvs.obd.command.engine.RPMCommand
 import com.github.eltonvs.obd.command.engine.SpeedCommand
 import com.github.eltonvs.obd.command.engine.ThrottlePositionCommand
 import com.github.eltonvs.obd.command.fuel.FuelLevelCommand
+import com.github.eltonvs.obd.command.temperature.AirIntakeTemperatureCommand
+import com.github.eltonvs.obd.command.temperature.EngineCoolantTemperatureCommand
 import com.github.eltonvs.obd.connection.ObdDeviceConnection
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -178,6 +181,18 @@ class ObdRepositoryImpl
                 val rpm = connection.run(RPMCommand())
                 logManager.response("010C: ${rpm.value}")
 
+                logManager.command("0105 (Coolant)")
+                val coolant = connection.run(EngineCoolantTemperatureCommand())
+                logManager.response("0105: ${coolant.value}")
+
+                logManager.command("010F (Intake Air)")
+                val intakeAir = connection.run(AirIntakeTemperatureCommand())
+                logManager.response("010F: ${intakeAir.value}")
+
+                logManager.command("0110 (MAF)")
+                val maf = connection.run(MassAirFlowCommand())
+                logManager.response("0110: ${maf.value}")
+
                 logManager.command("0111 (Throttle)")
                 val throttle = connection.run(ThrottlePositionCommand())
                 logManager.response("0111: ${throttle.value}")
@@ -203,6 +218,36 @@ class ObdRepositoryImpl
                         unit = rpm.unit,
                         minValue = 0f,
                         maxValue = 8000f,
+                    ),
+                )
+
+                _metricsFlow.emit(
+                    VehicleMetric(
+                        name = "Coolant",
+                        value = coolant.value,
+                        unit = coolant.unit,
+                        minValue = -40f,
+                        maxValue = 215f,
+                    ),
+                )
+
+                _metricsFlow.emit(
+                    VehicleMetric(
+                        name = "Intake",
+                        value = intakeAir.value,
+                        unit = intakeAir.unit,
+                        minValue = -40f,
+                        maxValue = 215f,
+                    ),
+                )
+
+                _metricsFlow.emit(
+                    VehicleMetric(
+                        name = "MAF",
+                        value = maf.value,
+                        unit = maf.unit,
+                        minValue = 0f,
+                        maxValue = 655.35f,
                     ),
                 )
 
