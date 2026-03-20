@@ -25,10 +25,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -49,14 +50,9 @@ class ObdRepositoryImpl
         private val _connectionState = MutableStateFlow<ConnectionState>(ConnectionState.Disconnected)
         override val connectionState: StateFlow<ConnectionState> = _connectionState.asStateFlow()
 
-        private val _metricsFlow = MutableStateFlow<VehicleMetric?>(null)
+        private val _metricsFlow = MutableSharedFlow<VehicleMetric>(replay = 1, extraBufferCapacity = 64)
 
-        override val vehicleMetrics: Flow<VehicleMetric> =
-            flow {
-                _metricsFlow.collect { metric ->
-                    metric?.let { emit(it) }
-                }
-            }
+        override val vehicleMetrics: Flow<VehicleMetric> = _metricsFlow.asSharedFlow()
 
         @Suppress("DEPRECATION")
         override suspend fun getPairedDevices(): List<DeviceInfo> =
@@ -185,32 +181,35 @@ class ObdRepositoryImpl
                 val fuel = connection.run(FuelLevelCommand())
                 logManager.response("012F: ${fuel.value}")
 
-                _metricsFlow.value =
+                _metricsFlow.emit(
                     VehicleMetric(
                         name = "RPM",
                         value = rpm.value,
                         unit = rpm.unit,
                         minValue = 0f,
                         maxValue = 8000f,
-                    )
+                    ),
+                )
 
-                _metricsFlow.value =
+                _metricsFlow.emit(
                     VehicleMetric(
                         name = "Throttle",
                         value = throttle.value,
                         unit = throttle.unit,
                         minValue = 0f,
                         maxValue = 100f,
-                    )
+                    ),
+                )
 
-                _metricsFlow.value =
+                _metricsFlow.emit(
                     VehicleMetric(
                         name = "Fuel",
                         value = fuel.value,
                         unit = fuel.unit,
                         minValue = 0f,
                         maxValue = 100f,
-                    )
+                    ),
+                )
             } catch (e: Exception) {
                 val errorMsg = e.message?.takeIf { it.isNotBlank() } ?: e::class.simpleName?.toString() ?: "Unknown error"
                 logManager.error("Read error: $errorMsg")
