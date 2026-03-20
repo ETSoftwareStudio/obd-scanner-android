@@ -9,6 +9,7 @@ import com.eltonvs.obdapp.domain.repository.ObdRepository
 import com.eltonvs.obdapp.domain.usecase.ConnectDeviceUseCase
 import com.eltonvs.obdapp.domain.usecase.DisconnectUseCase
 import com.eltonvs.obdapp.domain.usecase.ReadMetricsUseCase
+import com.eltonvs.obdapp.util.LogManager
 import com.eltonvs.obdapp.util.PreferencesManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -41,6 +42,7 @@ class DashboardViewModel
         private val connectDeviceUseCase: ConnectDeviceUseCase,
         private val repository: ObdRepository,
         private val preferencesManager: PreferencesManager,
+        val logManager: LogManager,
     ) : ViewModel() {
         private val _uiState = MutableStateFlow(DashboardUiState())
         val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
