@@ -1,5 +1,8 @@
 package com.eltonvs.obdapp.ui.feature.settings
 
+import com.eltonvs.obdapp.domain.repository.TelemetryRepository
+import com.eltonvs.obdapp.domain.usecase.ObserveTelemetryEnabledUseCase
+import com.eltonvs.obdapp.domain.usecase.SetTelemetryEnabledUseCase
 import com.eltonvs.obdapp.util.PreferencesManager
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -22,6 +25,7 @@ class SettingsViewModelTest {
     private val testDispatcher = StandardTestDispatcher()
 
     private val preferencesManager: PreferencesManager = mockk(relaxed = true)
+    private val telemetryRepository: TelemetryRepository = mockk(relaxed = true)
 
     private lateinit var viewModel: SettingsViewModel
 
@@ -32,8 +36,14 @@ class SettingsViewModelTest {
         every { preferencesManager.pollingInterval } returns MutableStateFlow(1000L)
         every { preferencesManager.theme } returns MutableStateFlow("dark")
         every { preferencesManager.autoConnect } returns MutableStateFlow(true)
+        every { telemetryRepository.isEnabled } returns MutableStateFlow(true)
 
-        viewModel = SettingsViewModel(preferencesManager)
+        viewModel =
+            SettingsViewModel(
+                preferencesManager,
+                ObserveTelemetryEnabledUseCase(telemetryRepository),
+                SetTelemetryEnabledUseCase(telemetryRepository),
+            )
     }
 
     @After
@@ -69,6 +79,17 @@ class SettingsViewModelTest {
             testDispatcher.scheduler.advanceUntilIdle()
 
             coVerify { preferencesManager.setTheme("light") }
+        }
+
+    @Test
+    fun `setTelemetryEnabled calls telemetry repository`() =
+        runTest {
+            coEvery { telemetryRepository.setEnabled(any()) } returns Unit
+
+            viewModel.setTelemetryEnabled(false)
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            coVerify { telemetryRepository.setEnabled(false) }
         }
 
     @Test

@@ -31,9 +31,11 @@ class PreferencesManager
             private val LAST_DEVICE_NAME_KEY = stringPreferencesKey("last_device_name")
             private val WAS_CONNECTED_KEY = booleanPreferencesKey("was_connected")
             private val AUTO_CONNECT_KEY = booleanPreferencesKey("auto_connect")
+            private val TELEMETRY_ENABLED_KEY = booleanPreferencesKey("telemetry_enabled")
 
             const val DEFAULT_POLLING_INTERVAL = 1000L
             const val DEFAULT_THEME = "system"
+            const val DEFAULT_TELEMETRY_ENABLED = true
         }
 
         val pollingInterval: Flow<Long> =
@@ -64,6 +66,11 @@ class PreferencesManager
         val autoConnect: Flow<Boolean> =
             dataStore.data.map { preferences ->
                 preferences[AUTO_CONNECT_KEY] ?: true
+            }
+
+        val telemetryEnabled: Flow<Boolean> =
+            dataStore.data.map { preferences ->
+                preferences[TELEMETRY_ENABLED_KEY] ?: DEFAULT_TELEMETRY_ENABLED
             }
 
         suspend fun setPollingInterval(intervalMs: Long) {
@@ -97,6 +104,12 @@ class PreferencesManager
         suspend fun setAutoConnect(enabled: Boolean) {
             dataStore.edit { preferences ->
                 preferences[AUTO_CONNECT_KEY] = enabled
+            }
+        }
+
+        suspend fun setTelemetryEnabled(enabled: Boolean) {
+            dataStore.edit { preferences ->
+                preferences[TELEMETRY_ENABLED_KEY] = enabled
             }
         }
     }

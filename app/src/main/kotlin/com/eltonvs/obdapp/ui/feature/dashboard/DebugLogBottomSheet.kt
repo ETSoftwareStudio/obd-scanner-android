@@ -137,6 +137,7 @@ private fun LogEntryItem(entry: LogEntry) {
             LogType.RESPONSE -> Color(0xFF1B3D1B) to GaugeGreen
             LogType.ERROR -> Color(0xFF3D1B1B) to GaugeRed
             LogType.SUCCESS -> Color(0xFF1B3D1B) to GaugeGreen
+            LogType.TELEMETRY -> Color(0xFF2D2A4A) to Color(0xFFB39DDB)
             LogType.INFO -> Color.Transparent to MaterialTheme.colorScheme.onSurface
         }
 

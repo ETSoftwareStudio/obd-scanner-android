@@ -7,8 +7,10 @@ import com.eltonvs.obdapp.domain.model.ConnectionState
 import com.eltonvs.obdapp.domain.model.DeviceInfo
 import com.eltonvs.obdapp.domain.model.DeviceType
 import com.eltonvs.obdapp.domain.repository.ObdRepository
+import com.eltonvs.obdapp.domain.usecase.ClearTelemetryUseCase
 import com.eltonvs.obdapp.domain.usecase.ConnectDeviceUseCase
 import com.eltonvs.obdapp.domain.usecase.DisconnectUseCase
+import com.eltonvs.obdapp.domain.usecase.ObserveTelemetryEventsUseCase
 import com.eltonvs.obdapp.domain.usecase.ReadMetricsUseCase
 import com.eltonvs.obdapp.util.LogEntry
 import com.eltonvs.obdapp.util.LogExportFormatter
@@ -52,11 +54,14 @@ class DashboardViewModel
         private val logExportFormatter: LogExportFormatter,
         private val logExporter: LogExporter,
         private val logManager: LogManager,
+        private val observeTelemetryEventsUseCase: ObserveTelemetryEventsUseCase,
+        private val clearTelemetryUseCase: ClearTelemetryUseCase,
     ) : ViewModel() {
         private val _uiState = MutableStateFlow(DashboardUiState())
         val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
 
         val logs: StateFlow<List<LogEntry>> = logManager.logs
+        private val telemetryEvents = observeTelemetryEventsUseCase()
 
         private val _events = MutableSharedFlow<DashboardEvent>(extraBufferCapacity = 1)
         val events: SharedFlow<DashboardEvent> = _events.asSharedFlow()
@@ -148,6 +153,9 @@ class DashboardViewModel
 
         fun clearLogs() {
             logManager.clear()
+            viewModelScope.launch {
+                clearTelemetryUseCase()
+            }
         }
 
         fun getSuggestedLogFileName(): String {
@@ -166,7 +174,11 @@ class DashboardViewModel
             }
 
             viewModelScope.launch {
-                val exportText = logExportFormatter.buildExportText(logSnapshot)
+                val exportText =
+                    logExportFormatter.buildExportText(
+                        logs = logSnapshot,
+                        telemetryEvents = telemetryEvents.value,
+                    )
                 logExporter.export(uri, exportText).fold(
                     onSuccess = {
                         emitEvent(DashboardEvent.ExportSuccess)

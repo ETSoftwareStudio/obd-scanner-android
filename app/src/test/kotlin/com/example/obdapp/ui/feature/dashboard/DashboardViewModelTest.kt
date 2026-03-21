@@ -4,9 +4,13 @@ import android.net.Uri
 import app.cash.turbine.test
 import com.eltonvs.obdapp.domain.model.ConnectionState
 import com.eltonvs.obdapp.domain.model.DashboardMetricsSnapshot
+import com.eltonvs.obdapp.domain.model.TelemetryEvent
 import com.eltonvs.obdapp.domain.repository.ObdRepository
+import com.eltonvs.obdapp.domain.repository.TelemetryRepository
+import com.eltonvs.obdapp.domain.usecase.ClearTelemetryUseCase
 import com.eltonvs.obdapp.domain.usecase.ConnectDeviceUseCase
 import com.eltonvs.obdapp.domain.usecase.DisconnectUseCase
+import com.eltonvs.obdapp.domain.usecase.ObserveTelemetryEventsUseCase
 import com.eltonvs.obdapp.domain.usecase.ReadMetricsUseCase
 import com.eltonvs.obdapp.util.LogEntry
 import com.eltonvs.obdapp.util.LogExportFormatter
@@ -46,11 +50,13 @@ class DashboardViewModelTest {
     private val preferencesManager: PreferencesManager = mockk(relaxed = true)
     private val logExporter: LogExporter = mockk(relaxed = true)
     private val logManager: LogManager = mockk(relaxed = true)
+    private val telemetryRepository: TelemetryRepository = mockk(relaxed = true)
     private val logExportFormatter = LogExportFormatter()
 
     private lateinit var viewModel: DashboardViewModel
     private lateinit var connectionStateFlow: MutableStateFlow<ConnectionState>
     private lateinit var logsFlow: MutableStateFlow<List<LogEntry>>
+    private lateinit var telemetryEventsFlow: MutableStateFlow<List<TelemetryEvent>>
 
     @Before
     fun setup() {
@@ -58,6 +64,7 @@ class DashboardViewModelTest {
 
         connectionStateFlow = MutableStateFlow(ConnectionState.Disconnected)
         logsFlow = MutableStateFlow(emptyList())
+        telemetryEventsFlow = MutableStateFlow(emptyList())
 
         every { repository.connectionState } returns connectionStateFlow
         every { preferencesManager.autoConnect } returns flowOf(false)
@@ -68,6 +75,7 @@ class DashboardViewModelTest {
         every { readMetricsUseCase.invoke() } returns MutableStateFlow(DashboardMetricsSnapshot())
         every { logManager.logs } returns logsFlow
         every { logManager.clear() } just runs
+        every { telemetryRepository.events } returns telemetryEventsFlow
 
         viewModel =
             DashboardViewModel(
@@ -79,6 +87,8 @@ class DashboardViewModelTest {
                 logExportFormatter,
                 logExporter,
                 logManager,
+                ObserveTelemetryEventsUseCase(telemetryRepository),
+                ClearTelemetryUseCase(telemetryRepository),
             )
     }
 
@@ -134,9 +144,14 @@ class DashboardViewModelTest {
         }
 
     @Test
-    fun `clearLogs delegates to log manager`() {
-        viewModel.clearLogs()
+    fun `clearLogs delegates to log manager and clears telemetry`() =
+        runTest {
+            coEvery { telemetryRepository.clear() } returns Unit
 
-        verify { logManager.clear() }
-    }
+            viewModel.clearLogs()
+            advanceUntilIdle()
+
+            verify { logManager.clear() }
+            coVerify { telemetryRepository.clear() }
+        }
 }
