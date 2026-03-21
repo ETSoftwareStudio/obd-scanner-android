@@ -19,6 +19,8 @@ interface ObdRepository {
 
     suspend fun readDiagnosticInfo(): Result<DiagnosticInfo>
 
+    suspend fun clearTroubleCodes(): Result<Unit>
+
     suspend fun startPolling(intervalMs: Long)
 
     suspend fun stopPolling()

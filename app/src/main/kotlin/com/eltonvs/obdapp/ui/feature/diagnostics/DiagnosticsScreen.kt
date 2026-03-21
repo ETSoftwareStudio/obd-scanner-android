@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Refresh
@@ -40,14 +41,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.eltonvs.obdapp.domain.model.ConnectionState
 import com.eltonvs.obdapp.domain.model.DiagnosticInfo
 import com.eltonvs.obdapp.domain.model.TroubleCode
@@ -87,7 +88,8 @@ fun DiagnosticsScreen(
                         containerColor = MaterialTheme.colorScheme.background,
                     ),
                 actions = {
-                    if (uiState.diagnosticInfo != null) {
+                    val diagnosticInfo = uiState.diagnosticInfo
+                    if (diagnosticInfo != null) {
                         if (uiState.isLoading) {
                             CircularProgressIndicator(
                                 modifier =
@@ -97,6 +99,15 @@ fun DiagnosticsScreen(
                                 strokeWidth = 2.dp,
                             )
                         } else {
+                            IconButton(
+                                onClick = { viewModel.clearTroubleCodes() },
+                                enabled =
+                                    uiState.connectionState is ConnectionState.Connected &&
+                                        diagnosticInfo.troubleCodes.isNotEmpty(),
+                            ) {
+                                Icon(Icons.Default.DeleteSweep, contentDescription = "Clear DTCs")
+                            }
+
                             IconButton(
                                 onClick = { viewModel.readDiagnostics() },
                                 enabled = uiState.connectionState is ConnectionState.Connected,
