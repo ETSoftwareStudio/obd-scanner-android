@@ -74,3 +74,7 @@ lint/tmp/
 
 # Mac OS
 .DS_Store
+
+# Local agent/runtime artifacts
+.pi/
+pulled-logs/

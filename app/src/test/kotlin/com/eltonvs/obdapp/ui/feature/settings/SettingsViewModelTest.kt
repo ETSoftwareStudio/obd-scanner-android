@@ -1,7 +1,10 @@
 package com.eltonvs.obdapp.ui.feature.settings
 
+import com.eltonvs.obdapp.domain.repository.PollingSettingsRepository
 import com.eltonvs.obdapp.domain.repository.TelemetryRepository
+import com.eltonvs.obdapp.domain.usecase.ObservePollingIntervalUseCase
 import com.eltonvs.obdapp.domain.usecase.ObserveTelemetryEnabledUseCase
+import com.eltonvs.obdapp.domain.usecase.SetPollingIntervalUseCase
 import com.eltonvs.obdapp.domain.usecase.SetTelemetryEnabledUseCase
 import com.eltonvs.obdapp.util.PreferencesManager
 import io.mockk.coEvery
@@ -25,6 +28,7 @@ class SettingsViewModelTest {
     private val testDispatcher = StandardTestDispatcher()
 
     private val preferencesManager: PreferencesManager = mockk(relaxed = true)
+    private val pollingSettingsRepository: PollingSettingsRepository = mockk(relaxed = true)
     private val telemetryRepository: TelemetryRepository = mockk(relaxed = true)
 
     private lateinit var viewModel: SettingsViewModel
@@ -33,7 +37,7 @@ class SettingsViewModelTest {
     fun setup() {
         Dispatchers.setMain(testDispatcher)
 
-        every { preferencesManager.pollingInterval } returns MutableStateFlow(1000L)
+        every { pollingSettingsRepository.pollingInterval } returns MutableStateFlow(1000L)
         every { preferencesManager.theme } returns MutableStateFlow("dark")
         every { preferencesManager.autoConnect } returns MutableStateFlow(true)
         every { telemetryRepository.isEnabled } returns MutableStateFlow(true)
@@ -41,6 +45,8 @@ class SettingsViewModelTest {
         viewModel =
             SettingsViewModel(
                 preferencesManager,
+                ObservePollingIntervalUseCase(pollingSettingsRepository),
+                SetPollingIntervalUseCase(pollingSettingsRepository),
                 ObserveTelemetryEnabledUseCase(telemetryRepository),
                 SetTelemetryEnabledUseCase(telemetryRepository),
             )
@@ -60,14 +66,14 @@ class SettingsViewModelTest {
         }
 
     @Test
-    fun `setPollingInterval calls preferences manager`() =
+    fun `setPollingInterval calls polling settings repository`() =
         runTest {
-            coEvery { preferencesManager.setPollingInterval(any()) } returns Unit
+            coEvery { pollingSettingsRepository.setPollingInterval(any()) } returns Unit
 
             viewModel.setPollingInterval(2000L)
             testDispatcher.scheduler.advanceUntilIdle()
 
-            coVerify { preferencesManager.setPollingInterval(2000L) }
+            coVerify { pollingSettingsRepository.setPollingInterval(2000L) }
         }
 
     @Test
