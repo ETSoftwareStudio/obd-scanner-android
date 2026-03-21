@@ -190,4 +190,19 @@ class DashboardViewModelTest {
             verify { logManager.clear() }
             coVerify { telemetryRepository.clear() }
         }
+
+    @Test
+    fun `disconnect stops polling before disconnecting`() =
+        runTest {
+            coEvery { readMetricsUseCase.stopPolling() } returns Unit
+            coEvery { disconnectUseCase.invoke() } returns Unit
+
+            viewModel.disconnect()
+            advanceUntilIdle()
+
+            io.mockk.coVerifyOrder {
+                readMetricsUseCase.stopPolling()
+                disconnectUseCase.invoke()
+            }
+        }
 }

@@ -27,6 +27,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -63,12 +64,14 @@ import com.eltonvs.obdapp.ui.theme.ConnectionStatusError
 fun DashboardScreen(
     viewModel: DashboardViewModel = hiltViewModel(),
     onConnectClick: () -> Unit = {},
+    onDisconnected: () -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val logs by viewModel.logs.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
     var showDebugLog by rememberSaveable { mutableStateOf(false) }
+    var isDisconnecting by rememberSaveable { mutableStateOf(false) }
 
     val exportLogLauncher =
         rememberLauncherForActivityResult(
@@ -96,6 +99,13 @@ fun DashboardScreen(
         }
     }
 
+    LaunchedEffect(isDisconnecting, uiState.connectionState) {
+        if (isDisconnecting && uiState.connectionState is ConnectionState.Disconnected) {
+            isDisconnecting = false
+            onDisconnected()
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -105,6 +115,19 @@ fun DashboardScreen(
                         containerColor = MaterialTheme.colorScheme.background,
                     ),
                 actions = {
+                    if (uiState.connectionState is ConnectionState.Connected) {
+                        IconButton(
+                            onClick = {
+                                isDisconnecting = true
+                                viewModel.disconnect()
+                            },
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.BluetoothDisabled,
+                                contentDescription = "Disconnect",
+                            )
+                        }
+                    }
                     ConnectionIndicator(
                         connectionState = uiState.connectionState,
                         onConnectClick = onConnectClick,

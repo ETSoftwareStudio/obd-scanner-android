@@ -169,15 +169,13 @@ class DashboardViewModel
 
         fun stopPolling() {
             viewModelScope.launch {
-                readMetricsUseCase.stopPolling()
-                activePollingIntervalMs = null
-                _uiState.update { it.copy(isPolling = false) }
+                stopPollingInternal()
             }
         }
 
         fun disconnect() {
             viewModelScope.launch {
-                stopPolling()
+                stopPollingInternal()
                 disconnectUseCase()
             }
         }
@@ -225,6 +223,12 @@ class DashboardViewModel
             readMetricsUseCase.startPolling(intervalMs)
             activePollingIntervalMs = intervalMs
             _uiState.update { it.copy(isPolling = true) }
+        }
+
+        private suspend fun stopPollingInternal() {
+            readMetricsUseCase.stopPolling()
+            activePollingIntervalMs = null
+            _uiState.update { it.copy(isPolling = false) }
         }
 
         private fun emitEvent(event: DashboardEvent) {
