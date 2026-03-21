@@ -93,15 +93,17 @@ class DashboardViewModel
 
         private fun observeMetrics() {
             viewModelScope.launch {
-                readMetricsUseCase().collect { metric ->
-                    when (metric.name) {
-                        "Speed" -> _uiState.update { it.copy(speed = metric.value) }
-                        "RPM" -> _uiState.update { it.copy(rpm = metric.value) }
-                        "Throttle" -> _uiState.update { it.copy(throttle = metric.value) }
-                        "Coolant" -> _uiState.update { it.copy(coolantTemp = metric.value) }
-                        "Intake" -> _uiState.update { it.copy(intakeTemp = metric.value) }
-                        "MAF" -> _uiState.update { it.copy(maf = metric.value) }
-                        "Fuel" -> _uiState.update { it.copy(fuel = metric.value) }
+                readMetricsUseCase().collect { metrics ->
+                    _uiState.update {
+                        it.copy(
+                            speed = metrics.speed,
+                            rpm = metrics.rpm,
+                            throttle = metrics.throttle,
+                            coolantTemp = metrics.coolantTemp,
+                            intakeTemp = metrics.intakeTemp,
+                            maf = metrics.maf,
+                            fuel = metrics.fuel,
+                        )
                     }
                 }
             }

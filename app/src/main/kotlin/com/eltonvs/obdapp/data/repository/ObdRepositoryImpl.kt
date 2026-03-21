@@ -10,6 +10,7 @@ import androidx.core.content.ContextCompat
 import com.eltonvs.obdapp.data.connection.BluetoothDiscoveryManager
 import com.eltonvs.obdapp.data.connection.ObdTransport
 import com.eltonvs.obdapp.domain.model.ConnectionState
+import com.eltonvs.obdapp.domain.model.DashboardMetricsSnapshot
 import com.eltonvs.obdapp.domain.model.DeviceInfo
 import com.eltonvs.obdapp.domain.model.DeviceType
 import com.eltonvs.obdapp.domain.model.DiagnosticInfo
@@ -70,9 +71,11 @@ class ObdRepositoryImpl
         override val pairingState: StateFlow<PairingState> = discoveryManager.pairingState
 
         private val _metricsFlow = MutableSharedFlow<VehicleMetric>(replay = 1, extraBufferCapacity = 64)
+        private val _dashboardMetrics = MutableStateFlow(DashboardMetricsSnapshot())
         private val dtcRegex = Regex("[PCBU][0-3][0-9A-F]{3}")
 
         override val vehicleMetrics: Flow<VehicleMetric> = _metricsFlow.asSharedFlow()
+        override val dashboardMetrics: StateFlow<DashboardMetricsSnapshot> = _dashboardMetrics.asStateFlow()
 
         override fun isBluetoothEnabled(): Boolean = discoveryManager.isBluetoothEnabled()
 
@@ -337,6 +340,17 @@ class ObdRepositoryImpl
                         maxValue = 100f,
                     ),
                 )
+
+                _dashboardMetrics.value =
+                    DashboardMetricsSnapshot(
+                        speed = speed.value,
+                        rpm = rpm.value,
+                        throttle = throttle.value,
+                        coolantTemp = coolant.value,
+                        intakeTemp = intakeAir.value,
+                        maf = maf.value,
+                        fuel = fuel.value,
+                    )
             } catch (e: Exception) {
                 val errorMsg = e.message?.takeIf { it.isNotBlank() } ?: e::class.simpleName?.toString() ?: "Unknown error"
                 logManager.error("Read error: $errorMsg")

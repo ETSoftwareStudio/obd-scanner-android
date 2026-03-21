@@ -1,6 +1,7 @@
 package com.eltonvs.obdapp.domain.repository
 
 import com.eltonvs.obdapp.domain.model.ConnectionState
+import com.eltonvs.obdapp.domain.model.DashboardMetricsSnapshot
 import com.eltonvs.obdapp.domain.model.DeviceInfo
 import com.eltonvs.obdapp.domain.model.DiagnosticInfo
 import com.eltonvs.obdapp.domain.model.DiscoveryState
@@ -14,6 +15,7 @@ interface ObdRepository {
     val discoveryState: StateFlow<DiscoveryState>
     val pairingState: StateFlow<PairingState>
     val vehicleMetrics: Flow<VehicleMetric>
+    val dashboardMetrics: StateFlow<DashboardMetricsSnapshot>
 
     suspend fun getPairedDevices(): List<DeviceInfo>
 
