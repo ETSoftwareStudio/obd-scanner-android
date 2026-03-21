@@ -266,7 +266,7 @@ app/src/main/kotlin/studio/etsoftware/obdapp/
 │   ├── LogExportFormatter.kt
 │   ├── LogManager.kt
 │   └── PreferencesManager.kt
-└── ObdSampleApp.kt
+└── ObdScannerApp.kt
 ```
 
 ---

@@ -48,7 +48,7 @@ private val LightColorScheme =
     )
 
 @Composable
-fun ObdSampleAppTheme(
+fun ObdScannerAppTheme(
     darkTheme: Boolean = true,
     dynamicColor: Boolean = false,
     content: @Composable () -> Unit,

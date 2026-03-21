@@ -18,5 +18,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "ObdSampleApp"
+rootProject.name = "OBD Scanner Android"
 include(":app")
