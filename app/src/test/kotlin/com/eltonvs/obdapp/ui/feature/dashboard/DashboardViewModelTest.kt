@@ -144,6 +144,19 @@ class DashboardViewModelTest {
         }
 
     @Test
+    fun `connection loss clears polling flag`() =
+        runTest {
+            connectionStateFlow.value = ConnectionState.Connected
+            advanceUntilIdle()
+            assertEquals(true, viewModel.uiState.value.isPolling)
+
+            connectionStateFlow.value = ConnectionState.Disconnected
+            advanceUntilIdle()
+
+            assertEquals(false, viewModel.uiState.value.isPolling)
+        }
+
+    @Test
     fun `clearLogs delegates to log manager and clears telemetry`() =
         runTest {
             coEvery { telemetryRepository.clear() } returns Unit
