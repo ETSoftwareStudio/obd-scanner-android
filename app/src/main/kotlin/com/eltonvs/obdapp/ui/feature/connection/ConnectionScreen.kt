@@ -55,6 +55,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -87,10 +88,10 @@ fun ConnectionScreen(
     val corePermissions = rememberCoreBluetoothPermissions()
     val discoveryPermissions = rememberDiscoveryPermissions()
 
-    var hasCorePermissions by remember { mutableStateOf(hasAllPermissions(context, corePermissions)) }
-    var hasDiscoveryPermissions by remember { mutableStateOf(hasAllPermissions(context, discoveryPermissions)) }
-    var showRationale by remember { mutableStateOf(false) }
-    var permissionDenied by remember { mutableStateOf(false) }
+    var hasCorePermissions by rememberSaveable { mutableStateOf(hasAllPermissions(context, corePermissions)) }
+    var hasDiscoveryPermissions by rememberSaveable { mutableStateOf(hasAllPermissions(context, discoveryPermissions)) }
+    var showRationale by rememberSaveable { mutableStateOf(false) }
+    var permissionDenied by rememberSaveable { mutableStateOf(false) }
 
     val permissionLauncher =
         rememberLauncherForActivityResult(
