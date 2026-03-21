@@ -65,7 +65,7 @@
 -keep class com.github.eltonvs.obd.** { *; }
 
 # Keep domain models
--keep class com.eltonvs.obdapp.domain.model.** { *; }
+-keep class studio.etsoftware.obdapp.domain.model.** { *; }
 
 # Keep enum classes
 -keepclassmembers enum * {

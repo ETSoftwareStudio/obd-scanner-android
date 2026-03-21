@@ -7,11 +7,11 @@ plugins {
 }
 
 android {
-    namespace = "com.eltonvs.obdapp"
+    namespace = "studio.etsoftware.obdapp"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.eltonvs.obdapp"
+        applicationId = "studio.etsoftware.obdapp"
         minSdk = 24
         targetSdk = 36
         versionCode = 1
