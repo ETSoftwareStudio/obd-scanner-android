@@ -70,9 +70,9 @@ fun MainApp(settingsViewModel: SettingsViewModel = hiltViewModel()) {
                         ) {
                             Screen.bottomNavItems.forEach { screen ->
                                 val selected =
-                                    currentDestination?.hierarchy?.any {
+                                    currentDestination.hierarchy.any {
                                         it.route == screen.route
-                                    } == true
+                                    }
 
                                 NavigationBarItem(
                                     icon = {
