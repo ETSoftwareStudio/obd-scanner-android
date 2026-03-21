@@ -1,6 +1,9 @@
 package com.eltonvs.obdapp.ui.feature.connection
 
 import android.Manifest
+import android.bluetooth.BluetoothAdapter
+import android.content.Context
+import android.content.Intent
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -14,18 +17,21 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bluetooth
 import androidx.compose.material.icons.filled.BluetoothConnected
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -44,6 +50,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -54,14 +61,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.eltonvs.obdapp.domain.model.ConnectionState
 import com.eltonvs.obdapp.domain.model.DeviceInfo
+import com.eltonvs.obdapp.domain.model.DiscoveryState
 import com.eltonvs.obdapp.ui.theme.ConnectionStatusConnected
 import com.eltonvs.obdapp.ui.theme.ConnectionStatusDisconnected
 
@@ -73,46 +82,76 @@ fun ConnectionScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    val scrollState = rememberScrollState()
     val context = LocalContext.current
+    val corePermissions = rememberCoreBluetoothPermissions()
+    val discoveryPermissions = rememberDiscoveryPermissions()
 
-    var hasPermissions by remember { mutableStateOf(false) }
+    var hasCorePermissions by remember { mutableStateOf(hasAllPermissions(context, corePermissions)) }
+    var hasDiscoveryPermissions by remember { mutableStateOf(hasAllPermissions(context, discoveryPermissions)) }
     var showRationale by remember { mutableStateOf(false) }
     var permissionDenied by remember { mutableStateOf(false) }
-
-    val permissions =
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            arrayOf(
-                Manifest.permission.BLUETOOTH_CONNECT,
-                Manifest.permission.BLUETOOTH_SCAN,
-                Manifest.permission.ACCESS_FINE_LOCATION,
-            )
-        } else {
-            arrayOf(
-                Manifest.permission.BLUETOOTH,
-                Manifest.permission.BLUETOOTH_ADMIN,
-                Manifest.permission.ACCESS_FINE_LOCATION,
-            )
-        }
 
     val permissionLauncher =
         rememberLauncherForActivityResult(
             ActivityResultContracts.RequestMultiplePermissions(),
         ) { permissionsMap ->
-            hasPermissions = permissionsMap.values.all { it }
-            if (!hasPermissions) {
+            hasCorePermissions = permissionsMap.values.all { it }
+            if (!hasCorePermissions) {
                 permissionDenied = true
             } else {
+                viewModel.refreshSystemState()
                 viewModel.loadPairedDevices()
             }
         }
 
+    val discoveryPermissionLauncher =
+        rememberLauncherForActivityResult(
+            ActivityResultContracts.RequestMultiplePermissions(),
+        ) { permissionsMap ->
+            hasDiscoveryPermissions = permissionsMap.values.all { it }
+            if (hasDiscoveryPermissions) {
+                viewModel.startDiscovery()
+            }
+        }
+
+    val enableBluetoothLauncher =
+        rememberLauncherForActivityResult(
+            ActivityResultContracts.StartActivityForResult(),
+        ) {
+            viewModel.refreshSystemState()
+            if (hasCorePermissions) {
+                viewModel.loadPairedDevices()
+            }
+        }
+
+    val enableLocationLauncher =
+        rememberLauncherForActivityResult(
+            ActivityResultContracts.StartActivityForResult(),
+        ) {
+            viewModel.refreshSystemState()
+        }
+
     LaunchedEffect(Unit) {
-        permissionLauncher.launch(permissions)
+        if (!hasCorePermissions) {
+            permissionLauncher.launch(corePermissions)
+        } else {
+            viewModel.refreshSystemState()
+            viewModel.loadPairedDevices()
+        }
     }
 
-    // Refresh devices when app comes to foreground
+    DisposableEffect(Unit) {
+        onDispose {
+            viewModel.stopDiscovery()
+        }
+    }
+
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
-        if (hasPermissions) {
+        hasCorePermissions = hasAllPermissions(context, corePermissions)
+        hasDiscoveryPermissions = hasAllPermissions(context, discoveryPermissions)
+        if (hasCorePermissions) {
+            viewModel.refreshSystemState()
             viewModel.loadPairedDevices()
         }
     }
@@ -130,7 +169,13 @@ fun ConnectionScreen(
         }
     }
 
-    // Permission Rationale Dialog
+    LaunchedEffect(uiState.message) {
+        uiState.message?.let { message ->
+            snackbarHostState.showSnackbar(message)
+            viewModel.clearMessage()
+        }
+    }
+
     if (showRationale) {
         AlertDialog(
             onDismissRequest = { showRationale = false },
@@ -138,15 +183,14 @@ fun ConnectionScreen(
             title = { Text("Bluetooth Permission Required") },
             text = {
                 Text(
-                    "This app needs Bluetooth permissions to scan for and connect to your OBD-II adapter. " +
-                        "Location permission is required for Bluetooth device discovery on Android.",
+                    "This app needs Bluetooth scan and connect permissions to discover and connect to your OBD-II adapter.",
                 )
             },
             confirmButton = {
                 Button(
                     onClick = {
                         showRationale = false
-                        permissionLauncher.launch(permissions)
+                        permissionLauncher.launch(corePermissions)
                     },
                 ) {
                     Text("Grant Permission")
@@ -160,7 +204,6 @@ fun ConnectionScreen(
         )
     }
 
-    // Permission Denied Dialog
     if (permissionDenied) {
         AlertDialog(
             onDismissRequest = { },
@@ -168,15 +211,14 @@ fun ConnectionScreen(
             title = { Text("Permissions Required") },
             text = {
                 Text(
-                    "Bluetooth permissions are required to use this app. Please enable them in Settings. " +
-                        "Without these permissions, the app cannot scan for or connect to OBD-II adapters.",
+                    "Bluetooth permissions are required to discover nearby adapters and connect to them. Please enable them in Settings.",
                 )
             },
             confirmButton = {
                 Button(
                     onClick = {
                         val intent =
-                            android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                            Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
                                 data = android.net.Uri.fromParts("package", context.packageName, null)
                             }
                         context.startActivity(intent)
@@ -199,6 +241,11 @@ fun ConnectionScreen(
         )
     }
 
+    val canConnect =
+        uiState.selectedDevice != null &&
+            uiState.pairedDevices.any { it.address == uiState.selectedDevice?.address } &&
+            !uiState.isLoading
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -209,10 +256,13 @@ fun ConnectionScreen(
                     ),
                 actions = {
                     IconButton(
-                        onClick = { viewModel.loadPairedDevices() },
-                        enabled = !uiState.isLoading,
+                        onClick = {
+                            viewModel.refreshSystemState()
+                            viewModel.loadPairedDevices()
+                        },
+                        enabled = !uiState.isLoading && hasCorePermissions,
                     ) {
-                        Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+                        Icon(Icons.Default.Refresh, contentDescription = "Refresh paired devices")
                     }
                 },
             )
@@ -226,111 +276,203 @@ fun ConnectionScreen(
                     .padding(padding)
                     .padding(16.dp),
         ) {
-            // Status Card
-            ConnectionStatusCard(
-                connectionState = uiState.connectionState,
-                selectedDevice = uiState.selectedDevice,
-            )
+            Column(
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .verticalScroll(scrollState),
+            ) {
+                ConnectionStatusCard(
+                    connectionState = uiState.connectionState,
+                    selectedDevice = uiState.selectedDevice,
+                )
 
-            Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
-            // Devices List
-            if (!hasPermissions) {
-                // Show permission required message
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors =
-                        CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.errorContainer,
-                        ),
-                    shape = RoundedCornerShape(16.dp),
-                ) {
-                    Column(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .padding(24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Warning,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onErrorContainer,
-                            modifier = Modifier.size(48.dp),
+                when {
+                    !hasCorePermissions -> {
+                        PermissionRequiredCard(
+                            onGrantPermissions = { showRationale = true },
                         )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = "Permissions Required",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onErrorContainer,
+                    }
+
+                    !uiState.isBluetoothEnabled -> {
+                        BluetoothDisabledCard(
+                            onEnableBluetooth = {
+                                enableBluetoothLauncher.launch(Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE))
+                            },
                         )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "Please grant Bluetooth permissions to scan for devices",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onErrorContainer,
-                            textAlign = TextAlign.Center,
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Button(
-                            onClick = { showRationale = true },
+                    }
+
+                    else -> {
+                        DeviceSection(
+                            title = "Paired Devices",
                         ) {
-                            Text("Grant Permissions")
+                            when {
+                                uiState.isLoadingPairedDevices -> {
+                                    SectionLoadingState()
+                                }
+
+                                uiState.pairedDevices.isEmpty() -> {
+                                    SectionEmptyState(
+                                        message = "No paired devices found. Scan nearby devices, then pair your adapter in system Bluetooth settings.",
+                                    )
+                                }
+
+                                else -> {
+                                    DeviceList(
+                                        devices = uiState.pairedDevices,
+                                        isSelected = { device -> device.address == uiState.selectedDevice?.address },
+                                        onClick = { device ->
+                                            if (!uiState.isLoading) {
+                                                viewModel.selectDevice(device)
+                                            }
+                                        },
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(20.dp))
+
+                    if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.R && !hasDiscoveryPermissions) {
+                        DeviceSection(
+                            title = "Nearby Devices",
+                            action = {
+                                TextButton(
+                                    onClick = { discoveryPermissionLauncher.launch(discoveryPermissions) },
+                                    enabled = !uiState.isLoading,
+                                ) {
+                                    Text("Grant Location")
+                                }
+                            },
+                        ) {
+                            DiscoveryPermissionRequiredCard(
+                                onGrantPermission = { discoveryPermissionLauncher.launch(discoveryPermissions) },
+                            )
+                        }
+                    } else if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.R && !uiState.isLocationServicesEnabledForDiscovery) {
+                        DeviceSection(
+                            title = "Nearby Devices",
+                            action = {
+                                TextButton(
+                                    onClick = {
+                                        enableLocationLauncher.launch(Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+                                    },
+                                    enabled = !uiState.isLoading,
+                                ) {
+                                    Text("Turn On Location")
+                                }
+                            },
+                        ) {
+                            LocationServicesRequiredCard(
+                                onOpenLocationSettings = {
+                                    enableLocationLauncher.launch(Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+                                },
+                            )
+                        }
+                    } else {
+                        DeviceSection(
+                            title = "Nearby Devices",
+                            action = {
+                                if (uiState.discoveryState is DiscoveryState.Starting || uiState.discoveryState is DiscoveryState.Discovering) {
+                                    TextButton(
+                                        onClick = { viewModel.stopDiscovery() },
+                                        enabled = !uiState.isLoading,
+                                    ) {
+                                        Icon(Icons.Default.Close, contentDescription = null)
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text("Stop")
+                                    }
+                                } else {
+                                    TextButton(
+                                        onClick = {
+                                            if (hasDiscoveryPermissions) {
+                                                viewModel.startDiscovery()
+                                            } else {
+                                                discoveryPermissionLauncher.launch(discoveryPermissions)
+                                            }
+                                        },
+                                        enabled = !uiState.isLoading,
+                                    ) {
+                                        Icon(Icons.Default.Search, contentDescription = null)
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text("Scan Nearby")
+                                    }
+                                }
+                            },
+                        ) {
+                            when (val discoveryState = uiState.discoveryState) {
+                                DiscoveryState.Idle -> {
+                                    SectionEmptyState(
+                                        message = "Tap Scan Nearby to search for nearby Bluetooth OBD adapters.",
+                                    )
+                                }
+
+                                DiscoveryState.Starting -> {
+                                    SectionLoadingState(message = "Starting Bluetooth discovery…")
+                                }
+
+                                is DiscoveryState.Discovering -> {
+                                    if (uiState.nearbyDevices.isEmpty()) {
+                                        SectionLoadingState(message = "Scanning for nearby devices…")
+                                    } else {
+                                        NearbyDeviceList(
+                                            devices = uiState.nearbyDevices,
+                                            pairingDeviceAddress = uiState.pairingDeviceAddress,
+                                            onPairRequested = { device ->
+                                                viewModel.pairDevice(device)
+                                            },
+                                        )
+                                    }
+                                }
+
+                                is DiscoveryState.Finished -> {
+                                    if (uiState.nearbyDevices.isEmpty()) {
+                                        SectionEmptyState(
+                                            message = "No nearby unpaired devices found. If your adapter is already paired, it will appear above.",
+                                        )
+                                    } else {
+                                        NearbyDeviceList(
+                                            devices = uiState.nearbyDevices,
+                                            pairingDeviceAddress = uiState.pairingDeviceAddress,
+                                            onPairRequested = { device ->
+                                                viewModel.pairDevice(device)
+                                            },
+                                        )
+                                    }
+                                }
+
+                                is DiscoveryState.Error -> {
+                                    if (uiState.nearbyDevices.isEmpty()) {
+                                        SectionEmptyState(message = discoveryState.message)
+                                    } else {
+                                        NearbyDeviceList(
+                                            devices = uiState.nearbyDevices,
+                                            pairingDeviceAddress = uiState.pairingDeviceAddress,
+                                            onPairRequested = { device ->
+                                                viewModel.pairDevice(device)
+                                            },
+                                        )
+                                    }
+                                }
+                            }
                         }
                     }
                 }
-            } else {
-                Text(
-                    text = "Paired Devices",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                if (uiState.isScanning) {
-                    Box(
-                        modifier = Modifier.fillMaxWidth(),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        CircularProgressIndicator()
-                    }
-                } else if (uiState.devices.isEmpty()) {
-                    Box(
-                        modifier = Modifier.fillMaxWidth(),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            text = "No paired devices found.\nPair your OBD adapter in system settings.",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(32.dp),
-                        )
-                    }
-                } else {
-                    LazyColumn(
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        items(uiState.devices) { device ->
-                            DeviceItem(
-                                device = device,
-                                isSelected = device == uiState.selectedDevice,
-                                onClick = { if (!uiState.isLoading) viewModel.selectDevice(device) },
-                            )
-                        }
-                    }
                 }
             }
 
-            Spacer(modifier = Modifier.weight(1f))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // Connect Button
             Button(
                 onClick = { viewModel.connect() },
                 modifier =
                     Modifier
                         .fillMaxWidth()
+                        .navigationBarsPadding()
                         .height(56.dp),
-                enabled = uiState.selectedDevice != null && !uiState.isLoading,
+                enabled = canConnect,
                 shape = RoundedCornerShape(16.dp),
             ) {
                 if (uiState.isLoading) {
@@ -356,6 +498,306 @@ fun ConnectionScreen(
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun PermissionRequiredCard(
+    onGrantPermissions: () -> Unit,
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors =
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.errorContainer,
+            ),
+        shape = RoundedCornerShape(16.dp),
+    ) {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Icon(
+                imageVector = Icons.Default.Warning,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onErrorContainer,
+                modifier = Modifier.size(48.dp),
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "Permissions Required",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onErrorContainer,
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Please grant Bluetooth permissions to discover nearby devices and connect to your adapter.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onErrorContainer,
+                textAlign = TextAlign.Center,
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(onClick = onGrantPermissions) {
+                Text("Grant Permissions")
+            }
+        }
+    }
+}
+
+@Composable
+private fun DiscoveryPermissionRequiredCard(
+    onGrantPermission: () -> Unit,
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors =
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+            ),
+        shape = RoundedCornerShape(16.dp),
+    ) {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Icon(
+                imageVector = Icons.Default.Warning,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                modifier = Modifier.size(48.dp),
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "Location permission required for scan",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "On Android 11 and below, Bluetooth discovery needs Location permission. Paired-device connection remains available without scanning.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                textAlign = TextAlign.Center,
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(onClick = onGrantPermission) {
+                Text("Grant Location Permission")
+            }
+        }
+    }
+}
+
+@Composable
+private fun BluetoothDisabledCard(
+    onEnableBluetooth: () -> Unit,
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors =
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+            ),
+        shape = RoundedCornerShape(16.dp),
+    ) {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Icon(
+                imageVector = Icons.Default.Bluetooth,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                modifier = Modifier.size(48.dp),
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "Bluetooth is off",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onTertiaryContainer,
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Enable Bluetooth to discover nearby adapters or connect to a paired device.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onTertiaryContainer,
+                textAlign = TextAlign.Center,
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(onClick = onEnableBluetooth) {
+                Text("Enable Bluetooth")
+            }
+        }
+    }
+}
+
+@Composable
+private fun LocationServicesRequiredCard(
+    onOpenLocationSettings: () -> Unit,
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors =
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+            ),
+        shape = RoundedCornerShape(16.dp),
+    ) {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Icon(
+                imageVector = Icons.Default.Warning,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                modifier = Modifier.size(48.dp),
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "Turn on Location to scan",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "On Android 11 and below, Bluetooth discovery needs Location services enabled. You can still connect to already paired devices.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                textAlign = TextAlign.Center,
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(onClick = onOpenLocationSettings) {
+                Text("Open Location Settings")
+            }
+        }
+    }
+}
+
+@Composable
+private fun DeviceSection(
+    title: String,
+    action: (@Composable () -> Unit)? = null,
+    content: @Composable () -> Unit,
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            action?.invoke()
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+        content()
+    }
+}
+
+@Composable
+private fun SectionLoadingState(message: String = "Loading…") {
+    Box(
+        modifier = Modifier.fillMaxWidth(),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            modifier = Modifier.padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            CircularProgressIndicator()
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = message,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+            )
+        }
+    }
+}
+
+@Composable
+private fun SectionEmptyState(message: String) {
+    Box(
+        modifier = Modifier.fillMaxWidth(),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = message,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(24.dp),
+            textAlign = TextAlign.Center,
+        )
+    }
+}
+
+@Composable
+private fun DeviceList(
+    devices: List<DeviceInfo>,
+    isSelected: (DeviceInfo) -> Boolean,
+    onClick: (DeviceInfo) -> Unit,
+) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        devices.forEach { device ->
+            DeviceItem(
+                device = device,
+                isSelected = isSelected(device),
+                onClick = { onClick(device) },
+            )
+        }
+    }
+}
+
+@Composable
+private fun NearbyDeviceList(
+    devices: List<DeviceInfo>,
+    pairingDeviceAddress: String?,
+    onPairRequested: (DeviceInfo) -> Unit,
+) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        devices.forEach { device ->
+            DeviceItem(
+                device = device,
+                isSelected = false,
+                onClick = { },
+                trailingContent = {
+                    TextButton(
+                        onClick = { onPairRequested(device) },
+                        enabled = pairingDeviceAddress == null,
+                    ) {
+                        if (pairingDeviceAddress == device.address) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(18.dp),
+                                strokeWidth = 2.dp,
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Pairing")
+                        } else {
+                            Text("Pair")
+                        }
+                    }
+                },
+            )
         }
     }
 }
@@ -436,12 +878,13 @@ private fun DeviceItem(
     device: DeviceInfo,
     isSelected: Boolean,
     onClick: () -> Unit,
+    trailingContent: @Composable (() -> Unit)? = null,
 ) {
     Card(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .clickable { onClick() },
+                .clickable(enabled = trailingContent == null) { onClick() },
         colors =
             CardDefaults.cardColors(
                 containerColor =
@@ -487,23 +930,60 @@ private fun DeviceItem(
                 )
             }
 
-            if (isSelected) {
-                Box(
-                    modifier =
-                        Modifier
-                            .size(24.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primary),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Check,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier.size(16.dp),
-                    )
+            when {
+                trailingContent != null -> trailingContent()
+                isSelected -> {
+                    Box(
+                        modifier =
+                            Modifier
+                                .size(24.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primary),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.size(16.dp),
+                        )
+                    }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun rememberCoreBluetoothPermissions(): Array<String> {
+    return remember {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            arrayOf(
+                Manifest.permission.BLUETOOTH_CONNECT,
+                Manifest.permission.BLUETOOTH_SCAN,
+            )
+        } else {
+            emptyArray()
+        }
+    }
+}
+
+@Composable
+private fun rememberDiscoveryPermissions(): Array<String> {
+    return remember {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            emptyArray()
+        } else {
+            arrayOf(Manifest.permission.ACCESS_FINE_LOCATION)
+        }
+    }
+}
+
+private fun hasAllPermissions(
+    context: Context,
+    permissions: Array<String>,
+): Boolean {
+    return permissions.all { permission ->
+        ContextCompat.checkSelfPermission(context, permission) == android.content.pm.PackageManager.PERMISSION_GRANTED
     }
 }
