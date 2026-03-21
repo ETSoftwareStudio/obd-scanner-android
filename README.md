@@ -11,19 +11,18 @@ Open-source **Android OBD2 scanner** sample app showing a production-style integ
 
 This repository is intended to be a canonical reference for developers who need to implement:
 
-- **Bluetooth ELM327 connection** on Android (SPP / Bluetooth Classic)
+- **Bluetooth ELM327 discovery, pairing, and connection** on Android (SPP / Bluetooth Classic)
 - **Live OBD-II PID polling** (speed, RPM, coolant, throttle, etc.)
-- **Vehicle diagnostics** (VIN + DTC parsing)
+- **Vehicle diagnostics** (VIN + DTC parsing + clear DTC)
 - **Jetpack Compose + Hilt + DataStore + Flow** architecture
-- **Quality checks** (Lint, ktlint, detekt, unit tests)
+- **Quality checks and observability** (Lint, ktlint, detekt, unit tests, debug logs, telemetry)
 
 ---
 
 ## Table of Contents
 
-- [Why this repository exists](#why-this-repository-exists)
+- [Overview](#overview)
 - [Quick Start Guide](#quick-start-guide)
-- [Demo](#demo)
 - [Features](#features)
 - [Tech Stack](#tech-stack)
 - [Project Structure](#project-structure)
@@ -45,7 +44,7 @@ This repository is intended to be a canonical reference for developers who need 
 
 ---
 
-## Why this repository exists
+## Overview
 
 Many OBD Android repos are either:
 
@@ -61,6 +60,27 @@ Many OBD Android repos are either:
 - **extensible** (easy to add more commands/transports).
 
 If you're building an app around **ELM327**, **vehicle telemetry**, or **Android diagnostics tools**, this repo is designed to be your starting point.
+
+At a high level, the app is organized around four main user flows:
+
+- **Connection**: discover nearby Bluetooth Classic devices, pair adapters, and establish the RFCOMM/OBD session
+- **Dashboard**: read live vehicle metrics with a polling scheduler tuned for fast/medium/slow sensor updates
+- **Diagnostics**: read VIN + trouble codes and clear DTCs without competing with dashboard polling
+- **Settings**: persist theme, polling interval, auto-connect, and telemetry preferences
+
+Under the hood, the project keeps UI, domain, and data responsibilities separate while still staying practical for a real Android Bluetooth + OBD implementation.
+
+This sample currently targets **Bluetooth Classic (SPP)** adapters. **BLE transport is not implemented** in this repository.
+
+### Screenshots
+
+| Connection | Dashboard |
+|---|---|
+| ![Android OBD2 scanner connection screen with paired Bluetooth ELM327 device](docs/images/connection-screen.png) | ![Android OBD2 scanner live dashboard showing speed RPM and sensor gauges](docs/images/dashboard-screen.png) |
+
+| Diagnostics | Settings |
+|---|---|
+| ![Android OBD2 diagnostics screen with VIN and trouble code status](docs/images/diagnostics-screen.png) | ![Android OBD2 app settings screen with theme refresh interval and auto-connect](docs/images/settings-screen.png) |
 
 ---
 
@@ -136,20 +156,6 @@ The remaining sections in this README cover the implementation in depth, includi
 
 ---
 
-## Demo
-
-### Screenshots
-
-| Connection | Dashboard |
-|---|---|
-| ![Android OBD2 scanner connection screen with paired Bluetooth ELM327 device](docs/images/connection-screen.png) | ![Android OBD2 scanner live dashboard showing speed RPM and sensor gauges](docs/images/dashboard-screen.png) |
-
-| Diagnostics | Settings |
-|---|---|
-| ![Android OBD2 diagnostics screen with VIN and trouble code status](docs/images/diagnostics-screen.png) | ![Android OBD2 app settings screen with theme refresh interval and auto-connect](docs/images/settings-screen.png) |
-
----
-
 ## Features
 
 ### Connection
@@ -161,16 +167,19 @@ The remaining sections in this README cover the implementation in depth, includi
 - Connect/disconnect to ELM327-compatible adapter
 - Connection state (`Disconnected`, `Connecting`, `Connected`, `Error`)
 - Discovery state (`Idle`, `Starting`, `Discovering`, `Finished`, `Error`)
+- Pairing state (`Idle`, `Pairing`, `Paired`, `Error`)
 
 ### Live Dashboard
-- Polling loop with configurable interval
+- Tiered polling loop with configurable base interval
 - Live gauges and sensor cards
 - In-app debug log viewer (command/response/error timeline)
 - Export current debug logs to a `.txt` file via the system document picker
+- Optional structured telemetry capture for command timing, cycle summaries, and metric emissions
 
 ### Diagnostics
 - VIN retrieval
 - Trouble code retrieval (Mode 03)
+- Trouble code clearing (Mode 04)
 - Robust DTC parser:
   - direct standard-code extraction (`[PCBU][0-3][0-9A-F]{3}`)
   - hex fallback decoding to canonical 5-char codes
@@ -180,6 +189,7 @@ The remaining sections in this README cover the implementation in depth, includi
 - Polling interval configuration
 - System/light/dark theme selection
 - Auto-connect to previous device
+- Telemetry logging toggle
 
 ---
 
@@ -187,7 +197,7 @@ The remaining sections in this README cover the implementation in depth, includi
 
 - **Language:** Kotlin
 - **UI:** Jetpack Compose + Material 3
-- **DI:** Hilt
+- **DI:** Hilt + KSP
 - **Concurrency:** Coroutines + Flow
 - **Persistence:** DataStore Preferences
 - **OBD Library:** `com.github.eltonvs:kotlin-obd-api:v1.4.1`
@@ -213,9 +223,18 @@ app/src/main/kotlin/studio/etsoftware/obdapp/
 │   │   └── ObdTransport.kt
 │   ├── di/
 │   │   ├── RepositoryModule.kt
+│   │   ├── SettingsModule.kt
+│   │   ├── TelemetryModule.kt
 │   │   └── TransportModule.kt
-│   └── repository/
-│       └── ObdRepositoryImpl.kt
+│   ├── repository/
+│   │   ├── DashboardPollingScheduler.kt
+│   │   └── ObdRepositoryImpl.kt
+│   ├── settings/
+│   │   └── PollingSettingsRepositoryImpl.kt
+│   └── telemetry/
+│       ├── TelemetryRecorder.kt
+│       ├── TelemetryRepositoryImpl.kt
+│       └── TelemetrySettingsDataSource.kt
 ├── domain/
 │   ├── model/
 │   │   ├── DashboardMetricsSnapshot.kt
@@ -223,9 +242,12 @@ app/src/main/kotlin/studio/etsoftware/obdapp/
 │   │   ├── DiagnosticInfo.kt
 │   │   ├── DiscoveryState.kt
 │   │   ├── PairingState.kt
+│   │   ├── TelemetryEvent.kt
 │   │   └── VehicleMetric.kt
 │   ├── repository/
-│   │   └── ObdRepository.kt
+│   │   ├── ObdRepository.kt
+│   │   ├── PollingSettingsRepository.kt
+│   │   └── TelemetryRepository.kt
 │   └── usecase/
 ├── ui/
 │   ├── components/
@@ -235,6 +257,8 @@ app/src/main/kotlin/studio/etsoftware/obdapp/
 │   │   ├── diagnostics/
 │   │   └── settings/
 │   ├── navigation/
+│   │   ├── NavGraph.kt
+│   │   └── Screen.kt
 │   ├── theme/
 │   └── MainActivity.kt
 ├── util/
@@ -252,8 +276,8 @@ app/src/main/kotlin/studio/etsoftware/obdapp/
 Layered architecture with clean separation:
 
 - **UI layer**: composables + ViewModels (presentation state)
-- **Domain layer**: use cases + repository contract + domain models
-- **Data layer**: repository implementation + transport implementation + external library integration
+- **Domain layer**: use cases + repository contracts + domain models
+- **Data layer**: repository implementations + transport implementation + settings/telemetry integration + external library integration
 
 ### Data flow
 
@@ -269,18 +293,19 @@ Compose Screen
                -> kotlin-obd-api commands
 ```
 
-Supporting UI utilities such as debug log export follow a lighter path:
+Supporting UI utilities such as debug log export and telemetry inspection follow a lighter path:
 
 ```text
 DashboardScreen
    -> DashboardViewModel
-      -> LogManager / LogExportFormatter / LogExporter
+      -> ObserveTelemetryEventsUseCase / LogManager / LogExportFormatter / LogExporter
 ```
 
 ### Why this architecture works
 
 - UI remains free from transport protocol details
 - business actions are explicit and testable
+- polling/diagnostics coordination stays inside the repository layer
 - swapping transport implementation is straightforward
 
 ---
@@ -297,7 +322,7 @@ DashboardScreen
    - starts Classic Bluetooth discovery via `BluetoothAdapter.startDiscovery()`
    - emits `DiscoveryState` updates as devices are found
 4. The ViewModel filters out already-paired devices and renders nearby unpaired devices separately
-5. Nearby unpaired devices can start Android's system Bluetooth pairing flow directly from the app
+5. Nearby unpaired devices can start Android's system Bluetooth pairing flow directly from the app, with bond-state progress reflected in `PairingState`
 
 ## 2) Device connection sequence
 
@@ -317,13 +342,16 @@ DashboardScreen
 
 - Dashboard starts polling only when connected
 - Polling executes on IO coroutine scope
-- Commands are executed each cycle and emitted as domain metrics
+- `DashboardPollingScheduler` staggers metrics by fast/medium/slow tiers instead of sending every command every cycle
+- Polling interval changes can be applied while the polling loop is active
 - Disconnect cancels polling and closes transport safely
 
 ## 4) Diagnostics lifecycle
 
 - `DiagnosticsViewModel` owns diagnostics screen state
 - Reads VIN and trouble codes on demand / when connected
+- Can clear trouble codes through Mode 04
+- Repository pauses dashboard polling during diagnostics operations and resumes afterward when appropriate
 - Applies resilient DTC normalization before UI rendering
 
 ---
@@ -343,6 +371,7 @@ DashboardScreen
 | Fuel level | `FuelLevelCommand` | `012F` |
 | VIN | `VINCommand` | Mode 09 |
 | Trouble codes | `TroubleCodesCommand` | Mode 03 |
+| Clear trouble codes | `ResetTroubleCodesCommand` | Mode 04 |
 
 ---
 
@@ -368,6 +397,7 @@ Defensive checks in data layer:
 - repository/discovery/transport guard sensitive calls with permission checks
 - sensitive Bluetooth calls handle `SecurityException` gracefully
 - discovery receiver is registered only for active scan sessions and unregistered when scanning finishes/stops
+- pairing and connection flows stop discovery before attempting RFCOMM work
 
 ---
 
@@ -375,8 +405,10 @@ Defensive checks in data layer:
 
 - Repository exposes `StateFlow<ConnectionState>` for connection status
 - Repository also exposes `StateFlow<DiscoveryState>` for Bluetooth discovery progress/results
+- Repository also exposes `StateFlow<PairingState>` for Bluetooth pairing progress/results
 - Repository exposes `StateFlow<DashboardMetricsSnapshot>` for dashboard-friendly metric snapshots
 - Low-level metric events are also available as a `Flow<VehicleMetric>` stream
+- Telemetry events are exposed separately via the telemetry repository/use cases when enabled
 - Screens consume state with `collectAsStateWithLifecycle()`
 
 This keeps UI reactive and lifecycle-safe.
@@ -391,11 +423,13 @@ This keeps UI reactive and lifecycle-safe.
 - theme (`system` default)
 - last connected device metadata
 - auto-connect flags
+- telemetry enabled state
+- previous-connection state used by the current auto-connect flow
 
 Auto-connect flow:
 
-- app checks persisted state at startup
-- if enabled and valid device exists, reconnect attempt is triggered
+- dashboard startup checks persisted state before attempting reconnect
+- if enabled and a valid previous device exists, reconnect attempt is triggered
 
 ---
 
@@ -437,9 +471,9 @@ Run full quality pipeline:
 Run individually:
 
 ```bash
-./gradlew testDebugUnitTest
-./gradlew lintDebug
-./gradlew ktlintCheck
+./gradlew app:testDebugUnitTest
+./gradlew app:lint
+./gradlew app:ktlintCheck
 ./gradlew :app:detekt
 ```
 
@@ -453,6 +487,8 @@ Current test coverage includes:
 
 - use case behavior
 - ViewModel state transitions and error handling
+- dashboard polling scheduler behavior
+- debug log export formatting
 
 Frameworks:
 
@@ -481,6 +517,7 @@ Toolchain note:
 
 - ensure Bluetooth is enabled on the phone/tablet
 - on Android 11 and below, ensure system Location is turned on before tapping **Scan Nearby**
+- on Android 11 and below, ensure Location permission is granted before scanning
 - tap **Scan Nearby** and wait for discovery to finish
 - if the adapter appears under nearby devices, tap **Pair** and complete the Android Bluetooth pairing dialog
 - verify Bluetooth permissions are granted
@@ -488,6 +525,7 @@ Toolchain note:
 ### Connection fails quickly
 
 - ensure adapter has power (ignition state)
+- ensure the adapter is paired before connecting
 - ensure no other app is currently connected to adapter
 - unplug/replug adapter and retry
 
