@@ -46,6 +46,7 @@ sealed class Screen(
     )
 
     companion object {
+        const val MAIN_TABS_ROUTE = "main_tabs"
         val bottomNavItems = listOf(Dashboard, Diagnostics, Settings)
     }
 }
