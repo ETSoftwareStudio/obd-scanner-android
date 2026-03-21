@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.eltonvs.obdapp.domain.model.ConnectionState
 import com.eltonvs.obdapp.domain.model.DiagnosticInfo
 import com.eltonvs.obdapp.domain.repository.ObdRepository
+import com.eltonvs.obdapp.domain.usecase.ClearTroubleCodesUseCase
 import com.eltonvs.obdapp.domain.usecase.ReadDiagnosticsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,6 +27,7 @@ class DiagnosticsViewModel
     @Inject
     constructor(
         private val readDiagnosticsUseCase: ReadDiagnosticsUseCase,
+        private val clearTroubleCodesUseCase: ClearTroubleCodesUseCase,
         private val repository: ObdRepository,
     ) : ViewModel() {
         private val _uiState = MutableStateFlow(DiagnosticsUiState())
@@ -46,10 +48,17 @@ class DiagnosticsViewModel
         fun readDiagnostics() {
             viewModelScope.launch {
                 _uiState.update { it.copy(isLoading = true, error = null) }
+                loadDiagnostics()
+            }
+        }
 
-                readDiagnosticsUseCase().fold(
-                    onSuccess = { info ->
-                        _uiState.update { it.copy(diagnosticInfo = info, isLoading = false) }
+        fun clearTroubleCodes() {
+            viewModelScope.launch {
+                _uiState.update { it.copy(isLoading = true, error = null) }
+
+                clearTroubleCodesUseCase().fold(
+                    onSuccess = {
+                        loadDiagnostics()
                     },
                     onFailure = { e ->
                         _uiState.update { it.copy(error = e.message, isLoading = false) }
@@ -60,5 +69,16 @@ class DiagnosticsViewModel
 
         fun clearError() {
             _uiState.update { it.copy(error = null) }
+        }
+
+        private suspend fun loadDiagnostics() {
+            readDiagnosticsUseCase().fold(
+                onSuccess = { info ->
+                    _uiState.update { it.copy(diagnosticInfo = info, isLoading = false) }
+                },
+                onFailure = { e ->
+                    _uiState.update { it.copy(error = e.message, isLoading = false) }
+                },
+            )
         }
     }

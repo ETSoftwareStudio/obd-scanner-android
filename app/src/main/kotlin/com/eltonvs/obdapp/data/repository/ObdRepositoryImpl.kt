@@ -20,6 +20,7 @@ import com.eltonvs.obdapp.util.LogManager
 import com.github.eltonvs.obd.command.Switcher
 import com.github.eltonvs.obd.command.at.ResetAdapterCommand
 import com.github.eltonvs.obd.command.at.SetEchoCommand
+import com.github.eltonvs.obd.command.control.ResetTroubleCodesCommand
 import com.github.eltonvs.obd.command.control.TroubleCodesCommand
 import com.github.eltonvs.obd.command.control.VINCommand
 import com.github.eltonvs.obd.command.engine.MassAirFlowCommand
@@ -171,6 +172,21 @@ class ObdRepositoryImpl
                         ),
                     )
                 } catch (e: Exception) {
+                    Result.failure(e)
+                }
+            }
+
+        override suspend fun clearTroubleCodes(): Result<Unit> =
+            withContext(Dispatchers.IO) {
+                val connection = obdConnection ?: return@withContext Result.failure(Exception("Not connected"))
+
+                try {
+                    logManager.command("04 (Clear trouble codes)")
+                    connection.run(ResetTroubleCodesCommand())
+                    logManager.success("Trouble codes clear command sent")
+                    Result.success(Unit)
+                } catch (e: Exception) {
+                    logManager.error("Failed to clear trouble codes: ${e.message}")
                     Result.failure(e)
                 }
             }
