@@ -21,7 +21,6 @@ import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavDestination.Companion.hierarchy
-import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.eltonvs.obdapp.ui.feature.settings.SettingsViewModel
@@ -48,6 +47,7 @@ fun MainApp(settingsViewModel: SettingsViewModel = hiltViewModel()) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
+    val showBottomBar = currentDestination?.hierarchy?.any { it.route == Screen.MAIN_TABS_ROUTE } == true
 
     val isDarkTheme =
         when (settingsState.theme) {
@@ -64,47 +64,48 @@ fun MainApp(settingsViewModel: SettingsViewModel = hiltViewModel()) {
         ) {
             Scaffold(
                 bottomBar = {
-                    NavigationBar(
-                        containerColor = MaterialTheme.colorScheme.background,
-                    ) {
-                        Screen.bottomNavItems.forEach { screen ->
-                            val selected =
-                                currentDestination?.hierarchy?.any {
-                                    it.route == screen.route
-                                } == true
+                    if (showBottomBar) {
+                        NavigationBar(
+                            containerColor = MaterialTheme.colorScheme.background,
+                        ) {
+                            Screen.bottomNavItems.forEach { screen ->
+                                val selected =
+                                    currentDestination?.hierarchy?.any {
+                                        it.route == screen.route
+                                    } == true
 
-                            NavigationBarItem(
-                                icon = {
-                                    Icon(
-                                        imageVector = if (selected) screen.selectedIcon else screen.unselectedIcon,
-                                        contentDescription = screen.title,
-                                    )
-                                },
-                                label = { Text(screen.title) },
-                                selected = selected,
-                                onClick = {
-                                    navController.navigate(screen.route) {
-                                        popUpTo(navController.graph.findStartDestination().id) {
-                                            saveState = true
+                                NavigationBarItem(
+                                    icon = {
+                                        Icon(
+                                            imageVector = if (selected) screen.selectedIcon else screen.unselectedIcon,
+                                            contentDescription = screen.title,
+                                        )
+                                    },
+                                    label = { Text(screen.title) },
+                                    selected = selected,
+                                    onClick = {
+                                        navController.navigate(screen.route) {
+                                            popUpTo(Screen.MAIN_TABS_ROUTE) {
+                                                saveState = true
+                                            }
+                                            launchSingleTop = true
+                                            restoreState = true
                                         }
-                                        launchSingleTop = true
-                                        restoreState = true
-                                    }
-                                },
-                                colors =
-                                    NavigationBarItemDefaults.colors(
-                                        selectedIconColor = ConnectionStatusConnected,
-                                        selectedTextColor = ConnectionStatusConnected,
-                                        indicatorColor = ConnectionStatusConnected.copy(alpha = 0.2f),
-                                    ),
-                            )
+                                    },
+                                    colors =
+                                        NavigationBarItemDefaults.colors(
+                                            selectedIconColor = ConnectionStatusConnected,
+                                            selectedTextColor = ConnectionStatusConnected,
+                                            indicatorColor = ConnectionStatusConnected.copy(alpha = 0.2f),
+                                        ),
+                                )
+                            }
                         }
                     }
                 },
             ) { innerPadding ->
                 NavGraph(
                     navController = navController,
-                    startDestination = Screen.Connection.route,
                     modifier = Modifier.padding(innerPadding),
                 )
             }
