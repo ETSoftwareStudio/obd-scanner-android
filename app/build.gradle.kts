@@ -55,6 +55,26 @@ android {
     }
 }
 
+val detekt by configurations.creating
+
+tasks.register("detekt", JavaExec::class) {
+    group = "verification"
+    description = "Run Detekt static analysis"
+    classpath = detekt
+    mainClass.set("io.gitlab.arturbosch.detekt.cli.Main")
+    args(
+        "--config",
+        rootProject.file("detekt.yml").absolutePath,
+        "--input",
+        "src/main/kotlin",
+        "--parallel",
+    )
+}
+
+tasks.named("check") {
+    dependsOn("detekt")
+}
+
 dependencies {
     val composeBom = platform("androidx.compose:compose-bom:2024.10.01")
     implementation(composeBom)
@@ -81,6 +101,8 @@ dependencies {
     implementation("com.github.eltonvs:kotlin-obd-api:v1.4.1")
 
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
+
+    detekt("io.gitlab.arturbosch.detekt:detekt-cli:1.23.8")
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("io.mockk:mockk:1.14.9")

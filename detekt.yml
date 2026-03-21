@@ -3,6 +3,13 @@
 build:
   maxIssues: 10
   excludeCorrectable: false
+  excludes:
+    - '**/test/**'
+    - '**/androidTest/**'
+    - '**/.gradle/**'
+    - '**/build/**'
+    - '**/.idea/**'
+    - '**/generated/**'
   weights:
     # Complexity: 2
     # LongParameterList: 3
@@ -49,11 +56,17 @@ complexity:
   LongMethod:
     threshold: 50
   LongParameterList:
-    threshold: 8
+    functionThreshold: 8
+    constructorThreshold: 8
   TooManyFunctions:
-    threshold: 20
+    thresholdInFiles: 20
   ComplexCondition:
     threshold: 5
+
+naming:
+  FunctionNaming:
+    ignoreAnnotated:
+      - 'Composable'
 
 style:
   active: true
@@ -66,10 +79,3 @@ style:
   WildcardImport:
     active: false
 
-exclusions:
-  - '**/test/**'
-  - '**/androidTest/**'
-  - '**/.gradle/**'
-  - '**/build/**'
-  - '**/.idea/**'
-  - '**/generated/**'

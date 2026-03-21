@@ -5,11 +5,9 @@ import androidx.lifecycle.viewModelScope
 import com.eltonvs.obdapp.domain.model.ConnectionState
 import com.eltonvs.obdapp.domain.model.DeviceInfo
 import com.eltonvs.obdapp.domain.model.DeviceType
-import com.eltonvs.obdapp.domain.model.DiagnosticInfo
 import com.eltonvs.obdapp.domain.repository.ObdRepository
 import com.eltonvs.obdapp.domain.usecase.ConnectDeviceUseCase
 import com.eltonvs.obdapp.domain.usecase.DisconnectUseCase
-import com.eltonvs.obdapp.domain.usecase.ReadDiagnosticsUseCase
 import com.eltonvs.obdapp.domain.usecase.ReadMetricsUseCase
 import com.eltonvs.obdapp.util.LogManager
 import com.eltonvs.obdapp.util.PreferencesManager
@@ -30,10 +28,8 @@ data class DashboardUiState(
     val intakeTemp: String = "--",
     val maf: String = "--",
     val fuel: String = "--",
-    val diagnosticInfo: DiagnosticInfo? = null,
     val connectionState: ConnectionState = ConnectionState.Disconnected,
     val isPolling: Boolean = false,
-    val isLoading: Boolean = false,
     val autoConnectEnabled: Boolean = true,
 )
 
@@ -42,7 +38,6 @@ class DashboardViewModel
     @Inject
     constructor(
         private val readMetricsUseCase: ReadMetricsUseCase,
-        private val readDiagnosticsUseCase: ReadDiagnosticsUseCase,
         private val disconnectUseCase: DisconnectUseCase,
         private val connectDeviceUseCase: ConnectDeviceUseCase,
         private val repository: ObdRepository,
@@ -132,20 +127,6 @@ class DashboardViewModel
             viewModelScope.launch {
                 stopPolling()
                 disconnectUseCase()
-            }
-        }
-
-        fun readDiagnostics() {
-            viewModelScope.launch {
-                _uiState.update { it.copy(isLoading = true) }
-                readDiagnosticsUseCase().fold(
-                    onSuccess = { info ->
-                        _uiState.update { it.copy(diagnosticInfo = info, isLoading = false) }
-                    },
-                    onFailure = {
-                        _uiState.update { it.copy(isLoading = false) }
-                    },
-                )
             }
         }
     }

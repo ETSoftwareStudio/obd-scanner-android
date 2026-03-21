@@ -31,7 +31,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -42,6 +41,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.eltonvs.obdapp.domain.model.ConnectionState
 import com.eltonvs.obdapp.ui.components.GaugeCard
 import com.eltonvs.obdapp.ui.components.MetricCard
@@ -49,7 +49,6 @@ import com.eltonvs.obdapp.ui.components.MetricIcon
 import com.eltonvs.obdapp.ui.theme.ConnectionStatusConnected
 import com.eltonvs.obdapp.ui.theme.ConnectionStatusDisconnected
 import com.eltonvs.obdapp.ui.theme.ConnectionStatusError
-import com.eltonvs.obdapp.util.LogManager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -57,7 +56,7 @@ fun DashboardScreen(
     viewModel: DashboardViewModel = hiltViewModel(),
     onConnectClick: () -> Unit = {},
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showDebugLog by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -247,9 +246,10 @@ private fun ConnectionIndicator(
 @Composable
 private fun NotConnectedCard(onConnectClick: () -> Unit) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onConnectClick() },
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable { onConnectClick() },
         colors =
             CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceVariant,

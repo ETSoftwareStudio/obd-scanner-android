@@ -29,7 +29,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,9 +36,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.eltonvs.obdapp.ui.theme.GaugeGreen
 import com.eltonvs.obdapp.ui.theme.GaugeRed
-import com.eltonvs.obdapp.ui.theme.GaugeYellow
 import com.eltonvs.obdapp.util.LogEntry
 import com.eltonvs.obdapp.util.LogManager
 import com.eltonvs.obdapp.util.LogType
@@ -50,7 +49,7 @@ fun DebugLogBottomSheet(
     logManager: LogManager,
     onDismiss: () -> Unit,
 ) {
-    val logs by logManager.logs.collectAsState()
+    val logs by logManager.logs.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
 
     LaunchedEffect(logs.size) {
@@ -66,10 +65,11 @@ fun DebugLogBottomSheet(
         sheetState = sheetState,
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(500.dp)
-                .padding(horizontal = 16.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .height(500.dp)
+                    .padding(horizontal = 16.dp),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -138,14 +138,15 @@ private fun LogEntryItem(entry: LogEntry) {
         }
 
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 2.dp)
-            .background(
-                color = backgroundColor,
-                shape = RoundedCornerShape(4.dp),
-            )
-            .padding(horizontal = 8.dp, vertical = 4.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = 2.dp)
+                .background(
+                    color = backgroundColor,
+                    shape = RoundedCornerShape(4.dp),
+                )
+                .padding(horizontal = 8.dp, vertical = 4.dp),
         verticalAlignment = Alignment.Top,
     ) {
         Text(

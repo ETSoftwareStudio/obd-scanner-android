@@ -33,7 +33,7 @@ class PreferencesManager
             private val AUTO_CONNECT_KEY = booleanPreferencesKey("auto_connect")
 
             const val DEFAULT_POLLING_INTERVAL = 1000L
-            const val DEFAULT_THEME = "dark"
+            const val DEFAULT_THEME = "system"
         }
 
         val pollingInterval: Flow<Long> =
