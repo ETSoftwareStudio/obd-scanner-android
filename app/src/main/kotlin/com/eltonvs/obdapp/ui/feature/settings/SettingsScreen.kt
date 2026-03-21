@@ -14,6 +14,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bluetooth
+import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Info
@@ -132,6 +133,39 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                     Switch(
                         checked = uiState.autoConnect,
                         onCheckedChange = { viewModel.setAutoConnect(it) },
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Telemetry Section
+            SettingsSection(
+                title = "Telemetry",
+                icon = Icons.Default.BugReport,
+            ) {
+                Row(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .clickable { viewModel.setTelemetryEnabled(!uiState.telemetryEnabled) }
+                            .padding(horizontal = 8.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Enable telemetry logging",
+                            style = MaterialTheme.typography.bodyLarge,
+                        )
+                        Text(
+                            text = "Collect per-command timings and export telemetry analysis in debug logs",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Switch(
+                        checked = uiState.telemetryEnabled,
+                        onCheckedChange = { viewModel.setTelemetryEnabled(it) },
                     )
                 }
             }

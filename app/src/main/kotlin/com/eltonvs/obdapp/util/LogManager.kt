@@ -22,6 +22,7 @@ enum class LogType {
     RESPONSE,
     ERROR,
     SUCCESS,
+    TELEMETRY,
 }
 
 @Singleton
@@ -60,6 +61,8 @@ class LogManager
         fun error(message: String) = log(LogType.ERROR, message)
 
         fun success(message: String) = log(LogType.SUCCESS, message)
+
+        fun telemetry(message: String) = log(LogType.TELEMETRY, message)
 
         fun clear() {
             _logs.update { emptyList() }
