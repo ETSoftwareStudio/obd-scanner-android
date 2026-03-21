@@ -8,12 +8,12 @@ import com.eltonvs.obdapp.domain.repository.ObdRepository
 import com.eltonvs.obdapp.domain.usecase.ClearTroubleCodesUseCase
 import com.eltonvs.obdapp.domain.usecase.ReadDiagnosticsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 data class DiagnosticsUiState(
     val diagnosticInfo: DiagnosticInfo? = null,
@@ -33,6 +33,9 @@ class DiagnosticsViewModel
         private val _uiState = MutableStateFlow(DiagnosticsUiState())
         val uiState: StateFlow<DiagnosticsUiState> = _uiState.asStateFlow()
 
+        private var hasLoadedForCurrentConnection = false
+        private var wasConnected = false
+
         init {
             observeConnectionState()
         }
@@ -41,8 +44,25 @@ class DiagnosticsViewModel
             viewModelScope.launch {
                 repository.connectionState.collect { state ->
                     _uiState.update { it.copy(connectionState = state) }
+
+                    val isConnected = state is ConnectionState.Connected
+                    if (isConnected && !wasConnected) {
+                        readDiagnosticsIfNeeded()
+                    }
+                    if (!isConnected) {
+                        hasLoadedForCurrentConnection = false
+                    }
+
+                    wasConnected = isConnected
                 }
             }
+        }
+
+        private fun readDiagnosticsIfNeeded() {
+            if (hasLoadedForCurrentConnection || _uiState.value.isLoading) {
+                return
+            }
+            readDiagnostics()
         }
 
         fun readDiagnostics() {
@@ -74,6 +94,7 @@ class DiagnosticsViewModel
         private suspend fun loadDiagnostics() {
             readDiagnosticsUseCase().fold(
                 onSuccess = { info ->
+                    hasLoadedForCurrentConnection = true
                     _uiState.update { it.copy(diagnosticInfo = info, isLoading = false) }
                 },
                 onFailure = { e ->
