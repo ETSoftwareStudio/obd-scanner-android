@@ -10,12 +10,12 @@ import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.content.ContextCompat
 import com.eltonvs.obdapp.domain.model.DeviceInfo
+import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.InputStream
 import java.io.OutputStream
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -44,6 +44,10 @@ class BluetoothTransport
                         BluetoothAdapter.getDefaultAdapter()
                             ?: return@withContext Result.failure(Exception("Bluetooth not available"))
 
+                    if (hasBluetoothScanPermission()) {
+                        bluetoothAdapter.cancelDiscovery()
+                    }
+
                     val bluetoothDevice: BluetoothDevice = bluetoothAdapter.getRemoteDevice(device.address)
 
                     socket?.close()
@@ -65,7 +69,7 @@ class BluetoothTransport
                     inputStream?.close()
                     outputStream?.close()
                     socket?.close()
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                     // Ignore close exceptions
                 } finally {
                     inputStream = null
@@ -80,6 +84,14 @@ class BluetoothTransport
                 ContextCompat.checkSelfPermission(
                     appContext,
                     Manifest.permission.BLUETOOTH_CONNECT,
+                ) == PackageManager.PERMISSION_GRANTED
+        }
+
+        private fun hasBluetoothScanPermission(): Boolean {
+            return Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
+                ContextCompat.checkSelfPermission(
+                    appContext,
+                    Manifest.permission.BLUETOOTH_SCAN,
                 ) == PackageManager.PERMISSION_GRANTED
         }
 

@@ -7,11 +7,14 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.content.ContextCompat
+import com.eltonvs.obdapp.data.connection.BluetoothDiscoveryManager
 import com.eltonvs.obdapp.data.connection.ObdTransport
 import com.eltonvs.obdapp.domain.model.ConnectionState
 import com.eltonvs.obdapp.domain.model.DeviceInfo
 import com.eltonvs.obdapp.domain.model.DeviceType
 import com.eltonvs.obdapp.domain.model.DiagnosticInfo
+import com.eltonvs.obdapp.domain.model.DiscoveryState
+import com.eltonvs.obdapp.domain.model.PairingState
 import com.eltonvs.obdapp.domain.model.TroubleCode
 import com.eltonvs.obdapp.domain.model.TroubleCodeType
 import com.eltonvs.obdapp.domain.model.VehicleMetric
@@ -32,6 +35,8 @@ import com.github.eltonvs.obd.command.temperature.AirIntakeTemperatureCommand
 import com.github.eltonvs.obd.command.temperature.EngineCoolantTemperatureCommand
 import com.github.eltonvs.obd.connection.ObdDeviceConnection
 import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -45,8 +50,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import javax.inject.Inject
-import javax.inject.Singleton
 
 @Singleton
 class ObdRepositoryImpl
@@ -54,6 +57,7 @@ class ObdRepositoryImpl
     constructor(
         @ApplicationContext private val appContext: Context,
         private val transport: ObdTransport,
+        private val discoveryManager: BluetoothDiscoveryManager,
         private val logManager: LogManager,
     ) : ObdRepository {
         private var obdConnection: ObdDeviceConnection? = null
@@ -62,11 +66,26 @@ class ObdRepositoryImpl
 
         private val _connectionState = MutableStateFlow<ConnectionState>(ConnectionState.Disconnected)
         override val connectionState: StateFlow<ConnectionState> = _connectionState.asStateFlow()
+        override val discoveryState: StateFlow<DiscoveryState> = discoveryManager.discoveryState
+        override val pairingState: StateFlow<PairingState> = discoveryManager.pairingState
 
         private val _metricsFlow = MutableSharedFlow<VehicleMetric>(replay = 1, extraBufferCapacity = 64)
         private val dtcRegex = Regex("[PCBU][0-3][0-9A-F]{3}")
 
         override val vehicleMetrics: Flow<VehicleMetric> = _metricsFlow.asSharedFlow()
+
+        override fun isBluetoothEnabled(): Boolean = discoveryManager.isBluetoothEnabled()
+
+        override fun isLocationServicesEnabledForDiscovery(): Boolean =
+            discoveryManager.isLocationServicesEnabledForDiscovery()
+
+        override fun startDiscovery(): Result<Unit> = discoveryManager.startDiscovery()
+
+        override fun stopDiscovery() = discoveryManager.stopDiscovery()
+
+        override fun pairDevice(device: DeviceInfo): Result<Unit> = discoveryManager.pairDevice(device)
+
+        override fun clearPairingState() = discoveryManager.clearPairingState()
 
         @Suppress("DEPRECATION")
         @SuppressLint("MissingPermission")
@@ -78,6 +97,10 @@ class ObdRepositoryImpl
                 }
 
                 val adapter = BluetoothAdapter.getDefaultAdapter() ?: return@withContext emptyList()
+                if (!adapter.isEnabled) {
+                    logManager.error("Bluetooth is disabled")
+                    return@withContext emptyList()
+                }
 
                 try {
                     adapter.bondedDevices?.map { bluetoothDevice ->
@@ -94,6 +117,7 @@ class ObdRepositoryImpl
             }
 
         override suspend fun connect(device: DeviceInfo): Result<Unit> {
+            stopDiscovery()
             _connectionState.value = ConnectionState.Connecting
             logManager.info("Connecting to ${device.name} (${device.address})...")
 

@@ -83,23 +83,26 @@ If you're new to Android OBD2 apps, start here first. This section is intentiona
 
 Install and open the app from Android Studio (or install APK via adb).
 
-### 3) Pair your adapter first (important)
+### 3) Discover or pair your adapter (important)
 
 Before using the app:
 
-1. Open Android Bluetooth settings
-2. Pair with your OBD adapter
-3. Return to the app
+1. Open the app's **Connection** screen
+2. Grant the requested Bluetooth permissions
+3. Use **Scan Nearby** to discover nearby adapters
+4. If your adapter is not already bonded, tap **Pair** from the nearby devices list and confirm the Android Bluetooth dialog
+5. Return to the app and select the paired adapter
 
-The app reads from **paired devices** (it does not run active Bluetooth discovery yet).
+The app **discovers nearby Bluetooth Classic devices**, initiates **system pairing** for nearby devices, and connects to **paired devices** for the RFCOMM/OBD session.
 
 ### 4) First-run walkthrough
 
 1. Open **Connection** screen
-2. Grant requested Bluetooth/location permissions
-3. Select your paired OBD adapter
-4. Tap **Connect**
-5. Once connected, open:
+2. Grant requested Bluetooth permissions
+3. Optionally tap **Scan Nearby** to confirm your adapter is visible
+4. Select your paired OBD adapter
+5. Tap **Connect**
+6. Once connected, open:
    - **Dashboard** for live metrics (speed/RPM/etc.)
    - **Diagnostics** for VIN and DTCs
 
@@ -150,10 +153,14 @@ The remaining sections in this README cover the implementation in depth, includi
 ## Features
 
 ### Connection
-- Runtime permission request flow for Bluetooth access
+- Runtime permission request flow for Bluetooth discovery and connection
 - List paired devices
+- Scan nearby Bluetooth Classic devices from inside the app
+- Start Bluetooth pairing for nearby devices from inside the app (system pairing dialog)
+- Show pairing progress and refresh paired devices when bonding completes
 - Connect/disconnect to ELM327-compatible adapter
 - Connection state (`Disconnected`, `Connecting`, `Connected`, `Error`)
+- Discovery state (`Idle`, `Starting`, `Discovering`, `Finished`, `Error`)
 
 ### Live Dashboard
 - Polling loop with configurable interval
@@ -200,6 +207,7 @@ Build configuration:
 app/src/main/kotlin/com/eltonvs/obdapp/
 ├── data/
 │   ├── connection/
+│   │   ├── BluetoothDiscoveryManager.kt
 │   │   ├── ObdTransport.kt
 │   │   └── BluetoothTransport.kt
 │   ├── di/
@@ -209,6 +217,7 @@ app/src/main/kotlin/com/eltonvs/obdapp/
 │       └── ObdRepositoryImpl.kt
 ├── domain/
 │   ├── model/
+│   │   └── DiscoveryState.kt
 │   ├── repository/
 │   │   └── ObdRepository.kt
 │   └── usecase/
@@ -260,26 +269,40 @@ Compose Screen
 
 ## Bluetooth + OBD Integration Deep Dive
 
-## 1) Device connection sequence
+## 1) Device discovery sequence
+
+1. User taps **Scan Nearby** in `ConnectionScreen`
+2. `ConnectionViewModel.startDiscovery()` delegates to `ObdRepository.startDiscovery()`
+3. `BluetoothDiscoveryManager`:
+   - validates Bluetooth scan/connect permissions
+   - registers a short-lived broadcast receiver for discovery events
+   - starts Classic Bluetooth discovery via `BluetoothAdapter.startDiscovery()`
+   - emits `DiscoveryState` updates as devices are found
+4. The ViewModel filters out already-paired devices and renders nearby unpaired devices separately
+5. Nearby unpaired devices can start Android's system Bluetooth pairing flow directly from the app
+
+## 2) Device connection sequence
 
 1. User selects a paired adapter in `ConnectionScreen`
 2. `ConnectionViewModel.connect()` invokes `ConnectDeviceUseCase`
 3. `ObdRepositoryImpl.connect()`:
+   - stops any active Bluetooth discovery first
    - validates `BLUETOOTH_CONNECT` permission
    - delegates socket creation/connection to `BluetoothTransport`
+   - `BluetoothTransport` defensively cancels discovery before RFCOMM connect
    - creates `ObdDeviceConnection(inputStream, outputStream)`
    - performs adapter bootstrap:
      - `ATZ` (`ResetAdapterCommand`)
      - `ATE0` (`SetEchoCommand(Switcher.OFF)`)
 
-## 2) Polling lifecycle
+## 3) Polling lifecycle
 
 - Dashboard starts polling only when connected
 - Polling executes on IO coroutine scope
 - Commands are executed each cycle and emitted as domain metrics
 - Disconnect cancels polling and closes transport safely
 
-## 3) Diagnostics lifecycle
+## 4) Diagnostics lifecycle
 
 - `DiagnosticsViewModel` owns diagnostics screen state
 - Reads VIN and trouble codes on demand / when connected
@@ -311,22 +334,29 @@ Manifest permissions:
 
 - `BLUETOOTH` / `BLUETOOTH_ADMIN` (for API <= 30)
 - `BLUETOOTH_CONNECT`
-- `BLUETOOTH_SCAN`
-- `ACCESS_FINE_LOCATION`
-- `ACCESS_COARSE_LOCATION`
+- `BLUETOOTH_SCAN` (`neverForLocation`)
+- `ACCESS_FINE_LOCATION` (API <= 30 only, for discovery)
 
 Runtime permission request is handled in `ConnectionScreen`.
 
+Runtime behavior:
+
+- API 31+: request `BLUETOOTH_SCAN` + `BLUETOOTH_CONNECT`
+- API <= 30: request location permission when starting Bluetooth discovery
+- API <= 30: Bluetooth discovery also requires system Location services to be turned on
+
 Defensive checks in data layer:
 
-- repository/transport guard sensitive calls with permission checks
+- repository/discovery/transport guard sensitive calls with permission checks
 - sensitive Bluetooth calls handle `SecurityException` gracefully
+- discovery receiver is registered only for active scan sessions and unregistered when scanning finishes/stops
 
 ---
 
 ## State Management
 
 - Repository exposes `StateFlow<ConnectionState>` for connection status
+- Repository also exposes `StateFlow<DiscoveryState>` for Bluetooth discovery progress/results
 - Metrics are streamed as Flow events
 - Screens consume state with `collectAsStateWithLifecycle()`
 
@@ -360,9 +390,10 @@ Auto-connect flow:
 
 ### Pairing
 
-1. Pair adapter via Android system Bluetooth settings first
-2. Open app and grant requested permissions
-3. Select paired adapter and connect
+1. Open app and grant requested permissions
+2. Use **Scan Nearby** to confirm the adapter is visible
+3. Tap **Pair** for a nearby device and confirm the Android Bluetooth pairing dialog
+4. The app refreshes the paired list when bonding completes; select the paired adapter and connect
 
 ---
 
@@ -415,8 +446,8 @@ Frameworks:
 
 ## Compatibility Notes
 
-- This sample currently targets **Bluetooth Classic (SPP)** transport
-- BLE transport is not yet implemented in this repository
+- This sample targets **Bluetooth Classic (SPP)** transport
+- BLE transport is not implemented in this repository
 - Not all ECUs expose all PIDs; missing sensor values may be expected on some vehicles
 
 Toolchain note:
@@ -429,7 +460,10 @@ Toolchain note:
 
 ### Adapter not listed
 
-- ensure adapter is paired at OS level first
+- ensure Bluetooth is enabled on the phone/tablet
+- on Android 11 and below, ensure system Location is turned on before tapping **Scan Nearby**
+- tap **Scan Nearby** and wait for discovery to finish
+- if the adapter appears under nearby devices, tap **Pair** and complete the Android Bluetooth pairing dialog
 - verify Bluetooth permissions are granted
 
 ### Connection fails quickly
