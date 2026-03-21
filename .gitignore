@@ -78,3 +78,4 @@ lint/tmp/
 # Local agent/runtime artifacts
 .pi/
 pulled-logs/
+.agents/
