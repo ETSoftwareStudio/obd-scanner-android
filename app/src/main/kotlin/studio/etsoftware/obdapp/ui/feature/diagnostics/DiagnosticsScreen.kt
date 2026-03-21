@@ -1,0 +1,420 @@
+package studio.etsoftware.obdapp.ui.feature.diagnostics
+
+import android.widget.Toast
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.DeleteSweep
+import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import studio.etsoftware.obdapp.domain.model.ConnectionState
+import studio.etsoftware.obdapp.domain.model.DiagnosticInfo
+import studio.etsoftware.obdapp.domain.model.TroubleCode
+import studio.etsoftware.obdapp.domain.model.TroubleCodeType
+import studio.etsoftware.obdapp.ui.theme.GaugeGreen
+import studio.etsoftware.obdapp.ui.theme.GaugeRed
+import studio.etsoftware.obdapp.ui.theme.GaugeYellow
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DiagnosticsScreen(
+    viewModel: DiagnosticsViewModel = hiltViewModel(),
+    onConnectClick: () -> Unit = {},
+) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(uiState.error) {
+        uiState.error?.let { error ->
+            snackbarHostState.showSnackbar(error)
+            viewModel.clearError()
+        }
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Diagnostics") },
+                colors =
+                    TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.background,
+                    ),
+                actions = {
+                    val diagnosticInfo = uiState.diagnosticInfo
+                    if (diagnosticInfo != null) {
+                        if (uiState.isLoading) {
+                            CircularProgressIndicator(
+                                modifier =
+                                    Modifier
+                                        .size(24.dp)
+                                        .padding(end = 12.dp),
+                                strokeWidth = 2.dp,
+                            )
+                        } else {
+                            IconButton(
+                                onClick = { viewModel.clearTroubleCodes() },
+                                enabled =
+                                    uiState.connectionState is ConnectionState.Connected &&
+                                        diagnosticInfo.troubleCodes.isNotEmpty(),
+                            ) {
+                                Icon(Icons.Default.DeleteSweep, contentDescription = "Clear DTCs")
+                            }
+
+                            IconButton(
+                                onClick = { viewModel.readDiagnostics() },
+                                enabled = uiState.connectionState is ConnectionState.Connected,
+                            ) {
+                                Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+                            }
+                        }
+                    }
+                },
+            )
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        containerColor = MaterialTheme.colorScheme.background,
+    ) { padding ->
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(16.dp),
+        ) {
+            if (uiState.connectionState !is ConnectionState.Connected) {
+                NotConnectedCard(onConnectClick = onConnectClick)
+            } else {
+                uiState.diagnosticInfo?.let { info ->
+                    DiagnosticContent(info = info)
+                } ?: run {
+                    if (uiState.isLoading) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            CircularProgressIndicator()
+                        }
+                    } else {
+                        InfoCard()
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DiagnosticContent(info: DiagnosticInfo) {
+    LazyColumn(
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        // VIN Card
+        item {
+            VinCard(vin = info.vin)
+        }
+
+        // Status Card
+        item {
+            StatusCard(info = info)
+        }
+
+        // DTCs
+        if (info.troubleCodes.isNotEmpty()) {
+            item {
+                Text(
+                    text = "Trouble Codes (${info.dtcCount})",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            items(info.troubleCodes) { dtc ->
+                DtcCard(dtc = dtc)
+            }
+        }
+    }
+}
+
+@Composable
+private fun VinCard(vin: String) {
+    val clipboardManager = LocalClipboardManager.current
+    val context = LocalContext.current
+
+    Card(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable(enabled = vin.isNotBlank()) {
+                    clipboardManager.setText(AnnotatedString(vin))
+                    Toast.makeText(context, "VIN copied to clipboard", Toast.LENGTH_SHORT).show()
+                },
+        colors =
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+            ),
+        shape = RoundedCornerShape(16.dp),
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+        ) {
+            Text(
+                text = "Vehicle Identification Number",
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = vin.ifBlank { "N/A" },
+                style =
+                    MaterialTheme.typography.titleLarge.copy(
+                        fontFamily = FontFamily.Monospace,
+                        fontWeight = FontWeight.Bold,
+                    ),
+                color =
+                    if (vin.isNotBlank()) {
+                        MaterialTheme.colorScheme.onSurface
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+            )
+        }
+    }
+}
+
+@Composable
+private fun StatusCard(info: DiagnosticInfo) {
+    val (icon, color, text) =
+        if (info.milStatus) {
+            Triple(Icons.Default.Warning, GaugeRed, "Malfunction Indicator Lamp ON")
+        } else {
+            Triple(Icons.Default.CheckCircle, GaugeGreen, "No Issues Detected")
+        }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors =
+            CardDefaults.cardColors(
+                containerColor = color.copy(alpha = 0.1f),
+            ),
+        shape = RoundedCornerShape(16.dp),
+    ) {
+        Row(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = color,
+                modifier = Modifier.size(32.dp),
+            )
+            Spacer(modifier = Modifier.width(16.dp))
+            Column {
+                Text(
+                    text = text,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = color,
+                )
+                Text(
+                    text = "${info.dtcCount} trouble code(s) found",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun DtcCard(dtc: TroubleCode) {
+    val typeColor =
+        when (dtc.type) {
+            TroubleCodeType.CURRENT -> GaugeRed
+            TroubleCodeType.PENDING -> GaugeYellow
+            TroubleCodeType.PERMANENT -> GaugeRed
+        }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors =
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface,
+            ),
+        shape = RoundedCornerShape(12.dp),
+    ) {
+        Row(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                modifier =
+                    Modifier
+                        .size(8.dp)
+                        .clip(CircleShape)
+                        .background(typeColor),
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = dtc.code,
+                    style =
+                        MaterialTheme.typography.titleMedium.copy(
+                            fontFamily = FontFamily.Monospace,
+                            fontWeight = FontWeight.Bold,
+                        ),
+                )
+                Text(
+                    text = dtc.description,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Box(
+                modifier =
+                    Modifier
+                        .background(
+                            color = typeColor.copy(alpha = 0.2f),
+                            shape = RoundedCornerShape(8.dp),
+                        )
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+            ) {
+                Text(
+                    text = dtc.type.name,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = typeColor,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun InfoCard() {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors =
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+            ),
+        shape = RoundedCornerShape(16.dp),
+    ) {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Icon(
+                imageVector = Icons.Default.Info,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(48.dp),
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "No Diagnostics Available",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+            )
+            Text(
+                text = "Diagnostics will be retrieved automatically when connected",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun NotConnectedCard(onConnectClick: () -> Unit) {
+    Card(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable { onConnectClick() },
+        colors =
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+            ),
+        shape = RoundedCornerShape(16.dp),
+    ) {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Icon(
+                imageVector = Icons.Default.Error,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(48.dp),
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "Not Connected",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+            )
+            Text(
+                text = "Connect to an OBD device to read diagnostics",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}

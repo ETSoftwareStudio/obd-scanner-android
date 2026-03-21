@@ -205,7 +205,7 @@ Build configuration:
 ## Project Structure
 
 ```text
-app/src/main/kotlin/com/eltonvs/obdapp/
+app/src/main/kotlin/studio/etsoftware/obdapp/
 ├── data/
 │   ├── connection/
 │   │   ├── BluetoothDiscoveryManager.kt
