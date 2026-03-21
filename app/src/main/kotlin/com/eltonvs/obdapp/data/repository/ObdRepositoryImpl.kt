@@ -6,6 +6,7 @@ import android.bluetooth.BluetoothAdapter
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
+import android.os.SystemClock
 import androidx.core.content.ContextCompat
 import com.eltonvs.obdapp.data.connection.BluetoothDiscoveryManager
 import com.eltonvs.obdapp.data.connection.ObdTransport
@@ -46,6 +47,7 @@ import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -55,6 +57,8 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 @Singleton
@@ -76,6 +80,8 @@ class ObdRepositoryImpl
         private var obdConnection: ObdDeviceConnection? = null
         private val scope = CoroutineScope(Dispatchers.IO)
         private var pollingJob: Job? = null
+        private val pollingLifecycleMutex = Mutex()
+        private val connectionAccessMutex = Mutex()
 
         private val _connectionState = MutableStateFlow<ConnectionState>(ConnectionState.Disconnected)
         override val connectionState: StateFlow<ConnectionState> = _connectionState.asStateFlow()
@@ -165,25 +171,27 @@ class ObdRepositoryImpl
             obdConnection = ObdDeviceConnection(inputStream, outputStream)
 
             try {
-                logManager.command("ATZ (Reset adapter)")
-                traceCommand(
-                    context = TelemetryContext.INIT,
-                    cycleId = null,
-                    rawPid = "ATZ",
-                    commandName = "ResetAdapterCommand",
-                    block = { obdConnection?.run(ResetAdapterCommand()) ?: error("No OBD connection") },
-                    preview = { it.value },
-                )
+                withConnectionAccess {
+                    logManager.command("ATZ (Reset adapter)")
+                    traceCommand(
+                        context = TelemetryContext.INIT,
+                        cycleId = null,
+                        rawPid = "ATZ",
+                        commandName = "ResetAdapterCommand",
+                        block = { obdConnection?.run(ResetAdapterCommand()) ?: error("No OBD connection") },
+                        preview = { it.value },
+                    )
 
-                logManager.command("ATE0 (Echo off)")
-                traceCommand(
-                    context = TelemetryContext.INIT,
-                    cycleId = null,
-                    rawPid = "ATE0",
-                    commandName = "SetEchoCommand",
-                    block = { obdConnection?.run(SetEchoCommand(Switcher.OFF)) ?: error("No OBD connection") },
-                    preview = { it.value },
-                )
+                    logManager.command("ATE0 (Echo off)")
+                    traceCommand(
+                        context = TelemetryContext.INIT,
+                        cycleId = null,
+                        rawPid = "ATE0",
+                        commandName = "SetEchoCommand",
+                        block = { obdConnection?.run(SetEchoCommand(Switcher.OFF)) ?: error("No OBD connection") },
+                        preview = { it.value },
+                    )
+                }
 
                 _connectionState.value = ConnectionState.Connected
                 logManager.success("Connected to ${device.name}")
@@ -197,52 +205,55 @@ class ObdRepositoryImpl
 
         override suspend fun disconnect() {
             logManager.info("Disconnecting...")
-            pollingJob?.cancel()
-            pollingJob = null
-            obdConnection = null
-            transport.disconnect()
+            stopPolling()
+            withConnectionAccess {
+                obdConnection = null
+                transport.disconnect()
+            }
             _connectionState.value = ConnectionState.Disconnected
             logManager.info("Disconnected")
         }
 
         override suspend fun readDiagnosticInfo(): Result<DiagnosticInfo> =
             withContext(Dispatchers.IO) {
-                val connection = obdConnection ?: return@withContext Result.failure(Exception("Not connected"))
-
                 try {
-                    val vin =
-                        traceCommand(
-                            context = TelemetryContext.DIAGNOSTICS,
-                            cycleId = null,
-                            rawPid = "VIN",
-                            commandName = "VINCommand",
-                            block = { connection.run(VINCommand()) },
-                            preview = { it.value },
+                    withConnectionAccess {
+                        val connection = obdConnection ?: return@withConnectionAccess Result.failure(Exception("Not connected"))
+
+                        val vin =
+                            traceCommand(
+                                context = TelemetryContext.DIAGNOSTICS,
+                                cycleId = null,
+                                rawPid = "VIN",
+                                commandName = "VINCommand",
+                                block = { connection.run(VINCommand()) },
+                                preview = { it.value },
+                            )
+
+                        val troubleCodes =
+                            traceCommand(
+                                context = TelemetryContext.DIAGNOSTICS,
+                                cycleId = null,
+                                rawPid = "03",
+                                commandName = "TroubleCodesCommand",
+                                block = { connection.run(TroubleCodesCommand()) },
+                                preview = { it.value },
+                            )
+
+                        val codes = parseDTCs(troubleCodes.value)
+
+                        Result.success(
+                            DiagnosticInfo(
+                                vin = vin.value,
+                                troubleCodes =
+                                    codes.map { code ->
+                                        TroubleCode(code, getDTCDescription(code), TroubleCodeType.CURRENT)
+                                    },
+                                milStatus = codes.isNotEmpty(),
+                                dtcCount = codes.size,
+                            ),
                         )
-
-                    val troubleCodes =
-                        traceCommand(
-                            context = TelemetryContext.DIAGNOSTICS,
-                            cycleId = null,
-                            rawPid = "03",
-                            commandName = "TroubleCodesCommand",
-                            block = { connection.run(TroubleCodesCommand()) },
-                            preview = { it.value },
-                        )
-
-                    val codes = parseDTCs(troubleCodes.value)
-
-                    Result.success(
-                        DiagnosticInfo(
-                            vin = vin.value,
-                            troubleCodes =
-                                codes.map { code ->
-                                    TroubleCode(code, getDTCDescription(code), TroubleCodeType.CURRENT)
-                                },
-                            milStatus = codes.isNotEmpty(),
-                            dtcCount = codes.size,
-                        ),
-                    )
+                    }
                 } catch (e: Exception) {
                     Result.failure(e)
                 }
@@ -250,19 +261,21 @@ class ObdRepositoryImpl
 
         override suspend fun clearTroubleCodes(): Result<Unit> =
             withContext(Dispatchers.IO) {
-                val connection = obdConnection ?: return@withContext Result.failure(Exception("Not connected"))
-
                 try {
-                    logManager.command("04 (Clear trouble codes)")
-                    traceCommand(
-                        context = TelemetryContext.CLEAR_DTC,
-                        cycleId = null,
-                        rawPid = "04",
-                        commandName = "ResetTroubleCodesCommand",
-                        block = { connection.run(ResetTroubleCodesCommand()) },
-                    )
-                    logManager.success("Trouble codes clear command sent")
-                    Result.success(Unit)
+                    withConnectionAccess {
+                        val connection = obdConnection ?: return@withConnectionAccess Result.failure(Exception("Not connected"))
+
+                        logManager.command("04 (Clear trouble codes)")
+                        traceCommand(
+                            context = TelemetryContext.CLEAR_DTC,
+                            cycleId = null,
+                            rawPid = "04",
+                            commandName = "ResetTroubleCodesCommand",
+                            block = { connection.run(ResetTroubleCodesCommand()) },
+                        )
+                        logManager.success("Trouble codes clear command sent")
+                        Result.success(Unit)
+                    }
                 } catch (e: Exception) {
                     logManager.error("Failed to clear trouble codes: ${e.message}")
                     Result.failure(e)
@@ -270,56 +283,62 @@ class ObdRepositoryImpl
             }
 
         override suspend fun startPolling(intervalMs: Long) {
-            pollingJob?.cancel()
-            pollingJob =
-                scope.launch {
-                    val scheduler = DashboardPollingScheduler(intervalMs, nowMs())
+            pollingLifecycleMutex.withLock {
+                pollingJob?.cancelAndJoin()
+                pollingJob =
+                    scope.launch {
+                        val scheduler = DashboardPollingScheduler(intervalMs, monotonicNowMs())
 
-                    while (isActive) {
-                        val connection = obdConnection
-                        if (connection == null || !transport.isConnected()) {
-                            _connectionState.value = ConnectionState.Disconnected
-                            break
-                        }
+                        while (isActive) {
+                            val connection = obdConnection
+                            if (connection == null || !transport.isConnected()) {
+                                _connectionState.value = ConnectionState.Disconnected
+                                break
+                            }
 
-                        val now = nowMs()
-                        val dueMetrics = scheduler.dueMetrics(now)
+                            val now = monotonicNowMs()
+                            val dueMetrics = scheduler.dueMetrics(now)
 
-                        if (dueMetrics.isEmpty()) {
-                            delay(scheduler.delayUntilNextWork(now))
-                            continue
-                        }
+                            if (dueMetrics.isEmpty()) {
+                                delay(scheduler.delayUntilNextWork(now))
+                                continue
+                            }
 
-                        val cycleId = telemetryRecorder.nextCycleId()
-                        val startedAt = now
-                        val stats = readMetrics(connection, cycleId, dueMetrics, scheduler)
-                        val finishedAt = nowMs()
+                            val cycleId = telemetryRecorder.nextCycleId()
+                            val startedAtWall = wallClockMs()
+                            val startedAtMono = monotonicNowMs()
+                            val stats = readMetrics(connection, cycleId, dueMetrics, scheduler)
+                            val finishedAtWall = wallClockMs()
+                            val finishedAtMono = monotonicNowMs()
 
-                        telemetryRecorder.recordCycle(
-                            CycleTelemetry(
-                                sessionId = telemetryRecorder.currentSessionId(),
-                                cycleId = cycleId,
-                                startedAtMs = startedAt,
-                                finishedAtMs = finishedAt,
-                                durationMs = finishedAt - startedAt,
-                                configuredIntervalMs = intervalMs,
-                                commandCount = stats.commandCount,
-                                successCount = stats.successCount,
-                                failureCount = stats.failureCount,
-                            ),
-                        )
+                            telemetryRecorder.recordCycle(
+                                CycleTelemetry(
+                                    sessionId = telemetryRecorder.currentSessionId(),
+                                    cycleId = cycleId,
+                                    startedAtMs = startedAtWall,
+                                    finishedAtMs = finishedAtWall,
+                                    durationMs = finishedAtMono - startedAtMono,
+                                    configuredIntervalMs = intervalMs,
+                                    commandCount = stats.commandCount,
+                                    successCount = stats.successCount,
+                                    failureCount = stats.failureCount,
+                                ),
+                            )
 
-                        val delayMs = scheduler.delayUntilNextWork(nowMs())
-                        if (delayMs > 0) {
-                            delay(delayMs)
+                            val delayMs = scheduler.delayUntilNextWork(monotonicNowMs())
+                            if (delayMs > 0) {
+                                delay(delayMs)
+                            }
                         }
                     }
-                }
+            }
         }
 
         override suspend fun stopPolling() {
-            pollingJob?.cancel()
-            pollingJob = null
+            pollingLifecycleMutex.withLock {
+                pollingJob?.cancelAndJoin()
+                pollingJob = null
+            }
         }
 
         private suspend fun readMetrics(
@@ -335,7 +354,7 @@ class ObdRepositoryImpl
             dueMetrics.forEach { metricId ->
                 commandCount++
                 val wasSuccessful = pollMetric(connection, cycleId, metricId)
-                scheduler.markExecuted(metricId, nowMs())
+                scheduler.markExecuted(metricId, monotonicNowMs())
 
                 if (wasSuccessful) {
                     successCount++
@@ -467,14 +486,16 @@ class ObdRepositoryImpl
 
             return try {
                 val response =
-                    traceCommand(
-                        context = TelemetryContext.DASHBOARD,
-                        cycleId = cycleId,
-                        rawPid = rawPid.substringBefore(" "),
-                        commandName = commandName,
-                        block = read,
-                        preview = { valueOf(it) },
-                    )
+                    withConnectionAccess {
+                        traceCommand(
+                            context = TelemetryContext.DASHBOARD,
+                            cycleId = cycleId,
+                            rawPid = rawPid.substringBefore(" "),
+                            commandName = commandName,
+                            block = read,
+                            preview = { valueOf(it) },
+                        )
+                    }
 
                 val value = valueOf(response)
                 val unit = unitOf(response)
@@ -553,12 +574,13 @@ class ObdRepositoryImpl
             block: suspend () -> T,
             preview: (T) -> String? = { null },
         ): T {
-            val startedAt = nowMs()
+            val startedAtWall = wallClockMs()
+            val startedAtMono = monotonicNowMs()
 
             try {
                 val result = block()
-                val finishedAt = nowMs()
-                val durationMs = finishedAt - startedAt
+                val finishedAtWall = wallClockMs()
+                val finishedAtMono = monotonicNowMs()
                 val valuePreview = previewValue(preview(result))
 
                 telemetryRecorder.recordCommand(
@@ -568,9 +590,9 @@ class ObdRepositoryImpl
                         context = context,
                         commandName = commandName,
                         rawPid = rawPid,
-                        startedAtMs = startedAt,
-                        finishedAtMs = finishedAt,
-                        durationMs = durationMs,
+                        startedAtMs = startedAtWall,
+                        finishedAtMs = finishedAtWall,
+                        durationMs = finishedAtMono - startedAtMono,
                         success = true,
                         valuePreview = valuePreview,
                     ),
@@ -578,8 +600,8 @@ class ObdRepositoryImpl
 
                 return result
             } catch (e: Exception) {
-                val finishedAt = nowMs()
-                val durationMs = finishedAt - startedAt
+                val finishedAtWall = wallClockMs()
+                val finishedAtMono = monotonicNowMs()
                 val errorType = e::class.simpleName ?: "Exception"
                 val errorMessage = previewValue(e.message)
 
@@ -590,9 +612,9 @@ class ObdRepositoryImpl
                         context = context,
                         commandName = commandName,
                         rawPid = rawPid,
-                        startedAtMs = startedAt,
-                        finishedAtMs = finishedAt,
-                        durationMs = durationMs,
+                        startedAtMs = startedAtWall,
+                        finishedAtMs = finishedAtWall,
+                        durationMs = finishedAtMono - startedAtMono,
                         success = false,
                         errorType = errorType,
                         errorMessage = errorMessage,
@@ -613,13 +635,21 @@ class ObdRepositoryImpl
                     sessionId = telemetryRecorder.currentSessionId(),
                     cycleId = cycleId,
                     metricName = metricName,
-                    emittedAtMs = nowMs(),
+                    emittedAtMs = wallClockMs(),
                     value = previewValue(value) ?: value,
                 ),
             )
         }
 
-        private fun nowMs(): Long = System.currentTimeMillis()
+        private suspend fun <T> withConnectionAccess(block: suspend () -> T): T {
+            return connectionAccessMutex.withLock {
+                block()
+            }
+        }
+
+        private fun wallClockMs(): Long = System.currentTimeMillis()
+
+        private fun monotonicNowMs(): Long = SystemClock.elapsedRealtime()
 
         private fun previewValue(value: String?): String? {
             return value

@@ -6,10 +6,12 @@ import com.eltonvs.obdapp.domain.model.ConnectionState
 import com.eltonvs.obdapp.domain.model.DashboardMetricsSnapshot
 import com.eltonvs.obdapp.domain.model.TelemetryEvent
 import com.eltonvs.obdapp.domain.repository.ObdRepository
+import com.eltonvs.obdapp.domain.repository.PollingSettingsRepository
 import com.eltonvs.obdapp.domain.repository.TelemetryRepository
 import com.eltonvs.obdapp.domain.usecase.ClearTelemetryUseCase
 import com.eltonvs.obdapp.domain.usecase.ConnectDeviceUseCase
 import com.eltonvs.obdapp.domain.usecase.DisconnectUseCase
+import com.eltonvs.obdapp.domain.usecase.ObservePollingIntervalUseCase
 import com.eltonvs.obdapp.domain.usecase.ObserveTelemetryEventsUseCase
 import com.eltonvs.obdapp.domain.usecase.ReadMetricsUseCase
 import com.eltonvs.obdapp.util.LogEntry
@@ -48,6 +50,7 @@ class DashboardViewModelTest {
     private val connectDeviceUseCase: ConnectDeviceUseCase = mockk(relaxed = true)
     private val repository: ObdRepository = mockk(relaxed = true)
     private val preferencesManager: PreferencesManager = mockk(relaxed = true)
+    private val pollingSettingsRepository: PollingSettingsRepository = mockk(relaxed = true)
     private val logExporter: LogExporter = mockk(relaxed = true)
     private val logManager: LogManager = mockk(relaxed = true)
     private val telemetryRepository: TelemetryRepository = mockk(relaxed = true)
@@ -57,6 +60,7 @@ class DashboardViewModelTest {
     private lateinit var connectionStateFlow: MutableStateFlow<ConnectionState>
     private lateinit var logsFlow: MutableStateFlow<List<LogEntry>>
     private lateinit var telemetryEventsFlow: MutableStateFlow<List<TelemetryEvent>>
+    private lateinit var pollingIntervalFlow: MutableStateFlow<Long>
 
     @Before
     fun setup() {
@@ -65,13 +69,14 @@ class DashboardViewModelTest {
         connectionStateFlow = MutableStateFlow(ConnectionState.Disconnected)
         logsFlow = MutableStateFlow(emptyList())
         telemetryEventsFlow = MutableStateFlow(emptyList())
+        pollingIntervalFlow = MutableStateFlow(1000L)
 
         every { repository.connectionState } returns connectionStateFlow
         every { preferencesManager.autoConnect } returns flowOf(false)
         every { preferencesManager.wasConnected } returns flowOf(false)
         every { preferencesManager.lastDeviceAddress } returns flowOf(null)
         every { preferencesManager.lastDeviceName } returns flowOf(null)
-        every { preferencesManager.pollingInterval } returns flowOf(1000L)
+        every { pollingSettingsRepository.pollingInterval } returns pollingIntervalFlow
         every { readMetricsUseCase.invoke() } returns MutableStateFlow(DashboardMetricsSnapshot())
         every { logManager.logs } returns logsFlow
         every { logManager.clear() } just runs
@@ -87,6 +92,7 @@ class DashboardViewModelTest {
                 logExportFormatter,
                 logExporter,
                 logManager,
+                ObservePollingIntervalUseCase(pollingSettingsRepository),
                 ObserveTelemetryEventsUseCase(telemetryRepository),
                 ClearTelemetryUseCase(telemetryRepository),
             )
@@ -146,6 +152,8 @@ class DashboardViewModelTest {
     @Test
     fun `connection loss clears polling flag`() =
         runTest {
+            coEvery { readMetricsUseCase.startPolling(any()) } returns Unit
+
             connectionStateFlow.value = ConnectionState.Connected
             advanceUntilIdle()
             assertEquals(true, viewModel.uiState.value.isPolling)
@@ -154,6 +162,21 @@ class DashboardViewModelTest {
             advanceUntilIdle()
 
             assertEquals(false, viewModel.uiState.value.isPolling)
+        }
+
+    @Test
+    fun `polling interval change restarts active polling`() =
+        runTest {
+            coEvery { readMetricsUseCase.startPolling(any()) } returns Unit
+
+            connectionStateFlow.value = ConnectionState.Connected
+            advanceUntilIdle()
+
+            pollingIntervalFlow.value = 2000L
+            advanceUntilIdle()
+
+            coVerify { readMetricsUseCase.startPolling(1000L) }
+            coVerify { readMetricsUseCase.startPolling(2000L) }
         }
 
     @Test

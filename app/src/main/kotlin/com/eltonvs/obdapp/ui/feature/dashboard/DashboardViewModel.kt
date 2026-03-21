@@ -10,6 +10,7 @@ import com.eltonvs.obdapp.domain.repository.ObdRepository
 import com.eltonvs.obdapp.domain.usecase.ClearTelemetryUseCase
 import com.eltonvs.obdapp.domain.usecase.ConnectDeviceUseCase
 import com.eltonvs.obdapp.domain.usecase.DisconnectUseCase
+import com.eltonvs.obdapp.domain.usecase.ObservePollingIntervalUseCase
 import com.eltonvs.obdapp.domain.usecase.ObserveTelemetryEventsUseCase
 import com.eltonvs.obdapp.domain.usecase.ReadMetricsUseCase
 import com.eltonvs.obdapp.util.LogEntry
@@ -54,6 +55,7 @@ class DashboardViewModel
         private val logExportFormatter: LogExportFormatter,
         private val logExporter: LogExporter,
         private val logManager: LogManager,
+        private val observePollingIntervalUseCase: ObservePollingIntervalUseCase,
         private val observeTelemetryEventsUseCase: ObserveTelemetryEventsUseCase,
         private val clearTelemetryUseCase: ClearTelemetryUseCase,
     ) : ViewModel() {
@@ -67,10 +69,13 @@ class DashboardViewModel
         val events: SharedFlow<DashboardEvent> = _events.asSharedFlow()
 
         private var hasCheckedAutoConnect = false
+        private var latestPollingIntervalMs: Long? = null
+        private var activePollingIntervalMs: Long? = null
 
         init {
             observeConnectionState()
             observeMetrics()
+            observePollingInterval()
             checkAutoConnect()
         }
 
@@ -108,6 +113,9 @@ class DashboardViewModel
                             isPolling = if (state is ConnectionState.Connected) it.isPolling else false,
                         )
                     }
+                    if (state !is ConnectionState.Connected) {
+                        activePollingIntervalMs = null
+                    }
                     if (state is ConnectionState.Connected) {
                         startPollingIfNeeded()
                     }
@@ -133,18 +141,36 @@ class DashboardViewModel
             }
         }
 
+        private fun observePollingInterval() {
+            viewModelScope.launch {
+                observePollingIntervalUseCase().collect { interval ->
+                    latestPollingIntervalMs = interval
+
+                    val shouldRestart =
+                        repository.connectionState.value is ConnectionState.Connected &&
+                            _uiState.value.isPolling &&
+                            activePollingIntervalMs != null &&
+                            activePollingIntervalMs != interval
+
+                    if (shouldRestart) {
+                        startPolling(interval)
+                    }
+                }
+            }
+        }
+
         private fun startPollingIfNeeded() {
             if (_uiState.value.isPolling) return
             viewModelScope.launch {
-                val interval = preferencesManager.pollingInterval.first()
-                readMetricsUseCase.startPolling(interval)
-                _uiState.update { it.copy(isPolling = true) }
+                val interval = latestPollingIntervalMs ?: observePollingIntervalUseCase().first()
+                startPolling(interval)
             }
         }
 
         fun stopPolling() {
             viewModelScope.launch {
                 readMetricsUseCase.stopPolling()
+                activePollingIntervalMs = null
                 _uiState.update { it.copy(isPolling = false) }
             }
         }
@@ -193,6 +219,12 @@ class DashboardViewModel
                     },
                 )
             }
+        }
+
+        private suspend fun startPolling(intervalMs: Long) {
+            readMetricsUseCase.startPolling(intervalMs)
+            activePollingIntervalMs = intervalMs
+            _uiState.update { it.copy(isPolling = true) }
         }
 
         private fun emitEvent(event: DashboardEvent) {

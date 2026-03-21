@@ -2,7 +2,9 @@ package com.eltonvs.obdapp.ui.feature.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.eltonvs.obdapp.domain.usecase.ObservePollingIntervalUseCase
 import com.eltonvs.obdapp.domain.usecase.ObserveTelemetryEnabledUseCase
+import com.eltonvs.obdapp.domain.usecase.SetPollingIntervalUseCase
 import com.eltonvs.obdapp.domain.usecase.SetTelemetryEnabledUseCase
 import com.eltonvs.obdapp.util.PreferencesManager
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -27,6 +29,8 @@ class SettingsViewModel
     @Inject
     constructor(
         private val preferencesManager: PreferencesManager,
+        private val observePollingIntervalUseCase: ObservePollingIntervalUseCase,
+        private val setPollingIntervalUseCase: SetPollingIntervalUseCase,
         private val observeTelemetryEnabledUseCase: ObserveTelemetryEnabledUseCase,
         private val setTelemetryEnabledUseCase: SetTelemetryEnabledUseCase,
     ) : ViewModel() {
@@ -39,7 +43,7 @@ class SettingsViewModel
 
         private fun loadSettings() {
             viewModelScope.launch {
-                preferencesManager.pollingInterval.collect { interval ->
+                observePollingIntervalUseCase().collect { interval ->
                     _uiState.update { it.copy(pollingInterval = interval) }
                 }
             }
@@ -62,7 +66,7 @@ class SettingsViewModel
 
         fun setPollingInterval(interval: Long) {
             viewModelScope.launch {
-                preferencesManager.setPollingInterval(interval)
+                setPollingIntervalUseCase(interval)
             }
         }
 
