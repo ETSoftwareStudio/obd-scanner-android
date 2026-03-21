@@ -475,6 +475,7 @@ class ObdRepositoryImpl
                         commandName = "SpeedCommand",
                         read = { connection.run(SpeedCommand()) },
                         valueOf = { it.value },
+                        rawValueOf = { it.rawResponse.value },
                         unitOf = { it.unit },
                         minValue = 0f,
                         maxValue = 200f,
@@ -488,6 +489,7 @@ class ObdRepositoryImpl
                         commandName = "RPMCommand",
                         read = { connection.run(RPMCommand()) },
                         valueOf = { it.value },
+                        rawValueOf = { it.rawResponse.value },
                         unitOf = { it.unit },
                         minValue = 0f,
                         maxValue = 8000f,
@@ -501,6 +503,7 @@ class ObdRepositoryImpl
                         commandName = "ThrottlePositionCommand",
                         read = { connection.run(ThrottlePositionCommand()) },
                         valueOf = { it.value },
+                        rawValueOf = { it.rawResponse.value },
                         unitOf = { it.unit },
                         minValue = 0f,
                         maxValue = 100f,
@@ -514,6 +517,7 @@ class ObdRepositoryImpl
                         commandName = "MassAirFlowCommand",
                         read = { connection.run(MassAirFlowCommand()) },
                         valueOf = { it.value },
+                        rawValueOf = { it.rawResponse.value },
                         unitOf = { it.unit },
                         minValue = 0f,
                         maxValue = 655.35f,
@@ -527,6 +531,7 @@ class ObdRepositoryImpl
                         commandName = "EngineCoolantTemperatureCommand",
                         read = { connection.run(EngineCoolantTemperatureCommand()) },
                         valueOf = { it.value },
+                        rawValueOf = { it.rawResponse.value },
                         unitOf = { it.unit },
                         minValue = -40f,
                         maxValue = 215f,
@@ -540,6 +545,7 @@ class ObdRepositoryImpl
                         commandName = "AirIntakeTemperatureCommand",
                         read = { connection.run(AirIntakeTemperatureCommand()) },
                         valueOf = { it.value },
+                        rawValueOf = { it.rawResponse.value },
                         unitOf = { it.unit },
                         minValue = -40f,
                         maxValue = 215f,
@@ -553,6 +559,7 @@ class ObdRepositoryImpl
                         commandName = "FuelLevelCommand",
                         read = { connection.run(FuelLevelCommand()) },
                         valueOf = { it.value },
+                        rawValueOf = { it.rawResponse.value },
                         unitOf = { it.unit },
                         minValue = 0f,
                         maxValue = 100f,
@@ -568,6 +575,7 @@ class ObdRepositoryImpl
             commandName: String,
             read: suspend () -> T,
             valueOf: (T) -> String,
+            rawValueOf: (T) -> String,
             unitOf: (T) -> String,
             minValue: Float,
             maxValue: Float,
@@ -589,7 +597,8 @@ class ObdRepositoryImpl
 
                 val value = valueOf(response)
                 val unit = unitOf(response)
-                logManager.response("${rawPid.substringBefore(" ")}: $value")
+                val rawValue = previewValue(rawValueOf(response)) ?: rawValueOf(response)
+                logManager.response("${rawPid.substringBefore(" ")}: $value (raw=$rawValue)")
 
                 publishMetric(
                     cycleId = cycleId,
