@@ -3,6 +3,7 @@ package com.eltonvs.obdapp.ui.feature.settings
 import com.eltonvs.obdapp.util.PreferencesManager
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -28,8 +29,9 @@ class SettingsViewModelTest {
     fun setup() {
         Dispatchers.setMain(testDispatcher)
 
-        coEvery { preferencesManager.pollingInterval } returns MutableStateFlow(1000L)
-        coEvery { preferencesManager.theme } returns MutableStateFlow("dark")
+        every { preferencesManager.pollingInterval } returns MutableStateFlow(1000L)
+        every { preferencesManager.theme } returns MutableStateFlow("dark")
+        every { preferencesManager.autoConnect } returns MutableStateFlow(true)
 
         viewModel = SettingsViewModel(preferencesManager)
     }
@@ -40,10 +42,12 @@ class SettingsViewModelTest {
     }
 
     @Test
-    fun `initial state has expected values`() {
-        assertEquals(1000L, viewModel.uiState.value.pollingInterval)
-        assertEquals("dark", viewModel.uiState.value.theme)
-    }
+    fun `initial state has expected values`() =
+        runTest {
+            testDispatcher.scheduler.advanceUntilIdle()
+            assertEquals(1000L, viewModel.uiState.value.pollingInterval)
+            assertEquals("dark", viewModel.uiState.value.theme)
+        }
 
     @Test
     fun `setPollingInterval calls preferences manager`() =

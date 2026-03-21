@@ -15,14 +15,16 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.ui.Modifier
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.eltonvs.obdapp.ui.feature.settings.SettingsViewModel
 import com.eltonvs.obdapp.ui.navigation.NavGraph
 import com.eltonvs.obdapp.ui.navigation.Screen
 import com.eltonvs.obdapp.ui.theme.ConnectionStatusConnected
@@ -41,19 +43,19 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun MainApp(
-    settingsViewModel: com.eltonvs.obdapp.ui.feature.settings.SettingsViewModel = hiltViewModel(),
-) {
-    val settingsState by settingsViewModel.uiState.collectAsState()
+fun MainApp(settingsViewModel: SettingsViewModel = hiltViewModel()) {
+    val settingsState by settingsViewModel.uiState.collectAsStateWithLifecycle()
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
 
-    val isDarkTheme = when (settingsState.theme) {
-        "light" -> false
-        "dark" -> true
-        else -> true // system default - default to dark
-    }
+    val isDarkTheme =
+        when (settingsState.theme) {
+            "light" -> false
+            "dark" -> true
+            "system" -> isSystemInDarkTheme()
+            else -> isSystemInDarkTheme()
+        }
 
     ObdSampleAppTheme(darkTheme = isDarkTheme) {
         Surface(

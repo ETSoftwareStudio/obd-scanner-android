@@ -1,12 +1,11 @@
 [*.{kt,kts}]
 # Disable rules that conflict with Jetpack Compose conventions
-ktlint_function_naming = disabled
-ktlint_import_ordering = disabled
-ktlint_argument_list_wrapping = disabled
-ktlint_max_line_length = disabled
-ktlint_backing_property_naming = disabled
-ktlint_multiline_expression_wrapping = disabled
+ktlint_standard_function-naming = disabled
+ktlint_standard_import-ordering = disabled
+ktlint_standard_argument-list-wrapping = disabled
+ktlint_standard_max-line-length = disabled
+ktlint_standard_backing-property-naming = disabled
+ktlint_standard_property-naming = disabled
 
 ij_kotlin_imports_layout = *
-# 100 character line length
 max_line_length = 120

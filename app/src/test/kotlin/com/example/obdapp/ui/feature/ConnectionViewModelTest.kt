@@ -47,8 +47,8 @@ class ConnectionViewModelTest {
         Dispatchers.setMain(testDispatcher)
 
         every { repository.connectionState } returns MutableStateFlow(ConnectionState.Disconnected)
-        coEvery { preferencesManager.lastDeviceAddress } returns flowOf(null)
-        coEvery { preferencesManager.lastDeviceName } returns flowOf(null)
+        every { preferencesManager.lastDeviceAddress } returns flowOf(null)
+        every { preferencesManager.lastDeviceName } returns flowOf(null)
 
         viewModel =
             ConnectionViewModel(

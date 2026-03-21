@@ -13,7 +13,7 @@ import javax.inject.Inject
 
 data class SettingsUiState(
     val pollingInterval: Long = 1000L,
-    val theme: String = "dark",
+    val theme: String = "system",
     val autoConnect: Boolean = true,
     val availableIntervals: List<Long> = listOf(500L, 1000L, 2000L, 5000L),
     val availableThemes: List<String> = listOf("system", "light", "dark"),

@@ -26,7 +26,6 @@ import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -39,9 +38,10 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -52,7 +52,6 @@ import com.eltonvs.obdapp.domain.model.ConnectionState
 import com.eltonvs.obdapp.domain.model.DiagnosticInfo
 import com.eltonvs.obdapp.domain.model.TroubleCode
 import com.eltonvs.obdapp.domain.model.TroubleCodeType
-import com.eltonvs.obdapp.ui.feature.dashboard.DashboardViewModel
 import com.eltonvs.obdapp.ui.theme.GaugeGreen
 import com.eltonvs.obdapp.ui.theme.GaugeRed
 import com.eltonvs.obdapp.ui.theme.GaugeYellow
@@ -60,15 +59,22 @@ import com.eltonvs.obdapp.ui.theme.GaugeYellow
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DiagnosticsScreen(
-    viewModel: DashboardViewModel,
+    viewModel: DiagnosticsViewModel = hiltViewModel(),
     onConnectClick: () -> Unit = {},
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(uiState.connectionState) {
         if (uiState.connectionState is ConnectionState.Connected && uiState.diagnosticInfo == null) {
             viewModel.readDiagnostics()
+        }
+    }
+
+    LaunchedEffect(uiState.error) {
+        uiState.error?.let { error ->
+            snackbarHostState.showSnackbar(error)
+            viewModel.clearError()
         }
     }
 
@@ -84,9 +90,10 @@ fun DiagnosticsScreen(
                     if (uiState.diagnosticInfo != null) {
                         if (uiState.isLoading) {
                             CircularProgressIndicator(
-                                modifier = Modifier
-                                    .size(24.dp)
-                                    .padding(end = 12.dp),
+                                modifier =
+                                    Modifier
+                                        .size(24.dp)
+                                        .padding(end = 12.dp),
                                 strokeWidth = 2.dp,
                             )
                         } else {
@@ -356,9 +363,10 @@ private fun InfoCard() {
 @Composable
 private fun NotConnectedCard(onConnectClick: () -> Unit) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onConnectClick() },
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable { onConnectClick() },
         colors =
             CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceVariant,

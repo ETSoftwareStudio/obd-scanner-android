@@ -1,9 +1,11 @@
 package com.eltonvs.obdapp.ui.navigation
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Bluetooth
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.outlined.Bluetooth
 import androidx.compose.material.icons.outlined.Build
 import androidx.compose.material.icons.outlined.Dashboard
 import androidx.compose.material.icons.outlined.Settings
@@ -18,8 +20,8 @@ sealed class Screen(
     data object Connection : Screen(
         route = "connection",
         title = "Connect",
-        selectedIcon = Icons.Filled.Dashboard,
-        unselectedIcon = Icons.Outlined.Dashboard,
+        selectedIcon = Icons.Filled.Bluetooth,
+        unselectedIcon = Icons.Outlined.Bluetooth,
     )
 
     data object Dashboard : Screen(

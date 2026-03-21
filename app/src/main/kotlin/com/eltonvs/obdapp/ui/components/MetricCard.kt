@@ -34,8 +34,8 @@ fun MetricCard(
     label: String,
     value: String,
     unit: String,
-    icon: MetricIcon = MetricIcon.SPEED,
     modifier: Modifier = Modifier,
+    icon: MetricIcon = MetricIcon.SPEED,
 ) {
     Card(
         modifier = modifier,

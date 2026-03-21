@@ -1,6 +1,12 @@
 package com.eltonvs.obdapp.data.repository
 
+import android.Manifest
+import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
+import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.core.content.ContextCompat
 import com.eltonvs.obdapp.data.connection.ObdTransport
 import com.eltonvs.obdapp.domain.model.ConnectionState
 import com.eltonvs.obdapp.domain.model.DeviceInfo
@@ -24,6 +30,7 @@ import com.github.eltonvs.obd.command.fuel.FuelLevelCommand
 import com.github.eltonvs.obd.command.temperature.AirIntakeTemperatureCommand
 import com.github.eltonvs.obd.command.temperature.EngineCoolantTemperatureCommand
 import com.github.eltonvs.obd.connection.ObdDeviceConnection
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -44,6 +51,7 @@ import javax.inject.Singleton
 class ObdRepositoryImpl
     @Inject
     constructor(
+        @ApplicationContext private val appContext: Context,
         private val transport: ObdTransport,
         private val logManager: LogManager,
     ) : ObdRepository {
@@ -55,26 +63,45 @@ class ObdRepositoryImpl
         override val connectionState: StateFlow<ConnectionState> = _connectionState.asStateFlow()
 
         private val _metricsFlow = MutableSharedFlow<VehicleMetric>(replay = 1, extraBufferCapacity = 64)
+        private val dtcRegex = Regex("[PCBU][0-3][0-9A-F]{3}")
 
         override val vehicleMetrics: Flow<VehicleMetric> = _metricsFlow.asSharedFlow()
 
         @Suppress("DEPRECATION")
+        @SuppressLint("MissingPermission")
         override suspend fun getPairedDevices(): List<DeviceInfo> =
             withContext(Dispatchers.IO) {
+                if (!hasBluetoothConnectPermission()) {
+                    logManager.error("Missing BLUETOOTH_CONNECT permission")
+                    return@withContext emptyList()
+                }
+
                 val adapter = BluetoothAdapter.getDefaultAdapter() ?: return@withContext emptyList()
 
-                adapter.bondedDevices?.map { bluetoothDevice ->
-                    DeviceInfo(
-                        address = bluetoothDevice.address,
-                        name = bluetoothDevice.name ?: "Unknown Device",
-                        type = DeviceType.CLASSIC,
-                    )
-                } ?: emptyList()
+                try {
+                    adapter.bondedDevices?.map { bluetoothDevice ->
+                        DeviceInfo(
+                            address = bluetoothDevice.address,
+                            name = bluetoothDevice.name ?: "Unknown Device",
+                            type = DeviceType.CLASSIC,
+                        )
+                    } ?: emptyList()
+                } catch (_: SecurityException) {
+                    logManager.error("Unable to read paired devices without BLUETOOTH_CONNECT permission")
+                    emptyList()
+                }
             }
 
         override suspend fun connect(device: DeviceInfo): Result<Unit> {
             _connectionState.value = ConnectionState.Connecting
             logManager.info("Connecting to ${device.name} (${device.address})...")
+
+            if (!hasBluetoothConnectPermission()) {
+                val error = Exception("BLUETOOTH_CONNECT permission is required")
+                _connectionState.value = ConnectionState.Error(error.message ?: "Missing permission")
+                logManager.error(error.message ?: "Missing BLUETOOTH_CONNECT permission")
+                return Result.failure(error)
+            }
 
             val connectionResult = transport.connect(device)
 
@@ -279,32 +306,69 @@ class ObdRepositoryImpl
         private fun parseDTCs(rawValue: String): List<String> {
             if (rawValue.isBlank()) return emptyList()
 
-            return rawValue
-                .replace(" ", "")
-                .chunked(2)
-                .filter { it != "00" }
-                .map { dtc ->
-                    val first = dtc.first()
-                    when (first) {
-                        '0' -> "P0${dtc[1]}"
-                        '1' -> "P1${dtc[1]}"
-                        '2' -> "P2${dtc[1]}"
-                        '3' -> "P3${dtc[1]}"
-                        '4' -> "C0${dtc[1]}"
-                        '5' -> "C1${dtc[1]}"
-                        '6' -> "C2${dtc[1]}"
-                        '7' -> "C3${dtc[1]}"
-                        '8' -> "B0${dtc[1]}"
-                        '9' -> "B1${dtc[1]}"
-                        'A' -> "B2${dtc[1]}"
-                        'B' -> "B3${dtc[1]}"
-                        'C' -> "U0${dtc[1]}"
-                        'D' -> "U1${dtc[1]}"
-                        'E' -> "U2${dtc[1]}"
-                        'F' -> "U3${dtc[1]}"
-                        else -> dtc
+            val normalized = rawValue.uppercase()
+            if (normalized.contains("NO DATA") || normalized.contains("NODATA")) {
+                return emptyList()
+            }
+
+            val directCodes =
+                dtcRegex
+                    .findAll(normalized)
+                    .map { it.value }
+                    .filterNot { it == "P0000" }
+                    .distinct()
+                    .toList()
+
+            if (directCodes.isNotEmpty()) {
+                return directCodes
+            }
+
+            val hexPayload = normalized.filter { it.isDigit() || it in 'A'..'F' }
+            if (hexPayload.length < 4) {
+                return emptyList()
+            }
+
+            return hexPayload
+                .chunked(4)
+                .mapNotNull { chunk ->
+                    if (chunk.length < 4 || chunk == "0000") {
+                        null
+                    } else {
+                        decodeDtcFromHex(chunk)
                     }
                 }
+                .distinct()
+        }
+
+        private fun decodeDtcFromHex(rawCode: String): String? {
+            val value = rawCode.toIntOrNull(16) ?: return null
+
+            val system =
+                when ((value and 0xC000) shr 14) {
+                    0 -> 'P'
+                    1 -> 'C'
+                    2 -> 'B'
+                    else -> 'U'
+                }
+
+            val code =
+                buildString(5) {
+                    append(system)
+                    append((value and 0x3000) shr 12)
+                    append(((value and 0x0F00) shr 8).toString(16).uppercase())
+                    append(((value and 0x00F0) shr 4).toString(16).uppercase())
+                    append((value and 0x000F).toString(16).uppercase())
+                }
+
+            return code.takeIf { it != "P0000" && dtcRegex.matches(it) }
+        }
+
+        private fun hasBluetoothConnectPermission(): Boolean {
+            return Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
+                ContextCompat.checkSelfPermission(
+                    appContext,
+                    Manifest.permission.BLUETOOTH_CONNECT,
+                ) == PackageManager.PERMISSION_GRANTED
         }
 
         private fun getDTCDescription(code: String): String {

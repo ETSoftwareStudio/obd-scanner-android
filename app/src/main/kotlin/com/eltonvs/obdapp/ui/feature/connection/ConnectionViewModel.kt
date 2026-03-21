@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.eltonvs.obdapp.domain.model.ConnectionState
 import com.eltonvs.obdapp.domain.model.DeviceInfo
+import com.eltonvs.obdapp.domain.model.DeviceType
 import com.eltonvs.obdapp.domain.repository.ObdRepository
 import com.eltonvs.obdapp.domain.usecase.ConnectDeviceUseCase
 import com.eltonvs.obdapp.domain.usecase.GetPairedDevicesUseCase
@@ -63,7 +64,9 @@ class ConnectionViewModel
                 val name = preferencesManager.lastDeviceName.first()
                 if (address != null && name != null) {
                     _uiState.update {
-                        it.copy(selectedDevice = DeviceInfo(address, name, com.eltonvs.obdapp.domain.model.DeviceType.CLASSIC))
+                        it.copy(
+                            selectedDevice = DeviceInfo(address, name, DeviceType.CLASSIC),
+                        )
                     }
                 }
             }
