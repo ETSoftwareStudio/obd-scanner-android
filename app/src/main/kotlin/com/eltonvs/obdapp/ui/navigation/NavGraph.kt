@@ -16,6 +16,13 @@ fun NavGraph(
     navController: NavHostController,
     modifier: Modifier = Modifier,
 ) {
+    fun navigateToConnectionScreen() {
+        navController.navigate(Screen.Connection.route) {
+            popUpTo(Screen.MAIN_TABS_ROUTE) { inclusive = true }
+            launchSingleTop = true
+        }
+    }
+
     NavHost(
         navController = navController,
         startDestination = Screen.Connection.route,
@@ -38,17 +45,14 @@ fun NavGraph(
         ) {
             composable(Screen.Dashboard.route) {
                 DashboardScreen(
-                    onConnectClick = {
-                        navController.navigate(Screen.Connection.route)
-                    },
+                    onConnectClick = ::navigateToConnectionScreen,
+                    onDisconnected = ::navigateToConnectionScreen,
                 )
             }
 
             composable(Screen.Diagnostics.route) {
                 DiagnosticsScreen(
-                    onConnectClick = {
-                        navController.navigate(Screen.Connection.route)
-                    },
+                    onConnectClick = ::navigateToConnectionScreen,
                 )
             }
 
