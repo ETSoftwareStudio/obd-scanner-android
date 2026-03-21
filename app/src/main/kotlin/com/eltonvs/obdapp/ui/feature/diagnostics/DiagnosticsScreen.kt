@@ -70,12 +70,6 @@ fun DiagnosticsScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    LaunchedEffect(uiState.connectionState) {
-        if (uiState.connectionState is ConnectionState.Connected && uiState.diagnosticInfo == null) {
-            viewModel.readDiagnostics()
-        }
-    }
-
     LaunchedEffect(uiState.error) {
         uiState.error?.let { error ->
             snackbarHostState.showSnackbar(error)
