@@ -166,6 +166,7 @@ The remaining sections in this README cover the implementation in depth, includi
 - Polling loop with configurable interval
 - Live gauges and sensor cards
 - In-app debug log viewer (command/response/error timeline)
+- Export current debug logs to a `.txt` file via the system document picker
 
 ### Diagnostics
 - VIN retrieval
@@ -208,8 +209,8 @@ app/src/main/kotlin/com/eltonvs/obdapp/
 ├── data/
 │   ├── connection/
 │   │   ├── BluetoothDiscoveryManager.kt
-│   │   ├── ObdTransport.kt
-│   │   └── BluetoothTransport.kt
+│   │   ├── BluetoothTransport.kt
+│   │   └── ObdTransport.kt
 │   ├── di/
 │   │   ├── RepositoryModule.kt
 │   │   └── TransportModule.kt
@@ -217,7 +218,12 @@ app/src/main/kotlin/com/eltonvs/obdapp/
 │       └── ObdRepositoryImpl.kt
 ├── domain/
 │   ├── model/
-│   │   └── DiscoveryState.kt
+│   │   ├── DashboardMetricsSnapshot.kt
+│   │   ├── DeviceInfo.kt
+│   │   ├── DiagnosticInfo.kt
+│   │   ├── DiscoveryState.kt
+│   │   ├── PairingState.kt
+│   │   └── VehicleMetric.kt
 │   ├── repository/
 │   │   └── ObdRepository.kt
 │   └── usecase/
@@ -232,6 +238,8 @@ app/src/main/kotlin/com/eltonvs/obdapp/
 │   ├── theme/
 │   └── MainActivity.kt
 ├── util/
+│   ├── LogExporter.kt
+│   ├── LogExportFormatter.kt
 │   ├── LogManager.kt
 │   └── PreferencesManager.kt
 └── ObdSampleApp.kt
@@ -249,6 +257,8 @@ Layered architecture with clean separation:
 
 ### Data flow
 
+Core OBD flow:
+
 ```text
 Compose Screen
    -> ViewModel
@@ -257,6 +267,14 @@ Compose Screen
             -> ObdRepositoryImpl
                -> ObdTransport (BluetoothTransport)
                -> kotlin-obd-api commands
+```
+
+Supporting UI utilities such as debug log export follow a lighter path:
+
+```text
+DashboardScreen
+   -> DashboardViewModel
+      -> LogManager / LogExportFormatter / LogExporter
 ```
 
 ### Why this architecture works
@@ -357,7 +375,8 @@ Defensive checks in data layer:
 
 - Repository exposes `StateFlow<ConnectionState>` for connection status
 - Repository also exposes `StateFlow<DiscoveryState>` for Bluetooth discovery progress/results
-- Metrics are streamed as Flow events
+- Repository exposes `StateFlow<DashboardMetricsSnapshot>` for dashboard-friendly metric snapshots
+- Low-level metric events are also available as a `Flow<VehicleMetric>` stream
 - Screens consume state with `collectAsStateWithLifecycle()`
 
 This keeps UI reactive and lifecycle-safe.
@@ -490,7 +509,7 @@ Toolchain note:
 
 - [ ] BLE transport implementation
 - [ ] richer DTC descriptions (lookup catalog)
-- [ ] historical charts and export
+- [ ] historical charts
 - [ ] integration tests with fake transport
 - [ ] sample video/GIF walkthrough in README
 

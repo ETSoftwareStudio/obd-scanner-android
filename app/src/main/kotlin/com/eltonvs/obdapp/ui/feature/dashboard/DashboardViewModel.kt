@@ -1,5 +1,6 @@
 package com.eltonvs.obdapp.ui.feature.dashboard
 
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.eltonvs.obdapp.domain.model.ConnectionState
@@ -9,16 +10,22 @@ import com.eltonvs.obdapp.domain.repository.ObdRepository
 import com.eltonvs.obdapp.domain.usecase.ConnectDeviceUseCase
 import com.eltonvs.obdapp.domain.usecase.DisconnectUseCase
 import com.eltonvs.obdapp.domain.usecase.ReadMetricsUseCase
+import com.eltonvs.obdapp.util.LogEntry
+import com.eltonvs.obdapp.util.LogExportFormatter
+import com.eltonvs.obdapp.util.LogExporter
 import com.eltonvs.obdapp.util.LogManager
 import com.eltonvs.obdapp.util.PreferencesManager
 import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 data class DashboardUiState(
     val speed: String = "--",
@@ -42,10 +49,17 @@ class DashboardViewModel
         private val connectDeviceUseCase: ConnectDeviceUseCase,
         private val repository: ObdRepository,
         private val preferencesManager: PreferencesManager,
-        val logManager: LogManager,
+        private val logExportFormatter: LogExportFormatter,
+        private val logExporter: LogExporter,
+        private val logManager: LogManager,
     ) : ViewModel() {
         private val _uiState = MutableStateFlow(DashboardUiState())
         val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
+
+        val logs: StateFlow<List<LogEntry>> = logManager.logs
+
+        private val _events = MutableSharedFlow<DashboardEvent>(extraBufferCapacity = 1)
+        val events: SharedFlow<DashboardEvent> = _events.asSharedFlow()
 
         private var hasCheckedAutoConnect = false
 
@@ -93,16 +107,16 @@ class DashboardViewModel
 
         private fun observeMetrics() {
             viewModelScope.launch {
-                readMetricsUseCase().collect { metrics ->
+                readMetricsUseCase().collect { snapshot ->
                     _uiState.update {
                         it.copy(
-                            speed = metrics.speed,
-                            rpm = metrics.rpm,
-                            throttle = metrics.throttle,
-                            coolantTemp = metrics.coolantTemp,
-                            intakeTemp = metrics.intakeTemp,
-                            maf = metrics.maf,
-                            fuel = metrics.fuel,
+                            speed = snapshot.speed,
+                            rpm = snapshot.rpm,
+                            throttle = snapshot.throttle,
+                            coolantTemp = snapshot.coolantTemp,
+                            intakeTemp = snapshot.intakeTemp,
+                            maf = snapshot.maf,
+                            fuel = snapshot.fuel,
                         )
                     }
                 }
@@ -129,6 +143,44 @@ class DashboardViewModel
             viewModelScope.launch {
                 stopPolling()
                 disconnectUseCase()
+            }
+        }
+
+        fun clearLogs() {
+            logManager.clear()
+        }
+
+        fun getSuggestedLogFileName(): String {
+            return logExportFormatter.buildDefaultFileName()
+        }
+
+        fun exportLogs(uri: Uri?) {
+            if (uri == null) {
+                return
+            }
+
+            val logSnapshot = logs.value
+            if (logSnapshot.isEmpty()) {
+                emitEvent(DashboardEvent.ExportSkippedNoLogs)
+                return
+            }
+
+            viewModelScope.launch {
+                val exportText = logExportFormatter.buildExportText(logSnapshot)
+                logExporter.export(uri, exportText).fold(
+                    onSuccess = {
+                        emitEvent(DashboardEvent.ExportSuccess)
+                    },
+                    onFailure = { error ->
+                        emitEvent(DashboardEvent.ExportError(error.message))
+                    },
+                )
+            }
+        }
+
+        private fun emitEvent(event: DashboardEvent) {
+            viewModelScope.launch {
+                _events.emit(event)
             }
         }
     }

@@ -15,9 +15,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -29,27 +29,27 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.eltonvs.obdapp.R
 import com.eltonvs.obdapp.ui.theme.GaugeGreen
 import com.eltonvs.obdapp.ui.theme.GaugeRed
 import com.eltonvs.obdapp.util.LogEntry
-import com.eltonvs.obdapp.util.LogManager
 import com.eltonvs.obdapp.util.LogType
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DebugLogBottomSheet(
-    logManager: LogManager,
+    logs: List<LogEntry>,
+    onClearClick: () -> Unit,
+    onExportClick: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val logs by logManager.logs.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
 
     LaunchedEffect(logs.size) {
@@ -87,7 +87,10 @@ fun DebugLogBottomSheet(
                     fontWeight = FontWeight.Bold,
                 )
                 Spacer(modifier = Modifier.weight(1f))
-                TextButton(onClick = { logManager.clear() }) {
+                TextButton(onClick = onExportClick, enabled = logs.isNotEmpty()) {
+                    Text(stringResource(id = R.string.debug_log_export))
+                }
+                TextButton(onClick = onClearClick, enabled = logs.isNotEmpty()) {
                     Icon(Icons.Default.Clear, contentDescription = "Clear")
                     Spacer(modifier = Modifier.width(4.dp))
                     Text("Clear")
