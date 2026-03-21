@@ -27,7 +27,7 @@ import studio.etsoftware.obdapp.ui.feature.settings.SettingsViewModel
 import studio.etsoftware.obdapp.ui.navigation.NavGraph
 import studio.etsoftware.obdapp.ui.navigation.Screen
 import studio.etsoftware.obdapp.ui.theme.ConnectionStatusConnected
-import studio.etsoftware.obdapp.ui.theme.ObdSampleAppTheme
+import studio.etsoftware.obdapp.ui.theme.ObdScannerAppTheme
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -57,7 +57,7 @@ fun MainApp(settingsViewModel: SettingsViewModel = hiltViewModel()) {
             else -> isSystemInDarkTheme()
         }
 
-    ObdSampleAppTheme(darkTheme = isDarkTheme) {
+    ObdScannerAppTheme(darkTheme = isDarkTheme) {
         Surface(
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colorScheme.background,
