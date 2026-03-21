@@ -1,4 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">OBD Reader</string>
+    <string name="debug_log_export">Export</string>
+    <string name="debug_log_export_success">Logs exported successfully</string>
+    <string name="debug_log_export_failed">Failed to export logs</string>
+    <string name="debug_log_export_failed_with_reason">Failed to export logs: %1$s</string>
+    <string name="debug_log_export_empty">No logs available to export</string>
 </resources>

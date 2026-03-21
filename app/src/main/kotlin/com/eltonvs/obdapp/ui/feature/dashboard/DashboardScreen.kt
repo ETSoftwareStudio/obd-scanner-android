@@ -1,5 +1,7 @@
 package com.eltonvs.obdapp.ui.feature.dashboard
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -27,10 +29,13 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -39,10 +44,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.eltonvs.obdapp.R
 import com.eltonvs.obdapp.domain.model.ConnectionState
 import com.eltonvs.obdapp.ui.components.GaugeCard
 import com.eltonvs.obdapp.ui.components.MetricCard
@@ -58,7 +65,36 @@ fun DashboardScreen(
     onConnectClick: () -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val logs by viewModel.logs.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
     var showDebugLog by rememberSaveable { mutableStateOf(false) }
+
+    val exportLogLauncher =
+        rememberLauncherForActivityResult(
+            ActivityResultContracts.CreateDocument("text/plain"),
+        ) { uri ->
+            viewModel.exportLogs(uri)
+        }
+
+    LaunchedEffect(Unit) {
+        viewModel.events.collect { event ->
+            val message =
+                when (event) {
+                    DashboardEvent.ExportSuccess -> context.getString(R.string.debug_log_export_success)
+                    DashboardEvent.ExportSkippedNoLogs -> context.getString(R.string.debug_log_export_empty)
+                    is DashboardEvent.ExportError -> {
+                        if (event.reason.isNullOrBlank()) {
+                            context.getString(R.string.debug_log_export_failed)
+                        } else {
+                            context.getString(R.string.debug_log_export_failed_with_reason, event.reason)
+                        }
+                    }
+                }
+
+            snackbarHostState.showSnackbar(message)
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -86,6 +122,9 @@ fun DashboardScreen(
                     contentDescription = "Debug Log",
                 )
             }
+        },
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState)
         },
         containerColor = MaterialTheme.colorScheme.background,
     ) { padding ->
@@ -194,7 +233,11 @@ fun DashboardScreen(
 
     if (showDebugLog) {
         DebugLogBottomSheet(
-            logManager = viewModel.logManager,
+            logs = logs,
+            onClearClick = viewModel::clearLogs,
+            onExportClick = {
+                exportLogLauncher.launch(viewModel.getSuggestedLogFileName())
+            },
             onDismiss = { showDebugLog = false },
         )
     }
