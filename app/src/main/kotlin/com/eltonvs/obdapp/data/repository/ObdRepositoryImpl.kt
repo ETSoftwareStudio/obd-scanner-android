@@ -273,32 +273,46 @@ class ObdRepositoryImpl
             pollingJob?.cancel()
             pollingJob =
                 scope.launch {
-                    while (isActive) {
-                        if (obdConnection != null && transport.isConnected()) {
-                            val cycleId = telemetryRecorder.nextCycleId()
-                            val startedAt = nowMs()
-                            val stats = readMetrics(cycleId)
-                            val finishedAt = nowMs()
-                            val durationMs = finishedAt - startedAt
+                    val scheduler = DashboardPollingScheduler(intervalMs, nowMs())
 
-                            telemetryRecorder.recordCycle(
-                                CycleTelemetry(
-                                    sessionId = telemetryRecorder.currentSessionId(),
-                                    cycleId = cycleId,
-                                    startedAtMs = startedAt,
-                                    finishedAtMs = finishedAt,
-                                    durationMs = durationMs,
-                                    configuredIntervalMs = intervalMs,
-                                    commandCount = stats.commandCount,
-                                    successCount = stats.successCount,
-                                    failureCount = stats.failureCount,
-                                ),
-                            )
-                        } else {
+                    while (isActive) {
+                        val connection = obdConnection
+                        if (connection == null || !transport.isConnected()) {
                             _connectionState.value = ConnectionState.Disconnected
                             break
                         }
-                        delay(intervalMs)
+
+                        val now = nowMs()
+                        val dueMetrics = scheduler.dueMetrics(now)
+
+                        if (dueMetrics.isEmpty()) {
+                            delay(scheduler.delayUntilNextWork(now))
+                            continue
+                        }
+
+                        val cycleId = telemetryRecorder.nextCycleId()
+                        val startedAt = now
+                        val stats = readMetrics(connection, cycleId, dueMetrics, scheduler)
+                        val finishedAt = nowMs()
+
+                        telemetryRecorder.recordCycle(
+                            CycleTelemetry(
+                                sessionId = telemetryRecorder.currentSessionId(),
+                                cycleId = cycleId,
+                                startedAtMs = startedAt,
+                                finishedAtMs = finishedAt,
+                                durationMs = finishedAt - startedAt,
+                                configuredIntervalMs = intervalMs,
+                                commandCount = stats.commandCount,
+                                successCount = stats.successCount,
+                                failureCount = stats.failureCount,
+                            ),
+                        )
+
+                        val delayMs = scheduler.delayUntilNextWork(nowMs())
+                        if (delayMs > 0) {
+                            delay(delayMs)
+                        }
                     }
                 }
         }
@@ -308,210 +322,26 @@ class ObdRepositoryImpl
             pollingJob = null
         }
 
-        private suspend fun readMetrics(cycleId: Long): PollingCycleStats {
-            val connection = obdConnection ?: return PollingCycleStats(0, 0, 0)
-
+        private suspend fun readMetrics(
+            connection: ObdDeviceConnection,
+            cycleId: Long,
+            dueMetrics: List<DashboardMetricId>,
+            scheduler: DashboardPollingScheduler,
+        ): PollingCycleStats {
             var commandCount = 0
             var successCount = 0
             var failureCount = 0
 
-            try {
-                logManager.command("010D (Speed)")
+            dueMetrics.forEach { metricId ->
                 commandCount++
-                val speed =
-                    traceCommand(
-                        context = TelemetryContext.DASHBOARD,
-                        cycleId = cycleId,
-                        rawPid = "010D",
-                        commandName = "SpeedCommand",
-                        block = { connection.run(SpeedCommand()) },
-                        preview = { it.value },
-                    )
-                successCount++
-                logManager.response("010D: ${speed.value}")
+                val wasSuccessful = pollMetric(connection, cycleId, metricId)
+                scheduler.markExecuted(metricId, nowMs())
 
-                logManager.command("010C (RPM)")
-                commandCount++
-                val rpm =
-                    traceCommand(
-                        context = TelemetryContext.DASHBOARD,
-                        cycleId = cycleId,
-                        rawPid = "010C",
-                        commandName = "RPMCommand",
-                        block = { connection.run(RPMCommand()) },
-                        preview = { it.value },
-                    )
-                successCount++
-                logManager.response("010C: ${rpm.value}")
-
-                logManager.command("0105 (Coolant)")
-                commandCount++
-                val coolant =
-                    traceCommand(
-                        context = TelemetryContext.DASHBOARD,
-                        cycleId = cycleId,
-                        rawPid = "0105",
-                        commandName = "EngineCoolantTemperatureCommand",
-                        block = { connection.run(EngineCoolantTemperatureCommand()) },
-                        preview = { it.value },
-                    )
-                successCount++
-                logManager.response("0105: ${coolant.value}")
-
-                logManager.command("010F (Intake Air)")
-                commandCount++
-                val intakeAir =
-                    traceCommand(
-                        context = TelemetryContext.DASHBOARD,
-                        cycleId = cycleId,
-                        rawPid = "010F",
-                        commandName = "AirIntakeTemperatureCommand",
-                        block = { connection.run(AirIntakeTemperatureCommand()) },
-                        preview = { it.value },
-                    )
-                successCount++
-                logManager.response("010F: ${intakeAir.value}")
-
-                logManager.command("0110 (MAF)")
-                commandCount++
-                val maf =
-                    traceCommand(
-                        context = TelemetryContext.DASHBOARD,
-                        cycleId = cycleId,
-                        rawPid = "0110",
-                        commandName = "MassAirFlowCommand",
-                        block = { connection.run(MassAirFlowCommand()) },
-                        preview = { it.value },
-                    )
-                successCount++
-                logManager.response("0110: ${maf.value}")
-
-                logManager.command("0111 (Throttle)")
-                commandCount++
-                val throttle =
-                    traceCommand(
-                        context = TelemetryContext.DASHBOARD,
-                        cycleId = cycleId,
-                        rawPid = "0111",
-                        commandName = "ThrottlePositionCommand",
-                        block = { connection.run(ThrottlePositionCommand()) },
-                        preview = { it.value },
-                    )
-                successCount++
-                logManager.response("0111: ${throttle.value}")
-
-                logManager.command("012F (Fuel Level)")
-                commandCount++
-                val fuel =
-                    traceCommand(
-                        context = TelemetryContext.DASHBOARD,
-                        cycleId = cycleId,
-                        rawPid = "012F",
-                        commandName = "FuelLevelCommand",
-                        block = { connection.run(FuelLevelCommand()) },
-                        preview = { it.value },
-                    )
-                successCount++
-                logManager.response("012F: ${fuel.value}")
-
-                emitMetric(
-                    cycleId = cycleId,
-                    metric =
-                        VehicleMetric(
-                            name = "Speed",
-                            value = speed.value,
-                            unit = speed.unit,
-                            minValue = 0f,
-                            maxValue = 200f,
-                        ),
-                )
-
-                emitMetric(
-                    cycleId = cycleId,
-                    metric =
-                        VehicleMetric(
-                            name = "RPM",
-                            value = rpm.value,
-                            unit = rpm.unit,
-                            minValue = 0f,
-                            maxValue = 8000f,
-                        ),
-                )
-
-                emitMetric(
-                    cycleId = cycleId,
-                    metric =
-                        VehicleMetric(
-                            name = "Coolant",
-                            value = coolant.value,
-                            unit = coolant.unit,
-                            minValue = -40f,
-                            maxValue = 215f,
-                        ),
-                )
-
-                emitMetric(
-                    cycleId = cycleId,
-                    metric =
-                        VehicleMetric(
-                            name = "Intake",
-                            value = intakeAir.value,
-                            unit = intakeAir.unit,
-                            minValue = -40f,
-                            maxValue = 215f,
-                        ),
-                )
-
-                emitMetric(
-                    cycleId = cycleId,
-                    metric =
-                        VehicleMetric(
-                            name = "MAF",
-                            value = maf.value,
-                            unit = maf.unit,
-                            minValue = 0f,
-                            maxValue = 655.35f,
-                        ),
-                )
-
-                emitMetric(
-                    cycleId = cycleId,
-                    metric =
-                        VehicleMetric(
-                            name = "Throttle",
-                            value = throttle.value,
-                            unit = throttle.unit,
-                            minValue = 0f,
-                            maxValue = 100f,
-                        ),
-                )
-
-                emitMetric(
-                    cycleId = cycleId,
-                    metric =
-                        VehicleMetric(
-                            name = "Fuel",
-                            value = fuel.value,
-                            unit = fuel.unit,
-                            minValue = 0f,
-                            maxValue = 100f,
-                        ),
-                )
-
-                _dashboardMetrics.value =
-                    DashboardMetricsSnapshot(
-                        speed = speed.value,
-                        rpm = rpm.value,
-                        throttle = throttle.value,
-                        coolantTemp = coolant.value,
-                        intakeTemp = intakeAir.value,
-                        maf = maf.value,
-                        fuel = fuel.value,
-                    )
-            } catch (e: Exception) {
-                failureCount++
-                val errorMsg = e.message?.takeIf { it.isNotBlank() } ?: e::class.simpleName ?: "Unknown error"
-                logManager.error("Read error: $errorMsg")
+                if (wasSuccessful) {
+                    successCount++
+                } else {
+                    failureCount++
+                }
             }
 
             return PollingCycleStats(
@@ -521,12 +351,198 @@ class ObdRepositoryImpl
             )
         }
 
-        private suspend fun emitMetric(
+        private suspend fun pollMetric(
+            connection: ObdDeviceConnection,
             cycleId: Long,
-            metric: VehicleMetric,
+            metricId: DashboardMetricId,
+        ): Boolean {
+            return when (metricId) {
+                DashboardMetricId.SPEED ->
+                    pollTypedMetric(
+                        cycleId = cycleId,
+                        metricId = metricId,
+                        rawPid = "010D",
+                        commandLabel = "010D (Speed)",
+                        commandName = "SpeedCommand",
+                        read = { connection.run(SpeedCommand()) },
+                        valueOf = { it.value },
+                        unitOf = { it.unit },
+                        minValue = 0f,
+                        maxValue = 200f,
+                    )
+                DashboardMetricId.RPM ->
+                    pollTypedMetric(
+                        cycleId = cycleId,
+                        metricId = metricId,
+                        rawPid = "010C",
+                        commandLabel = "010C (RPM)",
+                        commandName = "RPMCommand",
+                        read = { connection.run(RPMCommand()) },
+                        valueOf = { it.value },
+                        unitOf = { it.unit },
+                        minValue = 0f,
+                        maxValue = 8000f,
+                    )
+                DashboardMetricId.THROTTLE ->
+                    pollTypedMetric(
+                        cycleId = cycleId,
+                        metricId = metricId,
+                        rawPid = "0111",
+                        commandLabel = "0111 (Throttle)",
+                        commandName = "ThrottlePositionCommand",
+                        read = { connection.run(ThrottlePositionCommand()) },
+                        valueOf = { it.value },
+                        unitOf = { it.unit },
+                        minValue = 0f,
+                        maxValue = 100f,
+                    )
+                DashboardMetricId.MAF ->
+                    pollTypedMetric(
+                        cycleId = cycleId,
+                        metricId = metricId,
+                        rawPid = "0110",
+                        commandLabel = "0110 (MAF)",
+                        commandName = "MassAirFlowCommand",
+                        read = { connection.run(MassAirFlowCommand()) },
+                        valueOf = { it.value },
+                        unitOf = { it.unit },
+                        minValue = 0f,
+                        maxValue = 655.35f,
+                    )
+                DashboardMetricId.COOLANT ->
+                    pollTypedMetric(
+                        cycleId = cycleId,
+                        metricId = metricId,
+                        rawPid = "0105",
+                        commandLabel = "0105 (Coolant)",
+                        commandName = "EngineCoolantTemperatureCommand",
+                        read = { connection.run(EngineCoolantTemperatureCommand()) },
+                        valueOf = { it.value },
+                        unitOf = { it.unit },
+                        minValue = -40f,
+                        maxValue = 215f,
+                    )
+                DashboardMetricId.INTAKE ->
+                    pollTypedMetric(
+                        cycleId = cycleId,
+                        metricId = metricId,
+                        rawPid = "010F",
+                        commandLabel = "010F (Intake Air)",
+                        commandName = "AirIntakeTemperatureCommand",
+                        read = { connection.run(AirIntakeTemperatureCommand()) },
+                        valueOf = { it.value },
+                        unitOf = { it.unit },
+                        minValue = -40f,
+                        maxValue = 215f,
+                    )
+                DashboardMetricId.FUEL ->
+                    pollTypedMetric(
+                        cycleId = cycleId,
+                        metricId = metricId,
+                        rawPid = "012F",
+                        commandLabel = "012F (Fuel Level)",
+                        commandName = "FuelLevelCommand",
+                        read = { connection.run(FuelLevelCommand()) },
+                        valueOf = { it.value },
+                        unitOf = { it.unit },
+                        minValue = 0f,
+                        maxValue = 100f,
+                    )
+            }
+        }
+
+        private suspend fun <T> pollTypedMetric(
+            cycleId: Long,
+            metricId: DashboardMetricId,
+            rawPid: String,
+            commandLabel: String,
+            commandName: String,
+            read: suspend () -> T,
+            valueOf: (T) -> String,
+            unitOf: (T) -> String,
+            minValue: Float,
+            maxValue: Float,
+        ): Boolean {
+            logManager.command(commandLabel)
+
+            return try {
+                val response =
+                    traceCommand(
+                        context = TelemetryContext.DASHBOARD,
+                        cycleId = cycleId,
+                        rawPid = rawPid.substringBefore(" "),
+                        commandName = commandName,
+                        block = read,
+                        preview = { valueOf(it) },
+                    )
+
+                val value = valueOf(response)
+                val unit = unitOf(response)
+                logManager.response("${rawPid.substringBefore(" ")}: $value")
+
+                publishMetric(
+                    cycleId = cycleId,
+                    metricId = metricId,
+                    value = value,
+                    unit = unit,
+                    minValue = minValue,
+                    maxValue = maxValue,
+                )
+                true
+            } catch (e: Exception) {
+                val errorMsg = e.message?.takeIf { it.isNotBlank() } ?: e::class.simpleName ?: "Unknown error"
+                logManager.error("Read error for ${rawPid.substringBefore(" ")}: $errorMsg")
+                false
+            }
+        }
+
+        private suspend fun publishMetric(
+            cycleId: Long,
+            metricId: DashboardMetricId,
+            value: String,
+            unit: String,
+            minValue: Float,
+            maxValue: Float,
         ) {
-            _metricsFlow.emit(metric)
-            recordMetricEmission(cycleId, metric.name, metric.value)
+            val metricName = metricDisplayName(metricId)
+            _metricsFlow.emit(
+                VehicleMetric(
+                    name = metricName,
+                    value = value,
+                    unit = unit,
+                    minValue = minValue,
+                    maxValue = maxValue,
+                ),
+            )
+            _dashboardMetrics.value = updateDashboardSnapshot(metricId, value)
+            recordMetricEmission(cycleId, metricName, value)
+        }
+
+        private fun updateDashboardSnapshot(
+            metricId: DashboardMetricId,
+            value: String,
+        ): DashboardMetricsSnapshot {
+            return when (metricId) {
+                DashboardMetricId.SPEED -> _dashboardMetrics.value.copy(speed = value)
+                DashboardMetricId.RPM -> _dashboardMetrics.value.copy(rpm = value)
+                DashboardMetricId.THROTTLE -> _dashboardMetrics.value.copy(throttle = value)
+                DashboardMetricId.MAF -> _dashboardMetrics.value.copy(maf = value)
+                DashboardMetricId.COOLANT -> _dashboardMetrics.value.copy(coolantTemp = value)
+                DashboardMetricId.INTAKE -> _dashboardMetrics.value.copy(intakeTemp = value)
+                DashboardMetricId.FUEL -> _dashboardMetrics.value.copy(fuel = value)
+            }
+        }
+
+        private fun metricDisplayName(metricId: DashboardMetricId): String {
+            return when (metricId) {
+                DashboardMetricId.SPEED -> "Speed"
+                DashboardMetricId.RPM -> "RPM"
+                DashboardMetricId.THROTTLE -> "Throttle"
+                DashboardMetricId.MAF -> "MAF"
+                DashboardMetricId.COOLANT -> "Coolant"
+                DashboardMetricId.INTAKE -> "Intake"
+                DashboardMetricId.FUEL -> "Fuel"
+            }
         }
 
         private suspend fun <T> traceCommand(

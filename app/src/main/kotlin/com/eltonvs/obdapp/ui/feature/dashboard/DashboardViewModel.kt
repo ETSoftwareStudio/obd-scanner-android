@@ -102,7 +102,12 @@ class DashboardViewModel
         private fun observeConnectionState() {
             viewModelScope.launch {
                 repository.connectionState.collect { state ->
-                    _uiState.update { it.copy(connectionState = state) }
+                    _uiState.update {
+                        it.copy(
+                            connectionState = state,
+                            isPolling = if (state is ConnectionState.Connected) it.isPolling else false,
+                        )
+                    }
                     if (state is ConnectionState.Connected) {
                         startPollingIfNeeded()
                     }
