@@ -44,10 +44,12 @@ import com.github.eltonvs.obd.connection.ObdDeviceConnection
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -60,6 +62,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 
 @Singleton
 class ObdRepositoryImpl
@@ -80,6 +83,9 @@ class ObdRepositoryImpl
         private var obdConnection: ObdDeviceConnection? = null
         private val scope = CoroutineScope(Dispatchers.IO)
         private var pollingJob: Job? = null
+        private var activePollingIntervalMs: Long? = null
+        private var pendingPollingIntervalMs: Long? = null
+        private val pollingConfigUpdates = Channel<Unit>(capacity = Channel.CONFLATED)
         private val pollingLifecycleMutex = Mutex()
         private val connectionAccessMutex = Mutex()
 
@@ -216,121 +222,79 @@ class ObdRepositoryImpl
 
         override suspend fun readDiagnosticInfo(): Result<DiagnosticInfo> =
             withContext(Dispatchers.IO) {
-                try {
-                    withConnectionAccess {
-                        val connection = obdConnection ?: return@withConnectionAccess Result.failure(Exception("Not connected"))
-
-                        val vin =
-                            traceCommand(
-                                context = TelemetryContext.DIAGNOSTICS,
-                                cycleId = null,
-                                rawPid = "VIN",
-                                commandName = "VINCommand",
-                                block = { connection.run(VINCommand()) },
-                                preview = { it.value },
-                            )
-
-                        val troubleCodes =
-                            traceCommand(
-                                context = TelemetryContext.DIAGNOSTICS,
-                                cycleId = null,
-                                rawPid = "03",
-                                commandName = "TroubleCodesCommand",
-                                block = { connection.run(TroubleCodesCommand()) },
-                                preview = { it.value },
-                            )
-
-                        val codes = parseDTCs(troubleCodes.value)
-
-                        Result.success(
-                            DiagnosticInfo(
-                                vin = vin.value,
-                                troubleCodes =
-                                    codes.map { code ->
-                                        TroubleCode(code, getDTCDescription(code), TroubleCodeType.CURRENT)
-                                    },
-                                milStatus = codes.isNotEmpty(),
-                                dtcCount = codes.size,
-                            ),
+                runExclusiveOperation(
+                    reason = "diagnostics read",
+                    resumeLabel = "diagnostics read",
+                ) { connection ->
+                    val vin =
+                        traceCommand(
+                            context = TelemetryContext.DIAGNOSTICS,
+                            cycleId = null,
+                            rawPid = "VIN",
+                            commandName = "VINCommand",
+                            block = { connection.run(VINCommand()) },
+                            preview = { response -> response.value },
                         )
-                    }
-                } catch (e: Exception) {
-                    Result.failure(e)
+
+                    val troubleCodes =
+                        traceCommand(
+                            context = TelemetryContext.DIAGNOSTICS,
+                            cycleId = null,
+                            rawPid = "03",
+                            commandName = "TroubleCodesCommand",
+                            block = { connection.run(TroubleCodesCommand()) },
+                            preview = { response -> response.value },
+                        )
+
+                    val codes = parseDTCs(troubleCodes.value)
+
+                    Result.success(
+                        DiagnosticInfo(
+                            vin = vin.value,
+                            troubleCodes =
+                                codes.map { code ->
+                                    TroubleCode(code, getDTCDescription(code), TroubleCodeType.CURRENT)
+                                },
+                            milStatus = codes.isNotEmpty(),
+                            dtcCount = codes.size,
+                        ),
+                    )
                 }
             }
 
         override suspend fun clearTroubleCodes(): Result<Unit> =
             withContext(Dispatchers.IO) {
-                try {
-                    withConnectionAccess {
-                        val connection = obdConnection ?: return@withConnectionAccess Result.failure(Exception("Not connected"))
-
-                        logManager.command("04 (Clear trouble codes)")
-                        traceCommand(
-                            context = TelemetryContext.CLEAR_DTC,
-                            cycleId = null,
-                            rawPid = "04",
-                            commandName = "ResetTroubleCodesCommand",
-                            block = { connection.run(ResetTroubleCodesCommand()) },
-                        )
-                        logManager.success("Trouble codes clear command sent")
-                        Result.success(Unit)
-                    }
-                } catch (e: Exception) {
-                    logManager.error("Failed to clear trouble codes: ${e.message}")
-                    Result.failure(e)
+                runExclusiveOperation(
+                    reason = "trouble code clear",
+                    resumeLabel = "trouble code clear",
+                    onFailure = { error -> logManager.error("Failed to clear trouble codes: ${error.message}") },
+                ) { connection ->
+                    logManager.command("04 (Clear trouble codes)")
+                    traceCommand(
+                        context = TelemetryContext.CLEAR_DTC,
+                        cycleId = null,
+                        rawPid = "04",
+                        commandName = "ResetTroubleCodesCommand",
+                        block = { connection.run(ResetTroubleCodesCommand()) },
+                    )
+                    logManager.success("Trouble codes clear command sent")
+                    Result.success(Unit)
                 }
             }
 
         override suspend fun startPolling(intervalMs: Long) {
             pollingLifecycleMutex.withLock {
-                pollingJob?.cancelAndJoin()
-                pollingJob =
-                    scope.launch {
-                        val scheduler = DashboardPollingScheduler(intervalMs, monotonicNowMs())
-
-                        while (isActive) {
-                            val connection = obdConnection
-                            if (connection == null || !transport.isConnected()) {
-                                _connectionState.value = ConnectionState.Disconnected
-                                break
-                            }
-
-                            val now = monotonicNowMs()
-                            val dueMetrics = scheduler.dueMetrics(now)
-
-                            if (dueMetrics.isEmpty()) {
-                                delay(scheduler.delayUntilNextWork(now))
-                                continue
-                            }
-
-                            val cycleId = telemetryRecorder.nextCycleId()
-                            val startedAtWall = wallClockMs()
-                            val startedAtMono = monotonicNowMs()
-                            val stats = readMetrics(connection, cycleId, dueMetrics, scheduler)
-                            val finishedAtWall = wallClockMs()
-                            val finishedAtMono = monotonicNowMs()
-
-                            telemetryRecorder.recordCycle(
-                                CycleTelemetry(
-                                    sessionId = telemetryRecorder.currentSessionId(),
-                                    cycleId = cycleId,
-                                    startedAtMs = startedAtWall,
-                                    finishedAtMs = finishedAtWall,
-                                    durationMs = finishedAtMono - startedAtMono,
-                                    configuredIntervalMs = intervalMs,
-                                    commandCount = stats.commandCount,
-                                    successCount = stats.successCount,
-                                    failureCount = stats.failureCount,
-                                ),
-                            )
-
-                            val delayMs = scheduler.delayUntilNextWork(monotonicNowMs())
-                            if (delayMs > 0) {
-                                delay(delayMs)
-                            }
-                        }
+                if (pollingJob?.isActive == true) {
+                    if (activePollingIntervalMs != intervalMs || pendingPollingIntervalMs != null) {
+                        pendingPollingIntervalMs = intervalMs
+                        pollingConfigUpdates.trySend(Unit)
                     }
+                    return
+                }
+
+                activePollingIntervalMs = intervalMs
+                pendingPollingIntervalMs = null
+                pollingJob = createPollingJob(intervalMs)
             }
         }
 
@@ -338,6 +302,132 @@ class ObdRepositoryImpl
             pollingLifecycleMutex.withLock {
                 pollingJob?.cancelAndJoin()
                 pollingJob = null
+                activePollingIntervalMs = null
+                pendingPollingIntervalMs = null
+            }
+        }
+
+        private suspend fun <T> runExclusiveOperation(
+            reason: String,
+            resumeLabel: String,
+            onFailure: (Exception) -> Unit = {},
+            block: suspend (ObdDeviceConnection) -> Result<T>,
+        ): Result<T> =
+            pollingLifecycleMutex.withLock {
+                val resumeInterval = (pendingPollingIntervalMs ?: activePollingIntervalMs).takeIf { pollingJob?.isActive == true }
+
+                try {
+                    val result =
+                        withConnectionAccess {
+                            if (resumeInterval != null) {
+                                logManager.info("Pausing dashboard polling for $reason")
+                                pollingJob?.cancelAndJoin()
+                                pollingJob = null
+                            }
+
+                            val connection = obdConnection ?: return@withConnectionAccess Result.failure(Exception("Not connected"))
+                            block(connection)
+                        }
+
+                    result
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    onFailure(e)
+                    Result.failure(e)
+                } finally {
+                    if (resumeInterval != null) {
+                        if (obdConnection != null && transport.isConnected() && _connectionState.value is ConnectionState.Connected) {
+                            logManager.info("Resuming dashboard polling after $resumeLabel")
+                            activePollingIntervalMs = resumeInterval
+                            pendingPollingIntervalMs = null
+                            pollingJob = createPollingJob(resumeInterval)
+                        } else {
+                            activePollingIntervalMs = null
+                            pendingPollingIntervalMs = null
+                        }
+                    }
+                }
+            }
+
+        private fun createPollingJob(initialIntervalMs: Long): Job =
+            scope.launch {
+                var currentIntervalMs = initialIntervalMs
+                var scheduler = DashboardPollingScheduler(currentIntervalMs, monotonicNowMs())
+
+                while (isActive) {
+                    applyPendingPollingInterval(currentIntervalMs)?.let { nextIntervalMs ->
+                        currentIntervalMs = nextIntervalMs
+                        scheduler = DashboardPollingScheduler(currentIntervalMs, monotonicNowMs())
+                    }
+
+                    val connection = obdConnection
+                    if (connection == null || !transport.isConnected()) {
+                        _connectionState.value = ConnectionState.Disconnected
+                        break
+                    }
+
+                    val now = monotonicNowMs()
+                    val dueMetrics = scheduler.dueMetrics(now)
+
+                    if (dueMetrics.isEmpty()) {
+                        waitForPollingUpdate(scheduler.delayUntilNextWork(now))
+                        continue
+                    }
+
+                    val cycleId = telemetryRecorder.nextCycleId()
+                    val startedAtWall = wallClockMs()
+                    val startedAtMono = monotonicNowMs()
+                    val stats = readMetrics(connection, cycleId, dueMetrics, scheduler)
+                    val finishedAtWall = wallClockMs()
+                    val finishedAtMono = monotonicNowMs()
+
+                    telemetryRecorder.recordCycle(
+                        CycleTelemetry(
+                            sessionId = telemetryRecorder.currentSessionId(),
+                            cycleId = cycleId,
+                            startedAtMs = startedAtWall,
+                            finishedAtMs = finishedAtWall,
+                            durationMs = finishedAtMono - startedAtMono,
+                            configuredIntervalMs = currentIntervalMs,
+                            commandCount = stats.commandCount,
+                            successCount = stats.successCount,
+                            failureCount = stats.failureCount,
+                        ),
+                    )
+
+                    applyPendingPollingInterval(currentIntervalMs)?.let { nextIntervalMs ->
+                        currentIntervalMs = nextIntervalMs
+                        scheduler = DashboardPollingScheduler(currentIntervalMs, monotonicNowMs())
+                        continue
+                    }
+
+                    waitForPollingUpdate(scheduler.delayUntilNextWork(monotonicNowMs()))
+                }
+            }
+
+        private suspend fun applyPendingPollingInterval(currentIntervalMs: Long): Long? =
+            pollingLifecycleMutex.withLock {
+                val nextIntervalMs = pendingPollingIntervalMs
+                if (nextIntervalMs != null && nextIntervalMs != currentIntervalMs) {
+                    activePollingIntervalMs = nextIntervalMs
+                    pendingPollingIntervalMs = null
+                    nextIntervalMs
+                } else {
+                    if (nextIntervalMs == currentIntervalMs) {
+                        pendingPollingIntervalMs = null
+                    }
+                    null
+                }
+            }
+
+        private suspend fun waitForPollingUpdate(delayMs: Long) {
+            if (delayMs <= 0) {
+                return
+            }
+
+            withTimeoutOrNull(delayMs) {
+                pollingConfigUpdates.receive()
             }
         }
 
@@ -510,6 +600,8 @@ class ObdRepositoryImpl
                     maxValue = maxValue,
                 )
                 true
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 val errorMsg = e.message?.takeIf { it.isNotBlank() } ?: e::class.simpleName ?: "Unknown error"
                 logManager.error("Read error for ${rawPid.substringBefore(" ")}: $errorMsg")
