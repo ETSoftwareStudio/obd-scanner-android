@@ -37,15 +37,15 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import studio.etsoftware.obdapp.R
+import studio.etsoftware.obdapp.domain.model.DebugLogEntry
+import studio.etsoftware.obdapp.domain.model.DebugLogType
 import studio.etsoftware.obdapp.ui.theme.GaugeGreen
 import studio.etsoftware.obdapp.ui.theme.GaugeRed
-import studio.etsoftware.obdapp.util.LogEntry
-import studio.etsoftware.obdapp.util.LogType
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DebugLogBottomSheet(
-    logs: List<LogEntry>,
+    logs: List<DebugLogEntry>,
     onClearClick: () -> Unit,
     onExportClick: () -> Unit,
     onDismiss: () -> Unit,
@@ -130,15 +130,15 @@ fun DebugLogBottomSheet(
 }
 
 @Composable
-private fun LogEntryItem(entry: LogEntry) {
+private fun LogEntryItem(entry: DebugLogEntry) {
     val (backgroundColor, textColor) =
         when (entry.type) {
-            LogType.COMMAND -> Color(0xFF1E3A5F) to Color(0xFF64B5F6)
-            LogType.RESPONSE -> Color(0xFF1B3D1B) to GaugeGreen
-            LogType.ERROR -> Color(0xFF3D1B1B) to GaugeRed
-            LogType.SUCCESS -> Color(0xFF1B3D1B) to GaugeGreen
-            LogType.TELEMETRY -> Color(0xFF2D2A4A) to Color(0xFFB39DDB)
-            LogType.INFO -> Color.Transparent to MaterialTheme.colorScheme.onSurface
+            DebugLogType.COMMAND -> Color(0xFF1E3A5F) to Color(0xFF64B5F6)
+            DebugLogType.RESPONSE -> Color(0xFF1B3D1B) to GaugeGreen
+            DebugLogType.ERROR -> Color(0xFF3D1B1B) to GaugeRed
+            DebugLogType.SUCCESS -> Color(0xFF1B3D1B) to GaugeGreen
+            DebugLogType.TELEMETRY -> Color(0xFF2D2A4A) to Color(0xFFB39DDB)
+            DebugLogType.INFO -> Color.Transparent to MaterialTheme.colorScheme.onSurface
         }
 
     Row(
