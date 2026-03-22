@@ -11,7 +11,6 @@ import androidx.core.content.ContextCompat
 import studio.etsoftware.obdapp.data.connection.BluetoothDiscoveryManager
 import studio.etsoftware.obdapp.data.connection.ObdTransport
 import studio.etsoftware.obdapp.data.telemetry.TelemetryRecorder
-import studio.etsoftware.obdapp.domain.model.CommandTelemetry
 import studio.etsoftware.obdapp.domain.model.ConnectionState
 import studio.etsoftware.obdapp.domain.model.CycleTelemetry
 import studio.etsoftware.obdapp.domain.model.DeviceInfo
@@ -70,6 +69,7 @@ class ObdRepositoryImpl
         private val telemetryRecorder: TelemetryRecorder,
         private val dtcParser: DtcParser,
         private val metricsStore: DashboardMetricsStore,
+        private val commandExecutor: ObdCommandExecutor,
     ) : ObdRepository {
         private data class PollingCycleStats(
             val commandCount: Int,
@@ -172,7 +172,7 @@ class ObdRepositoryImpl
             try {
                 withConnectionAccess {
                     logManager.command("ATZ (Reset adapter)")
-                    traceCommand(
+                    commandExecutor.execute(
                         context = TelemetryContext.INIT,
                         cycleId = null,
                         rawPid = "ATZ",
@@ -182,7 +182,7 @@ class ObdRepositoryImpl
                     )
 
                     logManager.command("ATE0 (Echo off)")
-                    traceCommand(
+                    commandExecutor.execute(
                         context = TelemetryContext.INIT,
                         cycleId = null,
                         rawPid = "ATE0",
@@ -220,7 +220,7 @@ class ObdRepositoryImpl
                     resumeLabel = "diagnostics read",
                 ) { connection ->
                     val vin =
-                        traceCommand(
+                        commandExecutor.execute(
                             context = TelemetryContext.DIAGNOSTICS,
                             cycleId = null,
                             rawPid = "VIN",
@@ -230,7 +230,7 @@ class ObdRepositoryImpl
                         )
 
                     val troubleCodes =
-                        traceCommand(
+                        commandExecutor.execute(
                             context = TelemetryContext.DIAGNOSTICS,
                             cycleId = null,
                             rawPid = "03",
@@ -263,7 +263,7 @@ class ObdRepositoryImpl
                     onFailure = { error -> logManager.error("Failed to clear trouble codes: ${error.message}") },
                 ) { connection ->
                     logManager.command("04 (Clear trouble codes)")
-                    traceCommand(
+                    commandExecutor.execute(
                         context = TelemetryContext.CLEAR_DTC,
                         cycleId = null,
                         rawPid = "04",
@@ -578,7 +578,7 @@ class ObdRepositoryImpl
             return try {
                 val response =
                     withConnectionAccess {
-                        traceCommand(
+                        commandExecutor.execute(
                             context = TelemetryContext.DASHBOARD,
                             cycleId = cycleId,
                             rawPid = rawPid.substringBefore(" "),
@@ -590,7 +590,7 @@ class ObdRepositoryImpl
 
                 val value = valueOf(response)
                 val unit = unitOf(response)
-                val rawValue = previewValue(rawValueOf(response)) ?: rawValueOf(response)
+                val rawValue = commandExecutor.previewValue(rawValueOf(response)) ?: rawValueOf(response)
                 logManager.response("${rawPid.substringBefore(" ")}: $value (raw=$rawValue)")
 
                 metricsStore.publish(
@@ -611,65 +611,6 @@ class ObdRepositoryImpl
             }
         }
 
-        private suspend fun <T> traceCommand(
-            context: TelemetryContext,
-            cycleId: Long?,
-            rawPid: String,
-            commandName: String,
-            block: suspend () -> T,
-            preview: (T) -> String? = { null },
-        ): T {
-            val startedAtWall = wallClockMs()
-            val startedAtMono = monotonicNowMs()
-
-            try {
-                val result = block()
-                val finishedAtWall = wallClockMs()
-                val finishedAtMono = monotonicNowMs()
-                val valuePreview = previewValue(preview(result))
-
-                telemetryRecorder.recordCommand(
-                    CommandTelemetry(
-                        sessionId = telemetryRecorder.currentSessionId(),
-                        cycleId = cycleId,
-                        context = context,
-                        commandName = commandName,
-                        rawPid = rawPid,
-                        startedAtMs = startedAtWall,
-                        finishedAtMs = finishedAtWall,
-                        durationMs = finishedAtMono - startedAtMono,
-                        success = true,
-                        valuePreview = valuePreview,
-                    ),
-                )
-
-                return result
-            } catch (e: Exception) {
-                val finishedAtWall = wallClockMs()
-                val finishedAtMono = monotonicNowMs()
-                val errorType = e::class.simpleName ?: "Exception"
-                val errorMessage = previewValue(e.message)
-
-                telemetryRecorder.recordCommand(
-                    CommandTelemetry(
-                        sessionId = telemetryRecorder.currentSessionId(),
-                        cycleId = cycleId,
-                        context = context,
-                        commandName = commandName,
-                        rawPid = rawPid,
-                        startedAtMs = startedAtWall,
-                        finishedAtMs = finishedAtWall,
-                        durationMs = finishedAtMono - startedAtMono,
-                        success = false,
-                        errorType = errorType,
-                        errorMessage = errorMessage,
-                    ),
-                )
-
-                throw e
-            }
-        }
-
         private suspend fun <T> withConnectionAccess(block: suspend () -> T): T {
             return connectionAccessMutex.withLock {
                 block()
@@ -679,14 +620,6 @@ class ObdRepositoryImpl
         private fun wallClockMs(): Long = System.currentTimeMillis()
 
         private fun monotonicNowMs(): Long = SystemClock.elapsedRealtime()
-
-        private fun previewValue(value: String?): String? {
-            return value
-                ?.replace('\n', ' ')
-                ?.replace('\r', ' ')
-                ?.trim()
-                ?.take(40)
-        }
 
         private fun hasBluetoothConnectPermission(): Boolean {
             return Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
