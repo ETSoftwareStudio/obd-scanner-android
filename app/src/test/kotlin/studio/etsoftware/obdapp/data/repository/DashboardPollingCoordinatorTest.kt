@@ -9,6 +9,8 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import studio.etsoftware.obdapp.data.session.ObdCommandExecutor
+import studio.etsoftware.obdapp.data.session.ObdSessionManager
 import studio.etsoftware.obdapp.data.telemetry.TelemetryRecorder
 import studio.etsoftware.obdapp.domain.model.ConnectionState
 import studio.etsoftware.obdapp.util.LogManager
