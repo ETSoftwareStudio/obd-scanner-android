@@ -13,6 +13,8 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import studio.etsoftware.obdapp.data.diagnostics.DiagnosticsService
+import studio.etsoftware.obdapp.data.diagnostics.DtcParser
 import studio.etsoftware.obdapp.data.session.ObdCommandExecutor
 import studio.etsoftware.obdapp.domain.model.TelemetryContext
 import studio.etsoftware.obdapp.util.LogManager

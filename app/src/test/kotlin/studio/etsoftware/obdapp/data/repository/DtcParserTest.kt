@@ -3,6 +3,7 @@ package studio.etsoftware.obdapp.data.repository
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import studio.etsoftware.obdapp.data.diagnostics.DtcParser
 
 class DtcParserTest {
     private val parser = DtcParser()

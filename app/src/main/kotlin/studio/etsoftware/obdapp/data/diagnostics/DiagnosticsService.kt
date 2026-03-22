@@ -1,4 +1,4 @@
-package studio.etsoftware.obdapp.data.repository
+package studio.etsoftware.obdapp.data.diagnostics
 
 import com.github.eltonvs.obd.command.control.ResetTroubleCodesCommand
 import studio.etsoftware.obdapp.data.session.ObdCommandExecutor
