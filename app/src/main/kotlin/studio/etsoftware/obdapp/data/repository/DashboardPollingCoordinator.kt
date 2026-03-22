@@ -22,6 +22,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeoutOrNull
+import studio.etsoftware.obdapp.data.session.ObdCommandExecutor
+import studio.etsoftware.obdapp.data.session.ObdSessionManager
 import studio.etsoftware.obdapp.data.telemetry.TelemetryRecorder
 import studio.etsoftware.obdapp.domain.model.ConnectionState
 import studio.etsoftware.obdapp.domain.model.CycleTelemetry

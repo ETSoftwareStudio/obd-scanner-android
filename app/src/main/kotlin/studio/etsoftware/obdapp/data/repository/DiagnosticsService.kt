@@ -1,6 +1,7 @@
 package studio.etsoftware.obdapp.data.repository
 
 import com.github.eltonvs.obd.command.control.ResetTroubleCodesCommand
+import studio.etsoftware.obdapp.data.session.ObdCommandExecutor
 import com.github.eltonvs.obd.command.control.TroubleCodesCommand
 import com.github.eltonvs.obd.command.control.VINCommand
 import com.github.eltonvs.obd.connection.ObdDeviceConnection
