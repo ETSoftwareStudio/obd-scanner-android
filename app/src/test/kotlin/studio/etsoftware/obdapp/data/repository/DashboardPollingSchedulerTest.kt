@@ -1,11 +1,9 @@
-package studio.etsoftware.obdapp.data.repository
+package studio.etsoftware.obdapp.data.polling
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import studio.etsoftware.obdapp.data.polling.DashboardMetricId
-import studio.etsoftware.obdapp.data.polling.DashboardPollingScheduler
 
 class DashboardPollingSchedulerTest {
     @Test
