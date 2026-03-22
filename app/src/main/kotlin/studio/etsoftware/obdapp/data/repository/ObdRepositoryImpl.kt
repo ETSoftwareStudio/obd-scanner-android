@@ -14,12 +14,10 @@ import studio.etsoftware.obdapp.data.telemetry.TelemetryRecorder
 import studio.etsoftware.obdapp.domain.model.CommandTelemetry
 import studio.etsoftware.obdapp.domain.model.ConnectionState
 import studio.etsoftware.obdapp.domain.model.CycleTelemetry
-import studio.etsoftware.obdapp.domain.model.DashboardMetricsSnapshot
 import studio.etsoftware.obdapp.domain.model.DeviceInfo
 import studio.etsoftware.obdapp.domain.model.DeviceType
 import studio.etsoftware.obdapp.domain.model.DiagnosticInfo
 import studio.etsoftware.obdapp.domain.model.DiscoveryState
-import studio.etsoftware.obdapp.domain.model.MetricEmissionTelemetry
 import studio.etsoftware.obdapp.domain.model.PairingState
 import studio.etsoftware.obdapp.domain.model.TelemetryContext
 import studio.etsoftware.obdapp.domain.model.TroubleCode
@@ -51,10 +49,8 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -73,6 +69,7 @@ class ObdRepositoryImpl
         private val logManager: LogManager,
         private val telemetryRecorder: TelemetryRecorder,
         private val dtcParser: DtcParser,
+        private val metricsStore: DashboardMetricsStore,
     ) : ObdRepository {
         private data class PollingCycleStats(
             val commandCount: Int,
@@ -94,11 +91,8 @@ class ObdRepositoryImpl
         override val discoveryState: StateFlow<DiscoveryState> = discoveryManager.discoveryState
         override val pairingState: StateFlow<PairingState> = discoveryManager.pairingState
 
-        private val _metricsFlow = MutableSharedFlow<VehicleMetric>(replay = 1, extraBufferCapacity = 64)
-        private val _dashboardMetrics = MutableStateFlow(DashboardMetricsSnapshot())
-
-        override val vehicleMetrics: Flow<VehicleMetric> = _metricsFlow.asSharedFlow()
-        override val dashboardMetrics: StateFlow<DashboardMetricsSnapshot> = _dashboardMetrics.asStateFlow()
+        override val vehicleMetrics: Flow<VehicleMetric> = metricsStore.vehicleMetrics
+        override val dashboardMetrics = metricsStore.dashboardMetrics
 
         override fun isBluetoothEnabled(): Boolean = discoveryManager.isBluetoothEnabled()
 
@@ -599,7 +593,7 @@ class ObdRepositoryImpl
                 val rawValue = previewValue(rawValueOf(response)) ?: rawValueOf(response)
                 logManager.response("${rawPid.substringBefore(" ")}: $value (raw=$rawValue)")
 
-                publishMetric(
+                metricsStore.publish(
                     cycleId = cycleId,
                     metricId = metricId,
                     value = value,
@@ -614,55 +608,6 @@ class ObdRepositoryImpl
                 val errorMsg = e.message?.takeIf { it.isNotBlank() } ?: e::class.simpleName ?: "Unknown error"
                 logManager.error("Read error for ${rawPid.substringBefore(" ")}: $errorMsg")
                 false
-            }
-        }
-
-        private suspend fun publishMetric(
-            cycleId: Long,
-            metricId: DashboardMetricId,
-            value: String,
-            unit: String,
-            minValue: Float,
-            maxValue: Float,
-        ) {
-            val metricName = metricDisplayName(metricId)
-            _metricsFlow.emit(
-                VehicleMetric(
-                    name = metricName,
-                    value = value,
-                    unit = unit,
-                    minValue = minValue,
-                    maxValue = maxValue,
-                ),
-            )
-            _dashboardMetrics.value = updateDashboardSnapshot(metricId, value)
-            recordMetricEmission(cycleId, metricName, value)
-        }
-
-        private fun updateDashboardSnapshot(
-            metricId: DashboardMetricId,
-            value: String,
-        ): DashboardMetricsSnapshot {
-            return when (metricId) {
-                DashboardMetricId.SPEED -> _dashboardMetrics.value.copy(speed = value)
-                DashboardMetricId.RPM -> _dashboardMetrics.value.copy(rpm = value)
-                DashboardMetricId.THROTTLE -> _dashboardMetrics.value.copy(throttle = value)
-                DashboardMetricId.MAF -> _dashboardMetrics.value.copy(maf = value)
-                DashboardMetricId.COOLANT -> _dashboardMetrics.value.copy(coolantTemp = value)
-                DashboardMetricId.INTAKE -> _dashboardMetrics.value.copy(intakeTemp = value)
-                DashboardMetricId.FUEL -> _dashboardMetrics.value.copy(fuel = value)
-            }
-        }
-
-        private fun metricDisplayName(metricId: DashboardMetricId): String {
-            return when (metricId) {
-                DashboardMetricId.SPEED -> "Speed"
-                DashboardMetricId.RPM -> "RPM"
-                DashboardMetricId.THROTTLE -> "Throttle"
-                DashboardMetricId.MAF -> "MAF"
-                DashboardMetricId.COOLANT -> "Coolant"
-                DashboardMetricId.INTAKE -> "Intake"
-                DashboardMetricId.FUEL -> "Fuel"
             }
         }
 
@@ -723,22 +668,6 @@ class ObdRepositoryImpl
 
                 throw e
             }
-        }
-
-        private suspend fun recordMetricEmission(
-            cycleId: Long?,
-            metricName: String,
-            value: String,
-        ) {
-            telemetryRecorder.recordMetricEmission(
-                MetricEmissionTelemetry(
-                    sessionId = telemetryRecorder.currentSessionId(),
-                    cycleId = cycleId,
-                    metricName = metricName,
-                    emittedAtMs = wallClockMs(),
-                    value = previewValue(value) ?: value,
-                ),
-            )
         }
 
         private suspend fun <T> withConnectionAccess(block: suspend () -> T): T {
