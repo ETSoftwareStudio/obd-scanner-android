@@ -3,7 +3,6 @@ package studio.etsoftware.obdapp.data.repository
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
 import studio.etsoftware.obdapp.data.connection.BluetoothDiscoveryManager
@@ -17,7 +16,6 @@ import studio.etsoftware.obdapp.domain.model.DeviceInfo
 import studio.etsoftware.obdapp.domain.model.DiagnosticInfo
 import studio.etsoftware.obdapp.domain.model.DiscoveryState
 import studio.etsoftware.obdapp.domain.model.PairingState
-import studio.etsoftware.obdapp.domain.model.VehicleMetric
 import studio.etsoftware.obdapp.domain.repository.ConnectionRepository
 import studio.etsoftware.obdapp.domain.repository.DashboardRepository
 import studio.etsoftware.obdapp.domain.repository.DiagnosticsRepository
@@ -41,7 +39,6 @@ class ObdRepositoryImpl
         override val connectionState: StateFlow<ConnectionState> = sessionManager.connectionState
         override val discoveryState: StateFlow<DiscoveryState> = discoveryManager.discoveryState
         override val pairingState: StateFlow<PairingState> = discoveryManager.pairingState
-        val vehicleMetrics: Flow<VehicleMetric> = metricsStore.vehicleMetrics
         override val dashboardMetrics: StateFlow<DashboardMetricsSnapshot> = metricsStore.dashboardMetrics
 
         override fun isBluetoothEnabled(): Boolean = discoveryManager.isBluetoothEnabled()
