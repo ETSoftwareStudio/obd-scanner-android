@@ -1,20 +1,11 @@
 package studio.etsoftware.obdapp.data.repository
 
-import android.Manifest
-import android.annotation.SuppressLint
-import android.bluetooth.BluetoothAdapter
-import android.content.Context
-import android.content.pm.PackageManager
-import android.os.Build
 import android.os.SystemClock
-import androidx.core.content.ContextCompat
 import studio.etsoftware.obdapp.data.connection.BluetoothDiscoveryManager
-import studio.etsoftware.obdapp.data.connection.ObdTransport
 import studio.etsoftware.obdapp.data.telemetry.TelemetryRecorder
 import studio.etsoftware.obdapp.domain.model.ConnectionState
 import studio.etsoftware.obdapp.domain.model.CycleTelemetry
 import studio.etsoftware.obdapp.domain.model.DeviceInfo
-import studio.etsoftware.obdapp.domain.model.DeviceType
 import studio.etsoftware.obdapp.domain.model.DiagnosticInfo
 import studio.etsoftware.obdapp.domain.model.DiscoveryState
 import studio.etsoftware.obdapp.domain.model.PairingState
@@ -24,9 +15,6 @@ import studio.etsoftware.obdapp.domain.model.TroubleCodeType
 import studio.etsoftware.obdapp.domain.model.VehicleMetric
 import studio.etsoftware.obdapp.domain.repository.ObdRepository
 import studio.etsoftware.obdapp.util.LogManager
-import com.github.eltonvs.obd.command.Switcher
-import com.github.eltonvs.obd.command.at.ResetAdapterCommand
-import com.github.eltonvs.obd.command.at.SetEchoCommand
 import com.github.eltonvs.obd.command.control.ResetTroubleCodesCommand
 import com.github.eltonvs.obd.command.control.TroubleCodesCommand
 import com.github.eltonvs.obd.command.control.VINCommand
@@ -38,7 +26,6 @@ import com.github.eltonvs.obd.command.fuel.FuelLevelCommand
 import com.github.eltonvs.obd.command.temperature.AirIntakeTemperatureCommand
 import com.github.eltonvs.obd.command.temperature.EngineCoolantTemperatureCommand
 import com.github.eltonvs.obd.connection.ObdDeviceConnection
-import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
@@ -48,9 +35,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -62,14 +47,13 @@ import kotlinx.coroutines.withTimeoutOrNull
 class ObdRepositoryImpl
     @Inject
     constructor(
-        @param:ApplicationContext private val appContext: Context,
-        private val transport: ObdTransport,
         private val discoveryManager: BluetoothDiscoveryManager,
         private val logManager: LogManager,
         private val telemetryRecorder: TelemetryRecorder,
         private val dtcParser: DtcParser,
         private val metricsStore: DashboardMetricsStore,
         private val commandExecutor: ObdCommandExecutor,
+        private val sessionManager: ObdSessionManager,
     ) : ObdRepository {
         private data class PollingCycleStats(
             val commandCount: Int,
@@ -77,17 +61,14 @@ class ObdRepositoryImpl
             val failureCount: Int,
         )
 
-        private var obdConnection: ObdDeviceConnection? = null
         private val scope = CoroutineScope(Dispatchers.IO)
         private var pollingJob: Job? = null
         private var activePollingIntervalMs: Long? = null
         private var pendingPollingIntervalMs: Long? = null
         private val pollingConfigUpdates = Channel<Unit>(capacity = Channel.CONFLATED)
         private val pollingLifecycleMutex = Mutex()
-        private val connectionAccessMutex = Mutex()
 
-        private val _connectionState = MutableStateFlow<ConnectionState>(ConnectionState.Disconnected)
-        override val connectionState: StateFlow<ConnectionState> = _connectionState.asStateFlow()
+        override val connectionState: StateFlow<ConnectionState> = sessionManager.connectionState
         override val discoveryState: StateFlow<DiscoveryState> = discoveryManager.discoveryState
         override val pairingState: StateFlow<PairingState> = discoveryManager.pairingState
 
@@ -107,109 +88,17 @@ class ObdRepositoryImpl
 
         override fun clearPairingState() = discoveryManager.clearPairingState()
 
-        @Suppress("DEPRECATION")
-        @SuppressLint("MissingPermission")
-        override suspend fun getPairedDevices(): List<DeviceInfo> =
-            withContext(Dispatchers.IO) {
-                if (!hasBluetoothConnectPermission()) {
-                    logManager.error("Missing BLUETOOTH_CONNECT permission")
-                    return@withContext emptyList()
-                }
-
-                val adapter = BluetoothAdapter.getDefaultAdapter() ?: return@withContext emptyList()
-                if (!adapter.isEnabled) {
-                    logManager.error("Bluetooth is disabled")
-                    return@withContext emptyList()
-                }
-
-                try {
-                    adapter.bondedDevices?.map { bluetoothDevice ->
-                        DeviceInfo(
-                            address = bluetoothDevice.address,
-                            name = bluetoothDevice.name ?: "Unknown Device",
-                            type = DeviceType.CLASSIC,
-                        )
-                    } ?: emptyList()
-                } catch (_: SecurityException) {
-                    logManager.error("Unable to read paired devices without BLUETOOTH_CONNECT permission")
-                    emptyList()
-                }
-            }
+        override suspend fun getPairedDevices(): List<DeviceInfo> = sessionManager.getPairedDevices()
 
         override suspend fun connect(device: DeviceInfo): Result<Unit> {
             stopDiscovery()
-            _connectionState.value = ConnectionState.Connecting
-            logManager.info("Connecting to ${device.name} (${device.address})...")
-
-            if (!hasBluetoothConnectPermission()) {
-                val error = Exception("BLUETOOTH_CONNECT permission is required")
-                _connectionState.value = ConnectionState.Error(error.message ?: "Missing permission")
-                logManager.error(error.message ?: "Missing BLUETOOTH_CONNECT permission")
-                return Result.failure(error)
-            }
-
-            val connectionResult = transport.connect(device)
-
-            if (connectionResult.isFailure) {
-                val errorMsg = connectionResult.exceptionOrNull()?.message ?: "Connection failed"
-                _connectionState.value = ConnectionState.Error(errorMsg)
-                logManager.error("Connection failed: $errorMsg")
-                return Result.failure(connectionResult.exceptionOrNull() ?: Exception("Connection failed"))
-            }
-
-            val inputStream = transport.getInputStream()
-            val outputStream = transport.getOutputStream()
-
-            if (inputStream == null || outputStream == null) {
-                val error = Exception("Failed to get streams")
-                _connectionState.value = ConnectionState.Error(error.message ?: "Failed to get streams")
-                logManager.error("Failed to get Bluetooth streams")
-                return Result.failure(error)
-            }
-
-            obdConnection = ObdDeviceConnection(inputStream, outputStream)
-
-            try {
-                withConnectionAccess {
-                    logManager.command("ATZ (Reset adapter)")
-                    commandExecutor.execute(
-                        context = TelemetryContext.INIT,
-                        cycleId = null,
-                        rawPid = "ATZ",
-                        commandName = "ResetAdapterCommand",
-                        block = { obdConnection?.run(ResetAdapterCommand()) ?: error("No OBD connection") },
-                        preview = { it.value },
-                    )
-
-                    logManager.command("ATE0 (Echo off)")
-                    commandExecutor.execute(
-                        context = TelemetryContext.INIT,
-                        cycleId = null,
-                        rawPid = "ATE0",
-                        commandName = "SetEchoCommand",
-                        block = { obdConnection?.run(SetEchoCommand(Switcher.OFF)) ?: error("No OBD connection") },
-                        preview = { it.value },
-                    )
-                }
-
-                _connectionState.value = ConnectionState.Connected
-                logManager.success("Connected to ${device.name}")
-                return Result.success(Unit)
-            } catch (e: Exception) {
-                _connectionState.value = ConnectionState.Error(e.message ?: "Failed to initialize OBD")
-                logManager.error("OBD initialization failed: ${e.message}")
-                return Result.failure(e)
-            }
+            return sessionManager.connect(device)
         }
 
         override suspend fun disconnect() {
             logManager.info("Disconnecting...")
             stopPolling()
-            withConnectionAccess {
-                obdConnection = null
-                transport.disconnect()
-            }
-            _connectionState.value = ConnectionState.Disconnected
+            sessionManager.disconnect()
             logManager.info("Disconnected")
         }
 
@@ -311,14 +200,14 @@ class ObdRepositoryImpl
 
                 try {
                     val result =
-                        withConnectionAccess {
+                        sessionManager.withConnectionAccess {
                             if (resumeInterval != null) {
                                 logManager.info("Pausing dashboard polling for $reason")
                                 pollingJob?.cancelAndJoin()
                                 pollingJob = null
                             }
 
-                            val connection = obdConnection ?: return@withConnectionAccess Result.failure(Exception("Not connected"))
+                            val connection = sessionManager.currentConnection() ?: return@withConnectionAccess Result.failure(Exception("Not connected"))
                             block(connection)
                         }
 
@@ -330,7 +219,10 @@ class ObdRepositoryImpl
                     Result.failure(e)
                 } finally {
                     if (resumeInterval != null) {
-                        if (obdConnection != null && transport.isConnected() && _connectionState.value is ConnectionState.Connected) {
+                        if (sessionManager.currentConnection() != null &&
+                            sessionManager.isTransportConnected() &&
+                            connectionState.value is ConnectionState.Connected
+                        ) {
                             logManager.info("Resuming dashboard polling after $resumeLabel")
                             activePollingIntervalMs = resumeInterval
                             pendingPollingIntervalMs = null
@@ -354,9 +246,8 @@ class ObdRepositoryImpl
                         scheduler = DashboardPollingScheduler(currentIntervalMs, monotonicNowMs())
                     }
 
-                    val connection = obdConnection
-                    if (connection == null || !transport.isConnected()) {
-                        _connectionState.value = ConnectionState.Disconnected
+                    val connection = sessionManager.currentConnection()
+                    if (connection == null || !sessionManager.isTransportConnected()) {
                         break
                     }
 
@@ -577,7 +468,7 @@ class ObdRepositoryImpl
 
             return try {
                 val response =
-                    withConnectionAccess {
+                    sessionManager.withConnectionAccess {
                         commandExecutor.execute(
                             context = TelemetryContext.DASHBOARD,
                             cycleId = cycleId,
@@ -611,21 +502,7 @@ class ObdRepositoryImpl
             }
         }
 
-        private suspend fun <T> withConnectionAccess(block: suspend () -> T): T {
-            return connectionAccessMutex.withLock {
-                block()
-            }
-        }
-
         private fun wallClockMs(): Long = System.currentTimeMillis()
 
         private fun monotonicNowMs(): Long = SystemClock.elapsedRealtime()
-
-        private fun hasBluetoothConnectPermission(): Boolean {
-            return Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
-                ContextCompat.checkSelfPermission(
-                    appContext,
-                    Manifest.permission.BLUETOOTH_CONNECT,
-                ) == PackageManager.PERMISSION_GRANTED
-        }
     }
