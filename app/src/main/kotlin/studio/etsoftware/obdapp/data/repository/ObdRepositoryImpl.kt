@@ -18,7 +18,6 @@ import studio.etsoftware.obdapp.domain.repository.ConnectionRepository
 import studio.etsoftware.obdapp.domain.repository.DashboardRepository
 import studio.etsoftware.obdapp.domain.repository.DiagnosticsRepository
 import studio.etsoftware.obdapp.domain.repository.DiscoveryRepository
-import studio.etsoftware.obdapp.domain.repository.ObdRepository
 import studio.etsoftware.obdapp.util.LogManager
 
 @Singleton
@@ -31,15 +30,14 @@ class ObdRepositoryImpl
         private val sessionManager: ObdSessionManager,
         private val diagnosticsService: DiagnosticsService,
         private val pollingCoordinator: DashboardPollingCoordinator,
-    ) : ObdRepository,
-        ConnectionRepository,
+    ) : ConnectionRepository,
         DiscoveryRepository,
         DashboardRepository,
         DiagnosticsRepository {
         override val connectionState: StateFlow<ConnectionState> = sessionManager.connectionState
         override val discoveryState: StateFlow<DiscoveryState> = discoveryManager.discoveryState
         override val pairingState: StateFlow<PairingState> = discoveryManager.pairingState
-        override val vehicleMetrics: Flow<VehicleMetric> = metricsStore.vehicleMetrics
+        val vehicleMetrics: Flow<VehicleMetric> = metricsStore.vehicleMetrics
         override val dashboardMetrics: StateFlow<DashboardMetricsSnapshot> = metricsStore.dashboardMetrics
 
         override fun isBluetoothEnabled(): Boolean = discoveryManager.isBluetoothEnabled()
