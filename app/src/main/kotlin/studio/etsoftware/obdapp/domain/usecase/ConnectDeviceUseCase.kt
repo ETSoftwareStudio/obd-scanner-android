@@ -9,7 +9,5 @@ class ConnectDeviceUseCase
     constructor(
         private val connectionRepository: ConnectionRepository,
     ) {
-        suspend operator fun invoke(device: DeviceInfo): Result<Unit> {
-            return connectionRepository.connect(device)
-        }
+        suspend operator fun invoke(device: DeviceInfo): Result<Unit> = connectionRepository.connect(device)
     }

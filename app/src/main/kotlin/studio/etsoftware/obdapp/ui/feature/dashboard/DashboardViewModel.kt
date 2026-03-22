@@ -195,9 +195,7 @@ class DashboardViewModel
             }
         }
 
-        fun getSuggestedLogFileName(): String {
-            return getSuggestedLogFileNameUseCase()
-        }
+        fun getSuggestedLogFileName(): String = getSuggestedLogFileNameUseCase()
 
         fun exportLogs(uri: Uri?) {
             if (uri == null) {

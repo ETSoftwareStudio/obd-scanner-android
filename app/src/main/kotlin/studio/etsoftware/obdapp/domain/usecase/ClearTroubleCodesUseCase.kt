@@ -8,7 +8,5 @@ class ClearTroubleCodesUseCase
     constructor(
         private val diagnosticsRepository: DiagnosticsRepository,
     ) {
-        suspend operator fun invoke(): Result<Unit> {
-            return diagnosticsRepository.clearTroubleCodes()
-        }
+        suspend operator fun invoke(): Result<Unit> = diagnosticsRepository.clearTroubleCodes()
     }

@@ -149,8 +149,7 @@ private fun LogEntryItem(entry: DebugLogEntry) {
                 .background(
                     color = backgroundColor,
                     shape = RoundedCornerShape(4.dp),
-                )
-                .padding(horizontal = 8.dp, vertical = 4.dp),
+                ).padding(horizontal = 8.dp, vertical = 4.dp),
         verticalAlignment = Alignment.Top,
     ) {
         Text(

@@ -333,8 +333,7 @@ private fun DtcCard(dtc: TroubleCode) {
                         .background(
                             color = typeColor.copy(alpha = 0.2f),
                             shape = RoundedCornerShape(8.dp),
-                        )
-                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                        ).padding(horizontal = 8.dp, vertical = 4.dp),
             ) {
                 Text(
                     text = dtc.type.name,

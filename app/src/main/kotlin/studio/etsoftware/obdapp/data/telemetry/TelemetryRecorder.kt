@@ -51,8 +51,7 @@ class TelemetryRecorder
                 event.valuePreview?.let { append(" value=$it") }
             }
 
-        private fun formatCycle(event: CycleTelemetry): String =
-            "CYCLE id=${event.cycleId} dur=${event.durationMs}ms interval=${event.configuredIntervalMs}ms ok=${event.successCount} fail=${event.failureCount}"
+        private fun formatCycle(event: CycleTelemetry): String = "CYCLE id=${event.cycleId} dur=${event.durationMs}ms interval=${event.configuredIntervalMs}ms ok=${event.successCount} fail=${event.failureCount}"
 
         private fun formatMetricEmission(event: MetricEmissionTelemetry): String =
             buildString {

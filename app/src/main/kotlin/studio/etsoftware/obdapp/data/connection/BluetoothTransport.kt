@@ -79,25 +79,21 @@ class BluetoothTransport
             }
         }
 
-        private fun hasBluetoothConnectPermission(): Boolean {
-            return Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
+        private fun hasBluetoothConnectPermission(): Boolean =
+            Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
                 ContextCompat.checkSelfPermission(
                     appContext,
                     Manifest.permission.BLUETOOTH_CONNECT,
                 ) == PackageManager.PERMISSION_GRANTED
-        }
 
-        private fun hasBluetoothScanPermission(): Boolean {
-            return Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
+        private fun hasBluetoothScanPermission(): Boolean =
+            Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
                 ContextCompat.checkSelfPermission(
                     appContext,
                     Manifest.permission.BLUETOOTH_SCAN,
                 ) == PackageManager.PERMISSION_GRANTED
-        }
 
-        override fun isConnected(): Boolean {
-            return socket?.isConnected == true
-        }
+        override fun isConnected(): Boolean = socket?.isConnected == true
 
         override fun getInputStream(): InputStream? = inputStream
 

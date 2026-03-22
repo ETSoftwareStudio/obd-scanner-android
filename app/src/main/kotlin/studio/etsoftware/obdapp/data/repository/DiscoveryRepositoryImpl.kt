@@ -20,8 +20,7 @@ class DiscoveryRepositoryImpl
 
         override fun isBluetoothEnabled(): Boolean = discoveryManager.isBluetoothEnabled()
 
-        override fun isLocationServicesEnabledForDiscovery(): Boolean =
-            discoveryManager.isLocationServicesEnabledForDiscovery()
+        override fun isLocationServicesEnabledForDiscovery(): Boolean = discoveryManager.isLocationServicesEnabledForDiscovery()
 
         override fun startDiscovery(): Result<Unit> = discoveryManager.startDiscovery()
 

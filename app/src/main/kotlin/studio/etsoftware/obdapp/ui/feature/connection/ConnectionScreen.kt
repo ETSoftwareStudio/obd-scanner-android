@@ -336,131 +336,131 @@ fun ConnectionScreen(
 
                         Spacer(modifier = Modifier.height(20.dp))
 
-                    if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.R && !hasDiscoveryPermissions) {
-                        DeviceSection(
-                            title = "Nearby Devices",
-                            action = {
-                                TextButton(
-                                    onClick = { discoveryPermissionLauncher.launch(discoveryPermissions) },
-                                    enabled = !uiState.isLoading,
-                                ) {
-                                    Text("Grant Location")
-                                }
-                            },
-                        ) {
-                            DiscoveryPermissionRequiredCard(
-                                onGrantPermission = { discoveryPermissionLauncher.launch(discoveryPermissions) },
-                            )
-                        }
-                    } else if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.R && !uiState.isLocationServicesEnabledForDiscovery) {
-                        DeviceSection(
-                            title = "Nearby Devices",
-                            action = {
-                                TextButton(
-                                    onClick = {
-                                        enableLocationLauncher.launch(Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS))
-                                    },
-                                    enabled = !uiState.isLoading,
-                                ) {
-                                    Text("Turn On Location")
-                                }
-                            },
-                        ) {
-                            LocationServicesRequiredCard(
-                                onOpenLocationSettings = {
-                                    enableLocationLauncher.launch(Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS))
-                                },
-                            )
-                        }
-                    } else {
-                        DeviceSection(
-                            title = "Nearby Devices",
-                            action = {
-                                if (uiState.discoveryState is DiscoveryState.Starting || uiState.discoveryState is DiscoveryState.Discovering) {
+                        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.R && !hasDiscoveryPermissions) {
+                            DeviceSection(
+                                title = "Nearby Devices",
+                                action = {
                                     TextButton(
-                                        onClick = { viewModel.stopDiscovery() },
+                                        onClick = { discoveryPermissionLauncher.launch(discoveryPermissions) },
                                         enabled = !uiState.isLoading,
                                     ) {
-                                        Icon(Icons.Default.Close, contentDescription = null)
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Text("Stop")
+                                        Text("Grant Location")
                                     }
-                                } else {
+                                },
+                            ) {
+                                DiscoveryPermissionRequiredCard(
+                                    onGrantPermission = { discoveryPermissionLauncher.launch(discoveryPermissions) },
+                                )
+                            }
+                        } else if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.R && !uiState.isLocationServicesEnabledForDiscovery) {
+                            DeviceSection(
+                                title = "Nearby Devices",
+                                action = {
                                     TextButton(
                                         onClick = {
-                                            if (hasDiscoveryPermissions) {
-                                                viewModel.startDiscovery()
-                                            } else {
-                                                discoveryPermissionLauncher.launch(discoveryPermissions)
-                                            }
+                                            enableLocationLauncher.launch(Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS))
                                         },
                                         enabled = !uiState.isLoading,
                                     ) {
-                                        Icon(Icons.Default.Search, contentDescription = null)
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Text("Scan Nearby")
+                                        Text("Turn On Location")
                                     }
-                                }
-                            },
-                        ) {
-                            when (val discoveryState = uiState.discoveryState) {
-                                DiscoveryState.Idle -> {
-                                    SectionEmptyState(
-                                        message = "Tap Scan Nearby to search for nearby Bluetooth OBD adapters.",
-                                    )
-                                }
-
-                                DiscoveryState.Starting -> {
-                                    SectionLoadingState(message = "Starting Bluetooth discovery…")
-                                }
-
-                                is DiscoveryState.Discovering -> {
-                                    if (uiState.nearbyDevices.isEmpty()) {
-                                        SectionLoadingState(message = "Scanning for nearby devices…")
+                                },
+                            ) {
+                                LocationServicesRequiredCard(
+                                    onOpenLocationSettings = {
+                                        enableLocationLauncher.launch(Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+                                    },
+                                )
+                            }
+                        } else {
+                            DeviceSection(
+                                title = "Nearby Devices",
+                                action = {
+                                    if (uiState.discoveryState is DiscoveryState.Starting || uiState.discoveryState is DiscoveryState.Discovering) {
+                                        TextButton(
+                                            onClick = { viewModel.stopDiscovery() },
+                                            enabled = !uiState.isLoading,
+                                        ) {
+                                            Icon(Icons.Default.Close, contentDescription = null)
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text("Stop")
+                                        }
                                     } else {
-                                        NearbyDeviceList(
-                                            devices = uiState.nearbyDevices,
-                                            pairingDeviceAddress = uiState.pairingDeviceAddress,
-                                            onPairRequested = { device ->
-                                                viewModel.pairDevice(device)
+                                        TextButton(
+                                            onClick = {
+                                                if (hasDiscoveryPermissions) {
+                                                    viewModel.startDiscovery()
+                                                } else {
+                                                    discoveryPermissionLauncher.launch(discoveryPermissions)
+                                                }
                                             },
-                                        )
+                                            enabled = !uiState.isLoading,
+                                        ) {
+                                            Icon(Icons.Default.Search, contentDescription = null)
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text("Scan Nearby")
+                                        }
                                     }
-                                }
-
-                                is DiscoveryState.Finished -> {
-                                    if (uiState.nearbyDevices.isEmpty()) {
+                                },
+                            ) {
+                                when (val discoveryState = uiState.discoveryState) {
+                                    DiscoveryState.Idle -> {
                                         SectionEmptyState(
-                                            message = "No nearby unpaired devices found. If your adapter is already paired, it will appear above.",
-                                        )
-                                    } else {
-                                        NearbyDeviceList(
-                                            devices = uiState.nearbyDevices,
-                                            pairingDeviceAddress = uiState.pairingDeviceAddress,
-                                            onPairRequested = { device ->
-                                                viewModel.pairDevice(device)
-                                            },
+                                            message = "Tap Scan Nearby to search for nearby Bluetooth OBD adapters.",
                                         )
                                     }
-                                }
 
-                                is DiscoveryState.Error -> {
-                                    if (uiState.nearbyDevices.isEmpty()) {
-                                        SectionEmptyState(message = discoveryState.message)
-                                    } else {
-                                        NearbyDeviceList(
-                                            devices = uiState.nearbyDevices,
-                                            pairingDeviceAddress = uiState.pairingDeviceAddress,
-                                            onPairRequested = { device ->
-                                                viewModel.pairDevice(device)
-                                            },
-                                        )
+                                    DiscoveryState.Starting -> {
+                                        SectionLoadingState(message = "Starting Bluetooth discovery…")
+                                    }
+
+                                    is DiscoveryState.Discovering -> {
+                                        if (uiState.nearbyDevices.isEmpty()) {
+                                            SectionLoadingState(message = "Scanning for nearby devices…")
+                                        } else {
+                                            NearbyDeviceList(
+                                                devices = uiState.nearbyDevices,
+                                                pairingDeviceAddress = uiState.pairingDeviceAddress,
+                                                onPairRequested = { device ->
+                                                    viewModel.pairDevice(device)
+                                                },
+                                            )
+                                        }
+                                    }
+
+                                    is DiscoveryState.Finished -> {
+                                        if (uiState.nearbyDevices.isEmpty()) {
+                                            SectionEmptyState(
+                                                message = "No nearby unpaired devices found. If your adapter is already paired, it will appear above.",
+                                            )
+                                        } else {
+                                            NearbyDeviceList(
+                                                devices = uiState.nearbyDevices,
+                                                pairingDeviceAddress = uiState.pairingDeviceAddress,
+                                                onPairRequested = { device ->
+                                                    viewModel.pairDevice(device)
+                                                },
+                                            )
+                                        }
+                                    }
+
+                                    is DiscoveryState.Error -> {
+                                        if (uiState.nearbyDevices.isEmpty()) {
+                                            SectionEmptyState(message = discoveryState.message)
+                                        } else {
+                                            NearbyDeviceList(
+                                                devices = uiState.nearbyDevices,
+                                                pairingDeviceAddress = uiState.pairingDeviceAddress,
+                                                onPairRequested = { device ->
+                                                    viewModel.pairDevice(device)
+                                                },
+                                            )
+                                        }
                                     }
                                 }
                             }
                         }
                     }
-                }
                 }
             }
 
@@ -956,8 +956,8 @@ private fun DeviceItem(
 }
 
 @Composable
-private fun rememberCoreBluetoothPermissions(): Array<String> {
-    return remember {
+private fun rememberCoreBluetoothPermissions(): Array<String> =
+    remember {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             arrayOf(
                 Manifest.permission.BLUETOOTH_CONNECT,
@@ -967,24 +967,21 @@ private fun rememberCoreBluetoothPermissions(): Array<String> {
             emptyArray()
         }
     }
-}
 
 @Composable
-private fun rememberDiscoveryPermissions(): Array<String> {
-    return remember {
+private fun rememberDiscoveryPermissions(): Array<String> =
+    remember {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             emptyArray()
         } else {
             arrayOf(Manifest.permission.ACCESS_FINE_LOCATION)
         }
     }
-}
 
 private fun hasAllPermissions(
     context: Context,
     permissions: Array<String>,
-): Boolean {
-    return permissions.all { permission ->
+): Boolean =
+    permissions.all { permission ->
         ContextCompat.checkSelfPermission(context, permission) == android.content.pm.PackageManager.PERMISSION_GRANTED
     }
-}

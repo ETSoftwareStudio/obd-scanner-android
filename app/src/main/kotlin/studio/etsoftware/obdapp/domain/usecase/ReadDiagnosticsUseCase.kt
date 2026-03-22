@@ -9,7 +9,5 @@ class ReadDiagnosticsUseCase
     constructor(
         private val diagnosticsRepository: DiagnosticsRepository,
     ) {
-        suspend operator fun invoke(): Result<DiagnosticInfo> {
-            return diagnosticsRepository.readDiagnosticInfo()
-        }
+        suspend operator fun invoke(): Result<DiagnosticInfo> = diagnosticsRepository.readDiagnosticInfo()
     }
