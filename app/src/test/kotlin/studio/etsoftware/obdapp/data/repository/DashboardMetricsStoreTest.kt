@@ -29,7 +29,7 @@ class DashboardMetricsStoreTest {
                 )
 
                 assertEquals("88", store.dashboardMetrics.value.speed)
-                assertEquals("--", store.dashboardMetrics.value.rpm)
+                assertEquals("", store.dashboardMetrics.value.rpm)
                 assertEquals("Speed", awaitItem().name)
                 cancelAndIgnoreRemainingEvents()
             }
@@ -47,6 +47,6 @@ class DashboardMetricsStoreTest {
 
             assertEquals("55", store.dashboardMetrics.value.speed)
             assertEquals("40", store.dashboardMetrics.value.fuel)
-            assertEquals("--", store.dashboardMetrics.value.coolantTemp)
+            assertEquals("", store.dashboardMetrics.value.coolantTemp)
         }
 }

@@ -136,13 +136,13 @@ class DashboardViewModel
                 observeDashboardMetricsUseCase().collect { snapshot ->
                     _uiState.update {
                         it.copy(
-                            speed = snapshot.speed,
-                            rpm = snapshot.rpm,
-                            throttle = snapshot.throttle,
-                            coolantTemp = snapshot.coolantTemp,
-                            intakeTemp = snapshot.intakeTemp,
-                            maf = snapshot.maf,
-                            fuel = snapshot.fuel,
+                            speed = snapshot.speed.displayValue(),
+                            rpm = snapshot.rpm.displayValue(),
+                            throttle = snapshot.throttle.displayValue(),
+                            coolantTemp = snapshot.coolantTemp.displayValue(),
+                            intakeTemp = snapshot.intakeTemp.displayValue(),
+                            maf = snapshot.maf.displayValue(),
+                            fuel = snapshot.fuel.displayValue(),
                         )
                     }
                 }
@@ -244,4 +244,6 @@ class DashboardViewModel
                 _events.emit(event)
             }
         }
+
+        private fun String.displayValue(): String = ifBlank { "--" }
     }
