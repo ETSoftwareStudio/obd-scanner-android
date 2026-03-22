@@ -1,4 +1,4 @@
-package studio.etsoftware.obdapp.data.repository
+package studio.etsoftware.obdapp.data.polling
 
 import studio.etsoftware.obdapp.data.telemetry.TelemetryRecorder
 import studio.etsoftware.obdapp.domain.model.DashboardMetricsSnapshot

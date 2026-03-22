@@ -1,4 +1,4 @@
-package studio.etsoftware.obdapp.data.repository
+package studio.etsoftware.obdapp.data.polling
 
 import android.os.SystemClock
 import com.github.eltonvs.obd.command.engine.MassAirFlowCommand

@@ -1,4 +1,4 @@
-package studio.etsoftware.obdapp.data.repository
+package studio.etsoftware.obdapp.data.polling
 
 enum class DashboardMetricId {
     SPEED,
