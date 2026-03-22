@@ -1,4 +1,4 @@
-package studio.etsoftware.obdapp.data.repository
+package studio.etsoftware.obdapp.data.polling
 
 import com.github.eltonvs.obd.connection.ObdDeviceConnection
 import io.mockk.coEvery
@@ -9,8 +9,6 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import studio.etsoftware.obdapp.data.polling.DashboardMetricsStore
-import studio.etsoftware.obdapp.data.polling.DashboardPollingCoordinator
 import studio.etsoftware.obdapp.data.session.ObdCommandExecutor
 import studio.etsoftware.obdapp.data.session.ObdSessionManager
 import studio.etsoftware.obdapp.data.telemetry.TelemetryRecorder

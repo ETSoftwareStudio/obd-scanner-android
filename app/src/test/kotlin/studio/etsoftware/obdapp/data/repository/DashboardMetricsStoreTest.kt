@@ -1,11 +1,9 @@
-package studio.etsoftware.obdapp.data.repository
+package studio.etsoftware.obdapp.data.polling
 
 import app.cash.turbine.test
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
-import studio.etsoftware.obdapp.data.polling.DashboardMetricId
-import studio.etsoftware.obdapp.data.polling.DashboardMetricsStore
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Test
