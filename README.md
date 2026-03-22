@@ -38,9 +38,7 @@ This repository is intended to be a canonical reference for developers who need 
 - [Testing](#testing)
 - [Compatibility Notes](#compatibility-notes)
 - [Troubleshooting](#troubleshooting)
-- [Roadmap](#roadmap)
 - [Contributing](#contributing)
-- [SEO / Discoverability Tips (for maintainers)](#seo--discoverability-tips-for-maintainers)
 
 ---
 
@@ -543,16 +541,6 @@ Toolchain note:
 
 ---
 
-## Roadmap
-
-- [ ] BLE transport implementation
-- [ ] richer DTC descriptions (lookup catalog)
-- [ ] historical charts
-- [ ] integration tests with fake transport
-- [ ] sample video/GIF walkthrough in README
-
----
-
 ## Contributing
 
 Contributions are welcome.
@@ -566,32 +554,3 @@ Please:
 
 ---
 
-## SEO / Discoverability Tips (for maintainers)
-
-For better GitHub and Google discoverability, set the repo metadata:
-
-### Suggested GitHub repository description
-
-> Android OBD2 scanner sample app (Kotlin + Jetpack Compose) using kotlin-obd-api with Bluetooth ELM327 connection, live PID polling, and diagnostics.
-
-### Suggested GitHub topics
-
-`android` · `kotlin` · `jetpack-compose` · `obd2` · `obd-ii` · `elm327` · `bluetooth` · `vehicle-diagnostics` · `automotive` · `telematics`
-
-### Suggested social preview image text
-
-> "OBD Scanner Android — Kotlin + Compose + kotlin-obd-api"
-
-### Suggested docs additions
-
-- publish screenshots/GIFs under `docs/images`
-- add `LICENSE` file
-- add `CHANGELOG.md`
-- add releases with APK/demo video links
-
----
-
-## Repository Identity
-
-- **Repository name:** `obd-scanner-android`
-- **Goal:** canonical open-source Android sample for implementing `kotlin-obd-api`.
