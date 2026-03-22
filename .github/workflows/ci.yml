@@ -8,22 +8,22 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   android:
     name: Build and verify
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
 
-      - name: Set up JDK 17
+      - name: Set up Java
         uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: 17
 
       - name: Validate Gradle wrapper
         uses: gradle/actions/wrapper-validation@v5
