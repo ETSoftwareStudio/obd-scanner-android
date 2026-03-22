@@ -1,24 +1,24 @@
 package studio.etsoftware.obdapp.domain.usecase
 
 import studio.etsoftware.obdapp.domain.model.DashboardMetricsSnapshot
-import studio.etsoftware.obdapp.domain.repository.ObdRepository
+import studio.etsoftware.obdapp.domain.repository.DashboardRepository
 import javax.inject.Inject
 import kotlinx.coroutines.flow.StateFlow
 
 class ReadMetricsUseCase
     @Inject
     constructor(
-        private val repository: ObdRepository,
+        private val dashboardRepository: DashboardRepository,
     ) {
         operator fun invoke(): StateFlow<DashboardMetricsSnapshot> {
-            return repository.dashboardMetrics
+            return dashboardRepository.dashboardMetrics
         }
 
         suspend fun startPolling(intervalMs: Long) {
-            repository.startPolling(intervalMs)
+            dashboardRepository.startPolling(intervalMs)
         }
 
         suspend fun stopPolling() {
-            repository.stopPolling()
+            dashboardRepository.stopPolling()
         }
     }

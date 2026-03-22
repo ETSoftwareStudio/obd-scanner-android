@@ -1,15 +1,15 @@
 package studio.etsoftware.obdapp.domain.usecase
 
 import studio.etsoftware.obdapp.domain.model.DeviceInfo
-import studio.etsoftware.obdapp.domain.repository.ObdRepository
+import studio.etsoftware.obdapp.domain.repository.ConnectionRepository
 import javax.inject.Inject
 
 class ConnectDeviceUseCase
     @Inject
     constructor(
-        private val repository: ObdRepository,
+        private val connectionRepository: ConnectionRepository,
     ) {
         suspend operator fun invoke(device: DeviceInfo): Result<Unit> {
-            return repository.connect(device)
+            return connectionRepository.connect(device)
         }
     }

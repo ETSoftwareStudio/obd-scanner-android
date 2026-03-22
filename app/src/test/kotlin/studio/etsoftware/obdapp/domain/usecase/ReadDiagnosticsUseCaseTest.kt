@@ -3,7 +3,7 @@ package studio.etsoftware.obdapp.domain.usecase
 import studio.etsoftware.obdapp.domain.model.DiagnosticInfo
 import studio.etsoftware.obdapp.domain.model.TroubleCode
 import studio.etsoftware.obdapp.domain.model.TroubleCodeType
-import studio.etsoftware.obdapp.domain.repository.ObdRepository
+import studio.etsoftware.obdapp.domain.repository.DiagnosticsRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -14,7 +14,7 @@ import org.junit.Before
 import org.junit.Test
 
 class ReadDiagnosticsUseCaseTest {
-    private val repository: ObdRepository = mockk()
+    private val repository: DiagnosticsRepository = mockk()
     private lateinit var useCase: ReadDiagnosticsUseCase
 
     private val testDiagnosticInfo =

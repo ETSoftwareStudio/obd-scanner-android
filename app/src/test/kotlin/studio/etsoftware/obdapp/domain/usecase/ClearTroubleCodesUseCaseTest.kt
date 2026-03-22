@@ -1,6 +1,6 @@
 package studio.etsoftware.obdapp.domain.usecase
 
-import studio.etsoftware.obdapp.domain.repository.ObdRepository
+import studio.etsoftware.obdapp.domain.repository.DiagnosticsRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -10,7 +10,7 @@ import org.junit.Before
 import org.junit.Test
 
 class ClearTroubleCodesUseCaseTest {
-    private val repository: ObdRepository = mockk()
+    private val repository: DiagnosticsRepository = mockk()
     private lateinit var useCase: ClearTroubleCodesUseCase
 
     @Before

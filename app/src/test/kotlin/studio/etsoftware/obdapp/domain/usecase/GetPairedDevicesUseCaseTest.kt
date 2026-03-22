@@ -2,7 +2,7 @@ package studio.etsoftware.obdapp.domain.usecase
 
 import studio.etsoftware.obdapp.domain.model.DeviceInfo
 import studio.etsoftware.obdapp.domain.model.DeviceType
-import studio.etsoftware.obdapp.domain.repository.ObdRepository
+import studio.etsoftware.obdapp.domain.repository.ConnectionRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -12,7 +12,7 @@ import org.junit.Before
 import org.junit.Test
 
 class GetPairedDevicesUseCaseTest {
-    private val repository: ObdRepository = mockk()
+    private val repository: ConnectionRepository = mockk()
     private lateinit var useCase: GetPairedDevicesUseCase
 
     private val testDevices =
