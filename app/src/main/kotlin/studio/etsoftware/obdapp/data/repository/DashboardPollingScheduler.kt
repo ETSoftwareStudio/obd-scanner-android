@@ -1,6 +1,6 @@
 package studio.etsoftware.obdapp.data.repository
 
-internal enum class DashboardMetricId {
+enum class DashboardMetricId {
     SPEED,
     RPM,
     THROTTLE,
