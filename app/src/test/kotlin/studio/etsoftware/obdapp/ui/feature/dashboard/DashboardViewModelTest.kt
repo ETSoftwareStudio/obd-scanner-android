@@ -2,35 +2,13 @@ package studio.etsoftware.obdapp.ui.feature.dashboard
 
 import android.net.Uri
 import app.cash.turbine.test
-import studio.etsoftware.obdapp.domain.model.ConnectionState
-import studio.etsoftware.obdapp.domain.model.DashboardMetricsSnapshot
-import studio.etsoftware.obdapp.domain.model.TelemetryEvent
-import studio.etsoftware.obdapp.domain.repository.ObdRepository
-import studio.etsoftware.obdapp.domain.repository.PollingSettingsRepository
-import studio.etsoftware.obdapp.domain.repository.TelemetryRepository
-import studio.etsoftware.obdapp.domain.usecase.ClearTelemetryUseCase
-import studio.etsoftware.obdapp.domain.usecase.ConnectDeviceUseCase
-import studio.etsoftware.obdapp.domain.usecase.DisconnectUseCase
-import studio.etsoftware.obdapp.domain.usecase.ObservePollingIntervalUseCase
-import studio.etsoftware.obdapp.domain.usecase.ObserveTelemetryEventsUseCase
-import studio.etsoftware.obdapp.domain.usecase.ReadMetricsUseCase
-import studio.etsoftware.obdapp.util.LogEntry
-import studio.etsoftware.obdapp.util.LogExportFormatter
-import studio.etsoftware.obdapp.util.LogExporter
-import studio.etsoftware.obdapp.util.LogManager
-import studio.etsoftware.obdapp.util.LogType
-import studio.etsoftware.obdapp.util.PreferencesManager
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
-import io.mockk.just
 import io.mockk.mockk
-import io.mockk.runs
-import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -40,27 +18,54 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
+import studio.etsoftware.obdapp.domain.model.ConnectionState
+import studio.etsoftware.obdapp.domain.model.DashboardMetricsSnapshot
+import studio.etsoftware.obdapp.domain.model.DebugLogEntry
+import studio.etsoftware.obdapp.domain.model.DebugLogType
+import studio.etsoftware.obdapp.domain.model.TelemetryEvent
+import studio.etsoftware.obdapp.domain.repository.AppSettingsRepository
+import studio.etsoftware.obdapp.domain.repository.ConnectionRepository
+import studio.etsoftware.obdapp.domain.repository.DashboardRepository
+import studio.etsoftware.obdapp.domain.repository.DebugLogRepository
+import studio.etsoftware.obdapp.domain.repository.LogExportRepository
+import studio.etsoftware.obdapp.domain.repository.PollingSettingsRepository
+import studio.etsoftware.obdapp.domain.repository.TelemetryRepository
+import studio.etsoftware.obdapp.domain.usecase.BuildLogExportTextUseCase
+import studio.etsoftware.obdapp.domain.usecase.ClearDebugLogsUseCase
+import studio.etsoftware.obdapp.domain.usecase.ClearTelemetryUseCase
+import studio.etsoftware.obdapp.domain.usecase.ConnectDeviceUseCase
+import studio.etsoftware.obdapp.domain.usecase.DisconnectUseCase
+import studio.etsoftware.obdapp.domain.usecase.ExportLogsUseCase
+import studio.etsoftware.obdapp.domain.usecase.GetSuggestedLogFileNameUseCase
+import studio.etsoftware.obdapp.domain.usecase.ObserveAutoConnectUseCase
+import studio.etsoftware.obdapp.domain.usecase.ObserveConnectionStateUseCase
+import studio.etsoftware.obdapp.domain.usecase.ObserveDashboardMetricsUseCase
+import studio.etsoftware.obdapp.domain.usecase.ObserveDebugLogsUseCase
+import studio.etsoftware.obdapp.domain.usecase.ObserveLastDeviceUseCase
+import studio.etsoftware.obdapp.domain.usecase.ObservePollingIntervalUseCase
+import studio.etsoftware.obdapp.domain.usecase.ObserveTelemetryEventsUseCase
+import studio.etsoftware.obdapp.domain.usecase.ObserveWasConnectedUseCase
+import studio.etsoftware.obdapp.domain.usecase.StartDashboardPollingUseCase
+import studio.etsoftware.obdapp.domain.usecase.StopDashboardPollingUseCase
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DashboardViewModelTest {
     private val testDispatcher = StandardTestDispatcher()
 
-    private val readMetricsUseCase: ReadMetricsUseCase = mockk(relaxed = true)
-    private val disconnectUseCase: DisconnectUseCase = mockk(relaxed = true)
-    private val connectDeviceUseCase: ConnectDeviceUseCase = mockk(relaxed = true)
-    private val repository: ObdRepository = mockk(relaxed = true)
-    private val preferencesManager: PreferencesManager = mockk(relaxed = true)
+    private val dashboardRepository: DashboardRepository = mockk(relaxed = true)
+    private val connectionRepository: ConnectionRepository = mockk(relaxed = true)
+    private val appSettingsRepository: AppSettingsRepository = mockk(relaxed = true)
     private val pollingSettingsRepository: PollingSettingsRepository = mockk(relaxed = true)
-    private val logExporter: LogExporter = mockk(relaxed = true)
-    private val logManager: LogManager = mockk(relaxed = true)
+    private val debugLogRepository: DebugLogRepository = mockk(relaxed = true)
+    private val logExportRepository: LogExportRepository = mockk(relaxed = true)
     private val telemetryRepository: TelemetryRepository = mockk(relaxed = true)
-    private val logExportFormatter = LogExportFormatter()
 
     private lateinit var viewModel: DashboardViewModel
     private lateinit var connectionStateFlow: MutableStateFlow<ConnectionState>
-    private lateinit var logsFlow: MutableStateFlow<List<LogEntry>>
+    private lateinit var logsFlow: MutableStateFlow<List<DebugLogEntry>>
     private lateinit var telemetryEventsFlow: MutableStateFlow<List<TelemetryEvent>>
     private lateinit var pollingIntervalFlow: MutableStateFlow<Long>
+    private lateinit var dashboardMetricsFlow: MutableStateFlow<DashboardMetricsSnapshot>
 
     @Before
     fun setup() {
@@ -70,31 +75,38 @@ class DashboardViewModelTest {
         logsFlow = MutableStateFlow(emptyList())
         telemetryEventsFlow = MutableStateFlow(emptyList())
         pollingIntervalFlow = MutableStateFlow(1000L)
+        dashboardMetricsFlow = MutableStateFlow(DashboardMetricsSnapshot())
 
-        every { repository.connectionState } returns connectionStateFlow
-        every { preferencesManager.autoConnect } returns flowOf(false)
-        every { preferencesManager.wasConnected } returns flowOf(false)
-        every { preferencesManager.lastDeviceAddress } returns flowOf(null)
-        every { preferencesManager.lastDeviceName } returns flowOf(null)
+        every { connectionRepository.connectionState } returns connectionStateFlow
+        every { appSettingsRepository.autoConnect } returns MutableStateFlow(false)
+        every { appSettingsRepository.wasConnected } returns MutableStateFlow(false)
+        every { appSettingsRepository.lastDevice } returns MutableStateFlow(null)
         every { pollingSettingsRepository.pollingInterval } returns pollingIntervalFlow
-        every { readMetricsUseCase.invoke() } returns MutableStateFlow(DashboardMetricsSnapshot())
-        every { logManager.logs } returns logsFlow
-        every { logManager.clear() } just runs
+        every { dashboardRepository.dashboardMetrics } returns dashboardMetricsFlow
+        every { debugLogRepository.logs } returns logsFlow
         every { telemetryRepository.events } returns telemetryEventsFlow
+        every { logExportRepository.buildDefaultFileName(any()) } returns "obd-debug-log.txt"
+        every { logExportRepository.buildExportText(any(), any(), any()) } returns "export"
 
         viewModel =
             DashboardViewModel(
-                readMetricsUseCase,
-                disconnectUseCase,
-                connectDeviceUseCase,
-                repository,
-                preferencesManager,
-                logExportFormatter,
-                logExporter,
-                logManager,
-                ObservePollingIntervalUseCase(pollingSettingsRepository),
-                ObserveTelemetryEventsUseCase(telemetryRepository),
-                ClearTelemetryUseCase(telemetryRepository),
+                observeDashboardMetricsUseCase = ObserveDashboardMetricsUseCase(dashboardRepository),
+                startDashboardPollingUseCase = StartDashboardPollingUseCase(dashboardRepository),
+                stopDashboardPollingUseCase = StopDashboardPollingUseCase(dashboardRepository),
+                disconnectUseCase = DisconnectUseCase(connectionRepository),
+                connectDeviceUseCase = ConnectDeviceUseCase(connectionRepository),
+                observeConnectionStateUseCase = ObserveConnectionStateUseCase(connectionRepository),
+                observeAutoConnectUseCase = ObserveAutoConnectUseCase(appSettingsRepository),
+                observeWasConnectedUseCase = ObserveWasConnectedUseCase(appSettingsRepository),
+                observeLastDeviceUseCase = ObserveLastDeviceUseCase(appSettingsRepository),
+                observeDebugLogsUseCase = ObserveDebugLogsUseCase(debugLogRepository),
+                clearDebugLogsUseCase = ClearDebugLogsUseCase(debugLogRepository),
+                getSuggestedLogFileNameUseCase = GetSuggestedLogFileNameUseCase(logExportRepository),
+                buildLogExportTextUseCase = BuildLogExportTextUseCase(logExportRepository),
+                exportLogsUseCase = ExportLogsUseCase(logExportRepository),
+                observePollingIntervalUseCase = ObservePollingIntervalUseCase(pollingSettingsRepository),
+                observeTelemetryEventsUseCase = ObserveTelemetryEventsUseCase(telemetryRepository),
+                clearTelemetryUseCase = ClearTelemetryUseCase(telemetryRepository),
             )
     }
 
@@ -107,8 +119,8 @@ class DashboardViewModelTest {
     fun `exportLogs emits success event when exporter succeeds`() =
         runTest {
             val uri: Uri = mockk(relaxed = true)
-            logsFlow.value = listOf(LogEntry("10:00:00.000", LogType.INFO, "Connected"))
-            coEvery { logExporter.export(uri, any()) } returns Result.success(Unit)
+            logsFlow.value = listOf(DebugLogEntry("10:00:00.000", DebugLogType.INFO, "Connected"))
+            coEvery { logExportRepository.export(uri.toString(), any()) } returns Result.success(Unit)
 
             viewModel.events.test {
                 viewModel.exportLogs(uri)
@@ -122,8 +134,8 @@ class DashboardViewModelTest {
     fun `exportLogs emits error event when exporter fails`() =
         runTest {
             val uri: Uri = mockk(relaxed = true)
-            logsFlow.value = listOf(LogEntry("10:00:00.000", LogType.INFO, "Connected"))
-            coEvery { logExporter.export(uri, any()) } returns Result.failure(Exception("disk full"))
+            logsFlow.value = listOf(DebugLogEntry("10:00:00.000", DebugLogType.INFO, "Connected"))
+            coEvery { logExportRepository.export(uri.toString(), any()) } returns Result.failure(Exception("disk full"))
 
             viewModel.events.test {
                 viewModel.exportLogs(uri)
@@ -146,13 +158,13 @@ class DashboardViewModelTest {
                 assertEquals(DashboardEvent.ExportSkippedNoLogs, awaitItem())
             }
 
-            coVerify(exactly = 0) { logExporter.export(any(), any()) }
+            coVerify(exactly = 0) { logExportRepository.export(any(), any()) }
         }
 
     @Test
     fun `connection loss clears polling flag`() =
         runTest {
-            coEvery { readMetricsUseCase.startPolling(any()) } returns Unit
+            coEvery { dashboardRepository.startPolling(any()) } returns Unit
 
             connectionStateFlow.value = ConnectionState.Connected
             advanceUntilIdle()
@@ -167,7 +179,7 @@ class DashboardViewModelTest {
     @Test
     fun `polling interval change restarts active polling`() =
         runTest {
-            coEvery { readMetricsUseCase.startPolling(any()) } returns Unit
+            coEvery { dashboardRepository.startPolling(any()) } returns Unit
 
             connectionStateFlow.value = ConnectionState.Connected
             advanceUntilIdle()
@@ -175,34 +187,35 @@ class DashboardViewModelTest {
             pollingIntervalFlow.value = 2000L
             advanceUntilIdle()
 
-            coVerify { readMetricsUseCase.startPolling(1000L) }
-            coVerify { readMetricsUseCase.startPolling(2000L) }
+            coVerify { dashboardRepository.startPolling(1000L) }
+            coVerify { dashboardRepository.startPolling(2000L) }
         }
 
     @Test
-    fun `clearLogs delegates to log manager and clears telemetry`() =
+    fun `clearLogs delegates to debug log and telemetry repositories`() =
         runTest {
+            coEvery { debugLogRepository.clear() } returns Unit
             coEvery { telemetryRepository.clear() } returns Unit
 
             viewModel.clearLogs()
             advanceUntilIdle()
 
-            verify { logManager.clear() }
+            coVerify { debugLogRepository.clear() }
             coVerify { telemetryRepository.clear() }
         }
 
     @Test
     fun `disconnect stops polling before disconnecting`() =
         runTest {
-            coEvery { readMetricsUseCase.stopPolling() } returns Unit
-            coEvery { disconnectUseCase.invoke() } returns Unit
+            coEvery { dashboardRepository.stopPolling() } returns Unit
+            coEvery { connectionRepository.disconnect() } returns Unit
 
             viewModel.disconnect()
             advanceUntilIdle()
 
             io.mockk.coVerifyOrder {
-                readMetricsUseCase.stopPolling()
-                disconnectUseCase.invoke()
+                dashboardRepository.stopPolling()
+                connectionRepository.disconnect()
             }
         }
 }
