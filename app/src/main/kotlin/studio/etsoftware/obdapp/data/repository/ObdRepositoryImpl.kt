@@ -1,42 +1,21 @@
 package studio.etsoftware.obdapp.data.repository
 
-import android.os.SystemClock
+import javax.inject.Inject
+import javax.inject.Singleton
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.withContext
 import studio.etsoftware.obdapp.data.connection.BluetoothDiscoveryManager
-import studio.etsoftware.obdapp.data.telemetry.TelemetryRecorder
 import studio.etsoftware.obdapp.domain.model.ConnectionState
-import studio.etsoftware.obdapp.domain.model.CycleTelemetry
+import studio.etsoftware.obdapp.domain.model.DashboardMetricsSnapshot
 import studio.etsoftware.obdapp.domain.model.DeviceInfo
 import studio.etsoftware.obdapp.domain.model.DiagnosticInfo
 import studio.etsoftware.obdapp.domain.model.DiscoveryState
 import studio.etsoftware.obdapp.domain.model.PairingState
-import studio.etsoftware.obdapp.domain.model.TelemetryContext
 import studio.etsoftware.obdapp.domain.model.VehicleMetric
 import studio.etsoftware.obdapp.domain.repository.ObdRepository
 import studio.etsoftware.obdapp.util.LogManager
-import com.github.eltonvs.obd.command.engine.MassAirFlowCommand
-import com.github.eltonvs.obd.command.engine.RPMCommand
-import com.github.eltonvs.obd.command.engine.SpeedCommand
-import com.github.eltonvs.obd.command.engine.ThrottlePositionCommand
-import com.github.eltonvs.obd.command.fuel.FuelLevelCommand
-import com.github.eltonvs.obd.command.temperature.AirIntakeTemperatureCommand
-import com.github.eltonvs.obd.command.temperature.EngineCoolantTemperatureCommand
-import com.github.eltonvs.obd.connection.ObdDeviceConnection
-import javax.inject.Inject
-import javax.inject.Singleton
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancelAndJoin
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeoutOrNull
 
 @Singleton
 class ObdRepositoryImpl
@@ -44,32 +23,16 @@ class ObdRepositoryImpl
     constructor(
         private val discoveryManager: BluetoothDiscoveryManager,
         private val logManager: LogManager,
-        private val telemetryRecorder: TelemetryRecorder,
         private val metricsStore: DashboardMetricsStore,
-        private val commandExecutor: ObdCommandExecutor,
         private val sessionManager: ObdSessionManager,
         private val diagnosticsService: DiagnosticsService,
         private val pollingCoordinator: DashboardPollingCoordinator,
     ) : ObdRepository {
-        private data class PollingCycleStats(
-            val commandCount: Int,
-            val successCount: Int,
-            val failureCount: Int,
-        )
-
-        private val scope = CoroutineScope(Dispatchers.IO)
-        private var pollingJob: Job? = null
-        private var activePollingIntervalMs: Long? = null
-        private var pendingPollingIntervalMs: Long? = null
-        private val pollingConfigUpdates = Channel<Unit>(capacity = Channel.CONFLATED)
-        private val pollingLifecycleMutex = Mutex()
-
         override val connectionState: StateFlow<ConnectionState> = sessionManager.connectionState
         override val discoveryState: StateFlow<DiscoveryState> = discoveryManager.discoveryState
         override val pairingState: StateFlow<PairingState> = discoveryManager.pairingState
-
         override val vehicleMetrics: Flow<VehicleMetric> = metricsStore.vehicleMetrics
-        override val dashboardMetrics = metricsStore.dashboardMetrics
+        override val dashboardMetrics: StateFlow<DashboardMetricsSnapshot> = metricsStore.dashboardMetrics
 
         override fun isBluetoothEnabled(): Boolean = discoveryManager.isBluetoothEnabled()
 
@@ -93,7 +56,7 @@ class ObdRepositoryImpl
 
         override suspend fun disconnect() {
             logManager.info("Disconnecting...")
-            stopPolling()
+            pollingCoordinator.stopPolling()
             sessionManager.disconnect()
             logManager.info("Disconnected")
         }
@@ -127,195 +90,4 @@ class ObdRepositoryImpl
         override suspend fun stopPolling() {
             pollingCoordinator.stopPolling()
         }
-
-        private suspend fun readMetrics(
-            connection: ObdDeviceConnection,
-            cycleId: Long,
-            dueMetrics: List<DashboardMetricId>,
-            scheduler: DashboardPollingScheduler,
-        ): PollingCycleStats {
-            var commandCount = 0
-            var successCount = 0
-            var failureCount = 0
-
-            dueMetrics.forEach { metricId ->
-                commandCount++
-                val wasSuccessful = pollMetric(connection, cycleId, metricId)
-                scheduler.markExecuted(metricId, monotonicNowMs())
-
-                if (wasSuccessful) {
-                    successCount++
-                } else {
-                    failureCount++
-                }
-            }
-
-            return PollingCycleStats(
-                commandCount = commandCount,
-                successCount = successCount,
-                failureCount = failureCount,
-            )
-        }
-
-        private suspend fun pollMetric(
-            connection: ObdDeviceConnection,
-            cycleId: Long,
-            metricId: DashboardMetricId,
-        ): Boolean {
-            return when (metricId) {
-                DashboardMetricId.SPEED ->
-                    pollTypedMetric(
-                        cycleId = cycleId,
-                        metricId = metricId,
-                        rawPid = "010D",
-                        commandLabel = "010D (Speed)",
-                        commandName = "SpeedCommand",
-                        read = { connection.run(SpeedCommand()) },
-                        valueOf = { it.value },
-                        rawValueOf = { it.rawResponse.value },
-                        unitOf = { it.unit },
-                        minValue = 0f,
-                        maxValue = 200f,
-                    )
-                DashboardMetricId.RPM ->
-                    pollTypedMetric(
-                        cycleId = cycleId,
-                        metricId = metricId,
-                        rawPid = "010C",
-                        commandLabel = "010C (RPM)",
-                        commandName = "RPMCommand",
-                        read = { connection.run(RPMCommand()) },
-                        valueOf = { it.value },
-                        rawValueOf = { it.rawResponse.value },
-                        unitOf = { it.unit },
-                        minValue = 0f,
-                        maxValue = 8000f,
-                    )
-                DashboardMetricId.THROTTLE ->
-                    pollTypedMetric(
-                        cycleId = cycleId,
-                        metricId = metricId,
-                        rawPid = "0111",
-                        commandLabel = "0111 (Throttle)",
-                        commandName = "ThrottlePositionCommand",
-                        read = { connection.run(ThrottlePositionCommand()) },
-                        valueOf = { it.value },
-                        rawValueOf = { it.rawResponse.value },
-                        unitOf = { it.unit },
-                        minValue = 0f,
-                        maxValue = 100f,
-                    )
-                DashboardMetricId.MAF ->
-                    pollTypedMetric(
-                        cycleId = cycleId,
-                        metricId = metricId,
-                        rawPid = "0110",
-                        commandLabel = "0110 (MAF)",
-                        commandName = "MassAirFlowCommand",
-                        read = { connection.run(MassAirFlowCommand()) },
-                        valueOf = { it.value },
-                        rawValueOf = { it.rawResponse.value },
-                        unitOf = { it.unit },
-                        minValue = 0f,
-                        maxValue = 655.35f,
-                    )
-                DashboardMetricId.COOLANT ->
-                    pollTypedMetric(
-                        cycleId = cycleId,
-                        metricId = metricId,
-                        rawPid = "0105",
-                        commandLabel = "0105 (Coolant)",
-                        commandName = "EngineCoolantTemperatureCommand",
-                        read = { connection.run(EngineCoolantTemperatureCommand()) },
-                        valueOf = { it.value },
-                        rawValueOf = { it.rawResponse.value },
-                        unitOf = { it.unit },
-                        minValue = -40f,
-                        maxValue = 215f,
-                    )
-                DashboardMetricId.INTAKE ->
-                    pollTypedMetric(
-                        cycleId = cycleId,
-                        metricId = metricId,
-                        rawPid = "010F",
-                        commandLabel = "010F (Intake Air)",
-                        commandName = "AirIntakeTemperatureCommand",
-                        read = { connection.run(AirIntakeTemperatureCommand()) },
-                        valueOf = { it.value },
-                        rawValueOf = { it.rawResponse.value },
-                        unitOf = { it.unit },
-                        minValue = -40f,
-                        maxValue = 215f,
-                    )
-                DashboardMetricId.FUEL ->
-                    pollTypedMetric(
-                        cycleId = cycleId,
-                        metricId = metricId,
-                        rawPid = "012F",
-                        commandLabel = "012F (Fuel Level)",
-                        commandName = "FuelLevelCommand",
-                        read = { connection.run(FuelLevelCommand()) },
-                        valueOf = { it.value },
-                        rawValueOf = { it.rawResponse.value },
-                        unitOf = { it.unit },
-                        minValue = 0f,
-                        maxValue = 100f,
-                    )
-            }
-        }
-
-        private suspend fun <T> pollTypedMetric(
-            cycleId: Long,
-            metricId: DashboardMetricId,
-            rawPid: String,
-            commandLabel: String,
-            commandName: String,
-            read: suspend () -> T,
-            valueOf: (T) -> String,
-            rawValueOf: (T) -> String,
-            unitOf: (T) -> String,
-            minValue: Float,
-            maxValue: Float,
-        ): Boolean {
-            logManager.command(commandLabel)
-
-            return try {
-                val response =
-                    sessionManager.withConnectionAccess {
-                        commandExecutor.execute(
-                            context = TelemetryContext.DASHBOARD,
-                            cycleId = cycleId,
-                            rawPid = rawPid.substringBefore(" "),
-                            commandName = commandName,
-                            block = read,
-                            preview = { valueOf(it) },
-                        )
-                    }
-
-                val value = valueOf(response)
-                val unit = unitOf(response)
-                val rawValue = commandExecutor.previewValue(rawValueOf(response)) ?: rawValueOf(response)
-                logManager.response("${rawPid.substringBefore(" ")}: $value (raw=$rawValue)")
-
-                metricsStore.publish(
-                    cycleId = cycleId,
-                    metricId = metricId,
-                    value = value,
-                    unit = unit,
-                    minValue = minValue,
-                    maxValue = maxValue,
-                )
-                true
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                val errorMsg = e.message?.takeIf { it.isNotBlank() } ?: e::class.simpleName ?: "Unknown error"
-                logManager.error("Read error for ${rawPid.substringBefore(" ")}: $errorMsg")
-                false
-            }
-        }
-
-        private fun wallClockMs(): Long = System.currentTimeMillis()
-
-        private fun monotonicNowMs(): Long = SystemClock.elapsedRealtime()
     }
