@@ -4,8 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import studio.etsoftware.obdapp.domain.model.ConnectionState
 import studio.etsoftware.obdapp.domain.model.DiagnosticInfo
-import studio.etsoftware.obdapp.domain.repository.ObdRepository
 import studio.etsoftware.obdapp.domain.usecase.ClearTroubleCodesUseCase
+import studio.etsoftware.obdapp.domain.usecase.ObserveConnectionStateUseCase
 import studio.etsoftware.obdapp.domain.usecase.ReadDiagnosticsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -28,7 +28,7 @@ class DiagnosticsViewModel
     constructor(
         private val readDiagnosticsUseCase: ReadDiagnosticsUseCase,
         private val clearTroubleCodesUseCase: ClearTroubleCodesUseCase,
-        private val repository: ObdRepository,
+        private val observeConnectionStateUseCase: ObserveConnectionStateUseCase,
     ) : ViewModel() {
         private val _uiState = MutableStateFlow(DiagnosticsUiState())
         val uiState: StateFlow<DiagnosticsUiState> = _uiState.asStateFlow()
@@ -42,7 +42,7 @@ class DiagnosticsViewModel
 
         private fun observeConnectionState() {
             viewModelScope.launch {
-                repository.connectionState.collect { state ->
+                observeConnectionStateUseCase().collect { state ->
                     _uiState.update { it.copy(connectionState = state) }
 
                     val isConnected = state is ConnectionState.Connected
