@@ -13,7 +13,7 @@ import studio.etsoftware.obdapp.data.session.ObdCommandExecutor
 import studio.etsoftware.obdapp.data.session.ObdSessionManager
 import studio.etsoftware.obdapp.data.telemetry.TelemetryRecorder
 import studio.etsoftware.obdapp.domain.model.ConnectionState
-import studio.etsoftware.obdapp.util.LogManager
+import studio.etsoftware.obdapp.data.logging.LogManager
 
 class DashboardPollingCoordinatorTest {
     private val logManager = mockk<LogManager>(relaxed = true)

@@ -11,7 +11,7 @@ import studio.etsoftware.obdapp.domain.model.DiagnosticInfo
 import studio.etsoftware.obdapp.domain.model.TelemetryContext
 import studio.etsoftware.obdapp.domain.model.TroubleCode
 import studio.etsoftware.obdapp.domain.model.TroubleCodeType
-import studio.etsoftware.obdapp.util.LogManager
+import studio.etsoftware.obdapp.data.logging.LogManager
 
 @Singleton
 class DiagnosticsService

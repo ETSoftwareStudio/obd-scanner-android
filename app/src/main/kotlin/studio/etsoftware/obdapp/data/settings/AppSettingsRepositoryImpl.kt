@@ -7,7 +7,6 @@ import kotlinx.coroutines.flow.combine
 import studio.etsoftware.obdapp.domain.model.DeviceInfo
 import studio.etsoftware.obdapp.domain.model.DeviceType
 import studio.etsoftware.obdapp.domain.repository.AppSettingsRepository
-import studio.etsoftware.obdapp.util.PreferencesManager
 
 @Singleton
 class AppSettingsRepositoryImpl

@@ -15,7 +15,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import studio.etsoftware.obdapp.data.session.ObdCommandExecutor
 import studio.etsoftware.obdapp.domain.model.TelemetryContext
-import studio.etsoftware.obdapp.util.LogManager
+import studio.etsoftware.obdapp.data.logging.LogManager
 
 class DiagnosticsServiceTest {
     private val commandExecutor = mockk<ObdCommandExecutor>()

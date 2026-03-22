@@ -1,4 +1,4 @@
-package studio.etsoftware.obdapp.util
+package studio.etsoftware.obdapp.data.settings
 
 import android.content.Context
 import androidx.datastore.core.DataStore

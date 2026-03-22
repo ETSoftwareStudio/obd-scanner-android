@@ -1,4 +1,4 @@
-package studio.etsoftware.obdapp.util
+package studio.etsoftware.obdapp.data.logging
 
 import java.text.SimpleDateFormat
 import java.util.Date
