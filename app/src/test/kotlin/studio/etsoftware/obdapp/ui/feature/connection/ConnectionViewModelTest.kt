@@ -1,14 +1,5 @@
 package studio.etsoftware.obdapp.ui.feature.connection
 
-import studio.etsoftware.obdapp.domain.model.ConnectionState
-import studio.etsoftware.obdapp.domain.model.DeviceInfo
-import studio.etsoftware.obdapp.domain.model.DeviceType
-import studio.etsoftware.obdapp.domain.model.DiscoveryState
-import studio.etsoftware.obdapp.domain.model.PairingState
-import studio.etsoftware.obdapp.domain.repository.ObdRepository
-import studio.etsoftware.obdapp.domain.usecase.ConnectDeviceUseCase
-import studio.etsoftware.obdapp.domain.usecase.GetPairedDevicesUseCase
-import studio.etsoftware.obdapp.util.PreferencesManager
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -19,7 +10,6 @@ import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -29,20 +19,42 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import studio.etsoftware.obdapp.domain.model.ConnectionState
+import studio.etsoftware.obdapp.domain.model.DeviceInfo
+import studio.etsoftware.obdapp.domain.model.DeviceType
+import studio.etsoftware.obdapp.domain.model.DiscoveryState
+import studio.etsoftware.obdapp.domain.model.PairingState
+import studio.etsoftware.obdapp.domain.repository.AppSettingsRepository
+import studio.etsoftware.obdapp.domain.repository.ConnectionRepository
+import studio.etsoftware.obdapp.domain.repository.DiscoveryRepository
+import studio.etsoftware.obdapp.domain.usecase.ClearPairingStateUseCase
+import studio.etsoftware.obdapp.domain.usecase.ConnectDeviceUseCase
+import studio.etsoftware.obdapp.domain.usecase.GetPairedDevicesUseCase
+import studio.etsoftware.obdapp.domain.usecase.IsBluetoothEnabledUseCase
+import studio.etsoftware.obdapp.domain.usecase.IsLocationServicesEnabledForDiscoveryUseCase
+import studio.etsoftware.obdapp.domain.usecase.ObserveConnectionStateUseCase
+import studio.etsoftware.obdapp.domain.usecase.ObserveDiscoveryStateUseCase
+import studio.etsoftware.obdapp.domain.usecase.ObserveLastDeviceUseCase
+import studio.etsoftware.obdapp.domain.usecase.ObservePairingStateUseCase
+import studio.etsoftware.obdapp.domain.usecase.PairDeviceUseCase
+import studio.etsoftware.obdapp.domain.usecase.SaveLastDeviceUseCase
+import studio.etsoftware.obdapp.domain.usecase.SetWasConnectedUseCase
+import studio.etsoftware.obdapp.domain.usecase.StartDiscoveryUseCase
+import studio.etsoftware.obdapp.domain.usecase.StopDiscoveryUseCase
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ConnectionViewModelTest {
     private val testDispatcher = StandardTestDispatcher()
 
-    private val getPairedDevicesUseCase: GetPairedDevicesUseCase = mockk(relaxed = true)
-    private val connectDeviceUseCase: ConnectDeviceUseCase = mockk(relaxed = true)
-    private val repository: ObdRepository = mockk(relaxed = true)
-    private val preferencesManager: PreferencesManager = mockk(relaxed = true)
+    private val connectionRepository: ConnectionRepository = mockk(relaxed = true)
+    private val discoveryRepository: DiscoveryRepository = mockk(relaxed = true)
+    private val appSettingsRepository: AppSettingsRepository = mockk(relaxed = true)
 
     private lateinit var viewModel: ConnectionViewModel
     private lateinit var connectionStateFlow: MutableStateFlow<ConnectionState>
     private lateinit var discoveryStateFlow: MutableStateFlow<DiscoveryState>
     private lateinit var pairingStateFlow: MutableStateFlow<PairingState>
+    private lateinit var lastDeviceFlow: MutableStateFlow<DeviceInfo?>
 
     private val pairedDevices =
         listOf(
@@ -58,25 +70,36 @@ class ConnectionViewModelTest {
         connectionStateFlow = MutableStateFlow(ConnectionState.Disconnected)
         discoveryStateFlow = MutableStateFlow(DiscoveryState.Idle)
         pairingStateFlow = MutableStateFlow(PairingState.Idle)
+        lastDeviceFlow = MutableStateFlow(null)
 
-        every { repository.connectionState } returns connectionStateFlow
-        every { repository.discoveryState } returns discoveryStateFlow
-        every { repository.pairingState } returns pairingStateFlow
-        every { repository.isBluetoothEnabled() } returns true
-        every { repository.isLocationServicesEnabledForDiscovery() } returns true
-        every { repository.startDiscovery() } returns Result.success(Unit)
-        every { repository.stopDiscovery() } just runs
-        every { repository.pairDevice(any()) } returns Result.success(Unit)
-        every { repository.clearPairingState() } just runs
-        every { preferencesManager.lastDeviceAddress } returns flowOf(null)
-        every { preferencesManager.lastDeviceName } returns flowOf(null)
+        every { connectionRepository.connectionState } returns connectionStateFlow
+        every { discoveryRepository.discoveryState } returns discoveryStateFlow
+        every { discoveryRepository.pairingState } returns pairingStateFlow
+        every { discoveryRepository.isBluetoothEnabled() } returns true
+        every { discoveryRepository.isLocationServicesEnabledForDiscovery() } returns true
+        every { discoveryRepository.startDiscovery() } returns Result.success(Unit)
+        every { discoveryRepository.stopDiscovery() } just runs
+        every { discoveryRepository.pairDevice(any()) } returns Result.success(Unit)
+        every { appSettingsRepository.lastDevice } returns lastDeviceFlow
+        coEvery { appSettingsRepository.setWasConnected(any()) } returns Unit
+        coEvery { appSettingsRepository.setLastDevice(any()) } returns Unit
 
         viewModel =
             ConnectionViewModel(
-                getPairedDevicesUseCase,
-                connectDeviceUseCase,
-                repository,
-                preferencesManager,
+                getPairedDevicesUseCase = GetPairedDevicesUseCase(connectionRepository),
+                connectDeviceUseCase = ConnectDeviceUseCase(connectionRepository),
+                observeConnectionStateUseCase = ObserveConnectionStateUseCase(connectionRepository),
+                observeDiscoveryStateUseCase = ObserveDiscoveryStateUseCase(discoveryRepository),
+                observePairingStateUseCase = ObservePairingStateUseCase(discoveryRepository),
+                observeLastDeviceUseCase = ObserveLastDeviceUseCase(appSettingsRepository),
+                saveLastDeviceUseCase = SaveLastDeviceUseCase(appSettingsRepository),
+                setWasConnectedUseCase = SetWasConnectedUseCase(appSettingsRepository),
+                isBluetoothEnabledUseCase = IsBluetoothEnabledUseCase(discoveryRepository),
+                isLocationServicesEnabledForDiscoveryUseCase = IsLocationServicesEnabledForDiscoveryUseCase(discoveryRepository),
+                startDiscoveryUseCase = StartDiscoveryUseCase(discoveryRepository),
+                stopDiscoveryUseCase = StopDiscoveryUseCase(discoveryRepository),
+                pairDeviceUseCase = PairDeviceUseCase(discoveryRepository),
+                clearPairingStateUseCase = ClearPairingStateUseCase(discoveryRepository),
             )
     }
 
@@ -88,7 +111,7 @@ class ConnectionViewModelTest {
     @Test
     fun `loadPairedDevices updates paired device list`() =
         runTest {
-            coEvery { getPairedDevicesUseCase() } returns pairedDevices
+            coEvery { connectionRepository.getPairedDevices() } returns pairedDevices
 
             viewModel.loadPairedDevices()
             testDispatcher.scheduler.advanceUntilIdle()
@@ -99,7 +122,7 @@ class ConnectionViewModelTest {
     @Test
     fun `discovery updates nearby devices excluding already paired items`() =
         runTest {
-            coEvery { getPairedDevicesUseCase() } returns pairedDevices
+            coEvery { connectionRepository.getPairedDevices() } returns pairedDevices
 
             viewModel.loadPairedDevices()
             testDispatcher.scheduler.advanceUntilIdle()
@@ -121,7 +144,7 @@ class ConnectionViewModelTest {
 
     @Test
     fun `startDiscovery failure updates error state`() {
-        every { repository.startDiscovery() } returns Result.failure(Exception("Discovery failed"))
+        every { discoveryRepository.startDiscovery() } returns Result.failure(Exception("Discovery failed"))
 
         viewModel.startDiscovery()
 
@@ -130,7 +153,7 @@ class ConnectionViewModelTest {
 
     @Test
     fun `pairDevice failure updates error state`() {
-        every { repository.pairDevice(discoveredDevice) } returns Result.failure(Exception("Pairing failed"))
+        every { discoveryRepository.pairDevice(discoveredDevice) } returns Result.failure(Exception("Pairing failed"))
 
         viewModel.pairDevice(discoveredDevice)
 
@@ -141,7 +164,7 @@ class ConnectionViewModelTest {
     fun `pairing success refreshes paired devices and selects device`() =
         runTest {
             val updatedPairedDevices = pairedDevices + discoveredDevice
-            coEvery { getPairedDevicesUseCase() } returnsMany listOf(pairedDevices, updatedPairedDevices)
+            coEvery { connectionRepository.getPairedDevices() } returnsMany listOf(pairedDevices, updatedPairedDevices)
 
             viewModel.loadPairedDevices()
             testDispatcher.scheduler.advanceUntilIdle()
@@ -152,7 +175,7 @@ class ConnectionViewModelTest {
             assertEquals(updatedPairedDevices, viewModel.uiState.value.pairedDevices)
             assertEquals(discoveredDevice.address, viewModel.uiState.value.selectedDevice?.address)
             assertEquals("${discoveredDevice.name} paired successfully", viewModel.uiState.value.message)
-            verify { repository.clearPairingState() }
+            verify { discoveryRepository.clearPairingState() }
         }
 
     @Test
@@ -161,13 +184,13 @@ class ConnectionViewModelTest {
             val device = pairedDevices.first()
             viewModel.selectDevice(device)
 
-            coEvery { connectDeviceUseCase(device) } returns Result.success(Unit)
+            coEvery { connectionRepository.connect(device) } returns Result.success(Unit)
 
             viewModel.connect()
             testDispatcher.scheduler.advanceUntilIdle()
 
-            verify { repository.stopDiscovery() }
-            coVerify { connectDeviceUseCase(device) }
+            verify { discoveryRepository.stopDiscovery() }
+            coVerify { connectionRepository.connect(device) }
         }
 
     @Test
@@ -176,7 +199,7 @@ class ConnectionViewModelTest {
             val device = pairedDevices.first()
             viewModel.selectDevice(device)
 
-            coEvery { connectDeviceUseCase(device) } returns Result.failure(Exception("Connection failed"))
+            coEvery { connectionRepository.connect(device) } returns Result.failure(Exception("Connection failed"))
 
             viewModel.connect()
             testDispatcher.scheduler.advanceUntilIdle()

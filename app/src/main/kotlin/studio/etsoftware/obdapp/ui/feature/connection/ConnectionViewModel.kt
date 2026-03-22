@@ -4,13 +4,22 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import studio.etsoftware.obdapp.domain.model.ConnectionState
 import studio.etsoftware.obdapp.domain.model.DeviceInfo
-import studio.etsoftware.obdapp.domain.model.DeviceType
 import studio.etsoftware.obdapp.domain.model.DiscoveryState
 import studio.etsoftware.obdapp.domain.model.PairingState
-import studio.etsoftware.obdapp.domain.repository.ObdRepository
+import studio.etsoftware.obdapp.domain.usecase.ClearPairingStateUseCase
 import studio.etsoftware.obdapp.domain.usecase.ConnectDeviceUseCase
 import studio.etsoftware.obdapp.domain.usecase.GetPairedDevicesUseCase
-import studio.etsoftware.obdapp.util.PreferencesManager
+import studio.etsoftware.obdapp.domain.usecase.IsBluetoothEnabledUseCase
+import studio.etsoftware.obdapp.domain.usecase.IsLocationServicesEnabledForDiscoveryUseCase
+import studio.etsoftware.obdapp.domain.usecase.ObserveConnectionStateUseCase
+import studio.etsoftware.obdapp.domain.usecase.ObserveDiscoveryStateUseCase
+import studio.etsoftware.obdapp.domain.usecase.ObserveLastDeviceUseCase
+import studio.etsoftware.obdapp.domain.usecase.ObservePairingStateUseCase
+import studio.etsoftware.obdapp.domain.usecase.PairDeviceUseCase
+import studio.etsoftware.obdapp.domain.usecase.SaveLastDeviceUseCase
+import studio.etsoftware.obdapp.domain.usecase.SetWasConnectedUseCase
+import studio.etsoftware.obdapp.domain.usecase.StartDiscoveryUseCase
+import studio.etsoftware.obdapp.domain.usecase.StopDiscoveryUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -41,8 +50,18 @@ class ConnectionViewModel
     constructor(
         private val getPairedDevicesUseCase: GetPairedDevicesUseCase,
         private val connectDeviceUseCase: ConnectDeviceUseCase,
-        private val repository: ObdRepository,
-        private val preferencesManager: PreferencesManager,
+        private val observeConnectionStateUseCase: ObserveConnectionStateUseCase,
+        private val observeDiscoveryStateUseCase: ObserveDiscoveryStateUseCase,
+        private val observePairingStateUseCase: ObservePairingStateUseCase,
+        private val observeLastDeviceUseCase: ObserveLastDeviceUseCase,
+        private val saveLastDeviceUseCase: SaveLastDeviceUseCase,
+        private val setWasConnectedUseCase: SetWasConnectedUseCase,
+        private val isBluetoothEnabledUseCase: IsBluetoothEnabledUseCase,
+        private val isLocationServicesEnabledForDiscoveryUseCase: IsLocationServicesEnabledForDiscoveryUseCase,
+        private val startDiscoveryUseCase: StartDiscoveryUseCase,
+        private val stopDiscoveryUseCase: StopDiscoveryUseCase,
+        private val pairDeviceUseCase: PairDeviceUseCase,
+        private val clearPairingStateUseCase: ClearPairingStateUseCase,
     ) : ViewModel() {
         private val _uiState = MutableStateFlow(ConnectionUiState())
         val uiState: StateFlow<ConnectionUiState> = _uiState.asStateFlow()
@@ -57,18 +76,18 @@ class ConnectionViewModel
         }
 
         override fun onCleared() {
-            repository.stopDiscovery()
+            stopDiscoveryUseCase()
             super.onCleared()
         }
 
         private fun observeConnectionState() {
             viewModelScope.launch {
-                repository.connectionState.collect { state ->
+                observeConnectionStateUseCase().collect { state ->
                     _uiState.update { it.copy(connectionState = state) }
                     if (state is ConnectionState.Connected) {
-                        preferencesManager.setWasConnected(true)
+                        setWasConnectedUseCase(true)
                     } else if (state is ConnectionState.Disconnected) {
-                        preferencesManager.setWasConnected(false)
+                        setWasConnectedUseCase(false)
                     }
                 }
             }
@@ -76,7 +95,7 @@ class ConnectionViewModel
 
         private fun observeDiscoveryState() {
             viewModelScope.launch {
-                repository.discoveryState.collect { state ->
+                observeDiscoveryStateUseCase().collect { state ->
                     _uiState.update { currentState ->
                         currentState.copy(
                             discoveryState = state,
@@ -90,7 +109,7 @@ class ConnectionViewModel
 
         private fun observePairingState() {
             viewModelScope.launch {
-                repository.pairingState.collect { state ->
+                observePairingStateUseCase().collect { state ->
                     when (state) {
                         PairingState.Idle -> {
                             _uiState.update { it.copy(pairingDeviceAddress = null) }
@@ -114,7 +133,7 @@ class ConnectionViewModel
                                 )
                             }
                             loadPairedDevices()
-                            repository.clearPairingState()
+                            clearPairingStateUseCase()
                         }
 
                         is PairingState.Error -> {
@@ -124,7 +143,7 @@ class ConnectionViewModel
                                     error = state.message,
                                 )
                             }
-                            repository.clearPairingState()
+                            clearPairingStateUseCase()
                         }
                     }
                 }
@@ -133,13 +152,9 @@ class ConnectionViewModel
 
         private fun loadLastDevice() {
             viewModelScope.launch {
-                val address = preferencesManager.lastDeviceAddress.first()
-                val name = preferencesManager.lastDeviceName.first()
-                if (address != null && name != null) {
+                observeLastDeviceUseCase().first()?.let { device ->
                     _uiState.update {
-                        it.copy(
-                            selectedDevice = DeviceInfo(address, name, DeviceType.CLASSIC),
-                        )
+                        it.copy(selectedDevice = device)
                     }
                 }
             }
@@ -148,8 +163,8 @@ class ConnectionViewModel
         fun refreshSystemState() {
             _uiState.update {
                 it.copy(
-                    isBluetoothEnabled = repository.isBluetoothEnabled(),
-                    isLocationServicesEnabledForDiscovery = repository.isLocationServicesEnabledForDiscovery(),
+                    isBluetoothEnabled = isBluetoothEnabledUseCase(),
+                    isLocationServicesEnabledForDiscovery = isLocationServicesEnabledForDiscoveryUseCase(),
                 )
             }
         }
@@ -165,8 +180,8 @@ class ConnectionViewModel
                             nearbyDevices = filterNearbyDevices(currentState.discoveryState.devices(), devices),
                             selectedDevice = updateSelectedDevice(currentState.selectedDevice, devices),
                             isLoadingPairedDevices = false,
-                            isBluetoothEnabled = repository.isBluetoothEnabled(),
-                            isLocationServicesEnabledForDiscovery = repository.isLocationServicesEnabledForDiscovery(),
+                            isBluetoothEnabled = isBluetoothEnabledUseCase(),
+                            isLocationServicesEnabledForDiscovery = isLocationServicesEnabledForDiscoveryUseCase(),
                         )
                     }
                 } catch (e: Exception) {
@@ -174,8 +189,8 @@ class ConnectionViewModel
                         it.copy(
                             error = e.message,
                             isLoadingPairedDevices = false,
-                            isBluetoothEnabled = repository.isBluetoothEnabled(),
-                            isLocationServicesEnabledForDiscovery = repository.isLocationServicesEnabledForDiscovery(),
+                            isBluetoothEnabled = isBluetoothEnabledUseCase(),
+                            isLocationServicesEnabledForDiscovery = isLocationServicesEnabledForDiscoveryUseCase(),
                         )
                     }
                 }
@@ -184,13 +199,13 @@ class ConnectionViewModel
 
         fun startDiscovery() {
             refreshSystemState()
-            repository.startDiscovery().exceptionOrNull()?.let { error ->
+            startDiscoveryUseCase().exceptionOrNull()?.let { error ->
                 _uiState.update { it.copy(error = error.message) }
             }
         }
 
         fun stopDiscovery() {
-            repository.stopDiscovery()
+            stopDiscoveryUseCase()
         }
 
         fun selectDevice(device: DeviceInfo) {
@@ -206,11 +221,11 @@ class ConnectionViewModel
                 )
             }
 
-            return repository.pairDevice(device).fold(
+            return pairDeviceUseCase(device).fold(
                 onSuccess = { true },
                 onFailure = { error ->
                     _uiState.update { it.copy(pairingDeviceAddress = null, error = error.message) }
-                    repository.clearPairingState()
+                    clearPairingStateUseCase()
                     false
                 },
             )
@@ -218,14 +233,14 @@ class ConnectionViewModel
 
         fun connect() {
             val device = _uiState.value.selectedDevice ?: return
-            repository.stopDiscovery()
+            stopDiscoveryUseCase()
 
             viewModelScope.launch {
                 _uiState.update { it.copy(isLoading = true, error = null) }
 
                 connectDeviceUseCase(device).fold(
                     onSuccess = {
-                        preferencesManager.setLastDevice(device.address, device.name)
+                        saveLastDeviceUseCase(device)
                         _uiState.update { it.copy(isLoading = false) }
                     },
                     onFailure = { e ->
