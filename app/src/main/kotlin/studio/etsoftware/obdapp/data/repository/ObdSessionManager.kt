@@ -95,6 +95,7 @@ class ObdSessionManager
             val outputStream = transport.getOutputStream()
             if (inputStream == null || outputStream == null) {
                 val error = Exception("Failed to get streams")
+                cleanupConnection()
                 mutableConnectionState.value = ConnectionState.Error(error.message ?: "Failed to get streams")
                 logManager.error("Failed to get Bluetooth streams")
                 return Result.failure(error)
@@ -129,6 +130,7 @@ class ObdSessionManager
                 logManager.success("Connected to ${device.name}")
                 Result.success(Unit)
             } catch (e: Exception) {
+                cleanupConnection()
                 mutableConnectionState.value = ConnectionState.Error(e.message ?: "Failed to initialize OBD")
                 logManager.error("OBD initialization failed: ${e.message}")
                 Result.failure(e)
@@ -136,10 +138,7 @@ class ObdSessionManager
         }
 
         suspend fun disconnect() {
-            withConnectionAccess {
-                obdConnection = null
-                transport.disconnect()
-            }
+            cleanupConnection()
             mutableConnectionState.value = ConnectionState.Disconnected
         }
 
@@ -150,6 +149,13 @@ class ObdSessionManager
         suspend fun <T> withConnectionAccess(block: suspend () -> T): T {
             return connectionAccessMutex.withLock {
                 block()
+            }
+        }
+
+        private suspend fun cleanupConnection() {
+            withConnectionAccess {
+                obdConnection = null
+                transport.disconnect()
             }
         }
 
