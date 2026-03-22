@@ -221,16 +221,37 @@ app/src/main/kotlin/studio/etsoftware/obdapp/
 │   │   ├── BluetoothDiscoveryManager.kt
 │   │   ├── BluetoothTransport.kt
 │   │   └── ObdTransport.kt
+│   ├── diagnostics/
+│   │   ├── DiagnosticsService.kt
+│   │   └── DtcParser.kt
 │   ├── di/
+│   │   ├── LoggingModule.kt
 │   │   ├── RepositoryModule.kt
 │   │   ├── SettingsModule.kt
 │   │   ├── TelemetryModule.kt
 │   │   └── TransportModule.kt
+│   ├── logging/
+│   │   ├── DebugLogRepositoryImpl.kt
+│   │   ├── LogExporter.kt
+│   │   ├── LogExportFormatter.kt
+│   │   ├── LogExportRepositoryImpl.kt
+│   │   └── LogManager.kt
+│   ├── polling/
+│   │   ├── DashboardMetricsStore.kt
+│   │   ├── DashboardPollingCoordinator.kt
+│   │   └── DashboardPollingScheduler.kt
 │   ├── repository/
-│   │   ├── DashboardPollingScheduler.kt
-│   │   └── ObdRepositoryImpl.kt
+│   │   ├── ConnectionRepositoryImpl.kt
+│   │   ├── DashboardRepositoryImpl.kt
+│   │   ├── DiagnosticsRepositoryImpl.kt
+│   │   └── DiscoveryRepositoryImpl.kt
+│   ├── session/
+│   │   ├── ObdCommandExecutor.kt
+│   │   └── ObdSessionManager.kt
 │   ├── settings/
-│   │   └── PollingSettingsRepositoryImpl.kt
+│   │   ├── AppSettingsRepositoryImpl.kt
+│   │   ├── PollingSettingsRepositoryImpl.kt
+│   │   └── PreferencesManager.kt
 │   └── telemetry/
 │       ├── TelemetryRecorder.kt
 │       ├── TelemetryRepositoryImpl.kt
@@ -238,6 +259,7 @@ app/src/main/kotlin/studio/etsoftware/obdapp/
 ├── domain/
 │   ├── model/
 │   │   ├── DashboardMetricsSnapshot.kt
+│   │   ├── DebugLogEntry.kt
 │   │   ├── DeviceInfo.kt
 │   │   ├── DiagnosticInfo.kt
 │   │   ├── DiscoveryState.kt
@@ -245,7 +267,13 @@ app/src/main/kotlin/studio/etsoftware/obdapp/
 │   │   ├── TelemetryEvent.kt
 │   │   └── VehicleMetric.kt
 │   ├── repository/
-│   │   ├── ObdRepository.kt
+│   │   ├── AppSettingsRepository.kt
+│   │   ├── ConnectionRepository.kt
+│   │   ├── DashboardRepository.kt
+│   │   ├── DebugLogRepository.kt
+│   │   ├── DiagnosticsRepository.kt
+│   │   ├── DiscoveryRepository.kt
+│   │   ├── LogExportRepository.kt
 │   │   ├── PollingSettingsRepository.kt
 │   │   └── TelemetryRepository.kt
 │   └── usecase/
@@ -261,11 +289,6 @@ app/src/main/kotlin/studio/etsoftware/obdapp/
 │   │   └── Screen.kt
 │   ├── theme/
 │   └── MainActivity.kt
-├── util/
-│   ├── LogExporter.kt
-│   ├── LogExportFormatter.kt
-│   ├── LogManager.kt
-│   └── PreferencesManager.kt
 └── ObdScannerApp.kt
 ```
 
@@ -273,40 +296,60 @@ app/src/main/kotlin/studio/etsoftware/obdapp/
 
 ## Architecture
 
-Layered architecture with clean separation:
+Layered architecture with stricter dependency direction:
 
-- **UI layer**: composables + ViewModels (presentation state)
-- **Domain layer**: use cases + repository contracts + domain models
-- **Data layer**: repository implementations + transport implementation + settings/telemetry integration + external library integration
+- **UI layer**: composables + ViewModels that depend on **use cases and domain models only**
+- **Domain layer**: focused repository contracts + use cases + domain models
+- **Data layer**: Android transport/platform integrations + repository implementations + orchestrators/services + observability/persistence details
 
 ### Data flow
 
-Core OBD flow:
+Core OBD flow now goes through focused repository contracts instead of a single broad gateway:
 
 ```text
 Compose Screen
    -> ViewModel
       -> UseCase
-         -> ObdRepository (interface)
-            -> ObdRepositoryImpl
-               -> ObdTransport (BluetoothTransport)
-               -> kotlin-obd-api commands
+         -> ConnectionRepository / DiscoveryRepository / DashboardRepository / DiagnosticsRepository
+            -> repository impls
+               -> session / polling / diagnostics services
+                  -> kotlin-obd-api commands + Bluetooth transport
 ```
 
-Supporting UI utilities such as debug log export and telemetry inspection follow a lighter path:
+The data layer itself is decomposed into role-based collaborators:
+
+```text
+ConnectionRepositoryImpl
+   -> BluetoothDiscoveryManager
+   -> ObdSessionManager
+      -> ObdCommandExecutor
+      -> ObdTransport (BluetoothTransport)
+
+DashboardRepositoryImpl
+   -> DashboardPollingCoordinator
+      -> DashboardPollingScheduler
+      -> DashboardMetricsStore
+
+DiagnosticsRepositoryImpl
+   -> DashboardPollingCoordinator.runWithPollingPaused(...)
+   -> DiagnosticsService
+      -> DtcParser
+```
+
+Debug log export and telemetry inspection are also routed through domain-facing contracts:
 
 ```text
 DashboardScreen
    -> DashboardViewModel
-      -> ObserveTelemetryEventsUseCase / LogManager / LogExportFormatter / LogExporter
+      -> ObserveDebugLogsUseCase / BuildLogExportTextUseCase / ExportLogsUseCase / ObserveTelemetryEventsUseCase
 ```
 
 ### Why this architecture works
 
-- UI remains free from transport protocol details
-- business actions are explicit and testable
-- polling/diagnostics coordination stays inside the repository layer
-- swapping transport implementation is straightforward
+- UI remains free from transport, DataStore, and logging implementation details
+- repository contracts are focused by responsibility, which improves testability and change isolation
+- polling, diagnostics, session lifecycle, logging, and settings each have explicit owners in the data layer
+- Android-specific APIs stay at the edges while business-facing flows stay in domain/use cases
 
 ---
 
@@ -315,8 +358,8 @@ DashboardScreen
 ## 1) Device discovery sequence
 
 1. User taps **Scan Nearby** in `ConnectionScreen`
-2. `ConnectionViewModel.startDiscovery()` delegates to `ObdRepository.startDiscovery()`
-3. `BluetoothDiscoveryManager`:
+2. `ConnectionViewModel.startDiscovery()` invokes `StartDiscoveryUseCase`
+3. `DiscoveryRepositoryImpl` delegates to `BluetoothDiscoveryManager`, which:
    - validates Bluetooth scan/connect permissions
    - registers a short-lived broadcast receiver for discovery events
    - starts Classic Bluetooth discovery via `BluetoothAdapter.startDiscovery()`
@@ -328,31 +371,34 @@ DashboardScreen
 
 1. User selects a paired adapter in `ConnectionScreen`
 2. `ConnectionViewModel.connect()` invokes `ConnectDeviceUseCase`
-3. `ObdRepositoryImpl.connect()`:
-   - stops any active Bluetooth discovery first
+3. `ConnectionRepositoryImpl.connect()` stops any active discovery and delegates session setup to `ObdSessionManager`
+4. `ObdSessionManager.connect()`:
    - validates `BLUETOOTH_CONNECT` permission
    - delegates socket creation/connection to `BluetoothTransport`
    - `BluetoothTransport` defensively cancels discovery before RFCOMM connect
    - creates `ObdDeviceConnection(inputStream, outputStream)`
-   - performs adapter bootstrap:
+   - performs adapter bootstrap through `ObdCommandExecutor`:
      - `ATZ` (`ResetAdapterCommand`)
      - `ATE0` (`SetEchoCommand(Switcher.OFF)`)
+   - cleans up partially-open sessions if bootstrap fails
 
 ## 3) Polling lifecycle
 
 - Dashboard starts polling only when connected
-- Polling executes on IO coroutine scope
-- `DashboardPollingScheduler` staggers metrics by fast/medium/slow tiers instead of sending every command every cycle
+- `DashboardRepositoryImpl` delegates polling lifecycle to `DashboardPollingCoordinator`
+- `DashboardPollingCoordinator` executes on an IO coroutine scope
+- `DashboardPollingScheduler` decides which metrics are due using fast/medium/slow tiers instead of sending every command every cycle
 - Polling interval changes can be applied while the polling loop is active
-- Disconnect cancels polling and closes transport safely
+- Transport loss and disconnect both stop polling safely and update connection state through the session layer
 
 ## 4) Diagnostics lifecycle
 
 - `DiagnosticsViewModel` owns diagnostics screen state
 - Reads VIN and trouble codes on demand / when connected
 - Can clear trouble codes through Mode 04
-- Repository pauses dashboard polling during diagnostics operations and resumes afterward when appropriate
-- Applies resilient DTC normalization before UI rendering
+- `DiagnosticsRepositoryImpl` runs diagnostics through `DashboardPollingCoordinator.runWithPollingPaused(...)` so diagnostics do not race with dashboard polling
+- `DiagnosticsService` performs VIN / DTC command execution
+- `DtcParser` handles resilient DTC normalization before UI rendering
 
 ---
 
@@ -403,12 +449,11 @@ Defensive checks in data layer:
 
 ## State Management
 
-- Repository exposes `StateFlow<ConnectionState>` for connection status
-- Repository also exposes `StateFlow<DiscoveryState>` for Bluetooth discovery progress/results
-- Repository also exposes `StateFlow<PairingState>` for Bluetooth pairing progress/results
-- Repository exposes `StateFlow<DashboardMetricsSnapshot>` for dashboard-friendly metric snapshots
-- Low-level metric events are also available as a `Flow<VehicleMetric>` stream
-- Telemetry events are exposed separately via the telemetry repository/use cases when enabled
+- `ConnectionRepository` exposes `StateFlow<ConnectionState>` for connection status
+- `DiscoveryRepository` exposes `StateFlow<DiscoveryState>` and `StateFlow<PairingState>` for Bluetooth discovery/pairing progress
+- `DashboardRepository` exposes `StateFlow<DashboardMetricsSnapshot>` for dashboard-friendly metric snapshots
+- Low-level metric events are still produced in the data layer via `DashboardMetricsStore`
+- `TelemetryRepository` exposes telemetry events through dedicated use cases when enabled
 - Screens consume state with `collectAsStateWithLifecycle()`
 
 This keeps UI reactive and lifecycle-safe.
@@ -417,7 +462,7 @@ This keeps UI reactive and lifecycle-safe.
 
 ## Settings & Persistence
 
-`PreferencesManager` (DataStore) stores:
+`PreferencesManager` (DataStore, kept in the data layer) stores:
 
 - polling interval
 - theme (`system` default)
@@ -426,9 +471,11 @@ This keeps UI reactive and lifecycle-safe.
 - telemetry enabled state
 - previous-connection state used by the current auto-connect flow
 
+Those values are surfaced to the rest of the app through domain-facing contracts such as `AppSettingsRepository`, `PollingSettingsRepository`, and `TelemetryRepository`.
+
 Auto-connect flow:
 
-- dashboard startup checks persisted state before attempting reconnect
+- dashboard startup checks persisted state through use cases before attempting reconnect
 - if enabled and a valid previous device exists, reconnect attempt is triggered
 
 ---
@@ -485,9 +532,13 @@ Run individually:
 
 Current test coverage includes:
 
-- use case behavior
+- focused use case behavior against domain contracts
 - ViewModel state transitions and error handling
 - dashboard polling scheduler behavior
+- dashboard metrics publication/state snapshot behavior
+- polling coordinator pause/access behavior
+- diagnostics service behavior
+- DTC parser normalization/hex decoding
 - debug log export formatting
 
 Frameworks:
