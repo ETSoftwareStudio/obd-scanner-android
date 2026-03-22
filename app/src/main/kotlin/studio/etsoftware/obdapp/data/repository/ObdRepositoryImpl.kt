@@ -49,6 +49,7 @@ class ObdRepositoryImpl
         private val commandExecutor: ObdCommandExecutor,
         private val sessionManager: ObdSessionManager,
         private val diagnosticsService: DiagnosticsService,
+        private val pollingCoordinator: DashboardPollingCoordinator,
     ) : ObdRepository {
         private data class PollingCycleStats(
             val commandCount: Int,
@@ -99,7 +100,7 @@ class ObdRepositoryImpl
 
         override suspend fun readDiagnosticInfo(): Result<DiagnosticInfo> =
             withContext(Dispatchers.IO) {
-                runExclusiveOperation(
+                pollingCoordinator.runWithPollingPaused(
                     reason = "diagnostics read",
                     resumeLabel = "diagnostics read",
                 ) { connection ->
@@ -109,7 +110,7 @@ class ObdRepositoryImpl
 
         override suspend fun clearTroubleCodes(): Result<Unit> =
             withContext(Dispatchers.IO) {
-                runExclusiveOperation(
+                pollingCoordinator.runWithPollingPaused(
                     reason = "trouble code clear",
                     resumeLabel = "trouble code clear",
                     onFailure = { error -> logManager.error("Failed to clear trouble codes: ${error.message}") },
@@ -120,28 +121,11 @@ class ObdRepositoryImpl
             }
 
         override suspend fun startPolling(intervalMs: Long) {
-            pollingLifecycleMutex.withLock {
-                if (pollingJob?.isActive == true) {
-                    if (activePollingIntervalMs != intervalMs || pendingPollingIntervalMs != null) {
-                        pendingPollingIntervalMs = intervalMs
-                        pollingConfigUpdates.trySend(Unit)
-                    }
-                    return
-                }
-
-                activePollingIntervalMs = intervalMs
-                pendingPollingIntervalMs = null
-                pollingJob = createPollingJob(intervalMs)
-            }
+            pollingCoordinator.startPolling(intervalMs)
         }
 
         override suspend fun stopPolling() {
-            pollingLifecycleMutex.withLock {
-                pollingJob?.cancelAndJoin()
-                pollingJob = null
-                activePollingIntervalMs = null
-                pendingPollingIntervalMs = null
-            }
+            pollingCoordinator.stopPolling()
         }
 
         private suspend fun <T> runExclusiveOperation(
