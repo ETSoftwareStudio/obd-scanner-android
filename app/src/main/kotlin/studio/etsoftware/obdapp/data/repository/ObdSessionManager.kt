@@ -85,10 +85,12 @@ class ObdSessionManager
 
             val connectionResult = transport.connect(device)
             if (connectionResult.isFailure) {
-                val errorMsg = connectionResult.exceptionOrNull()?.message ?: "Connection failed"
+                cleanupConnection()
+                val cause = connectionResult.exceptionOrNull() ?: Exception("Connection failed")
+                val errorMsg = cause.message ?: "Connection failed"
                 mutableConnectionState.value = ConnectionState.Error(errorMsg)
                 logManager.error("Connection failed: $errorMsg")
-                return Result.failure(connectionResult.exceptionOrNull() ?: Exception("Connection failed"))
+                return Result.failure(cause)
             }
 
             val inputStream = transport.getInputStream()
