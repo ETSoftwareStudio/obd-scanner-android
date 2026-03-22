@@ -8,6 +8,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
 import studio.etsoftware.obdapp.data.connection.BluetoothDiscoveryManager
 import studio.etsoftware.obdapp.data.diagnostics.DiagnosticsService
+import studio.etsoftware.obdapp.data.polling.DashboardMetricsStore
+import studio.etsoftware.obdapp.data.polling.DashboardPollingCoordinator
 import studio.etsoftware.obdapp.data.session.ObdSessionManager
 import studio.etsoftware.obdapp.domain.model.ConnectionState
 import studio.etsoftware.obdapp.domain.model.DashboardMetricsSnapshot
