@@ -1,7 +1,10 @@
 package studio.etsoftware.obdapp.ui.theme
 
-import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
 import android.os.Build
+import androidx.activity.SystemBarStyle
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
@@ -12,8 +15,6 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalView
-import androidx.core.view.WindowCompat
 
 private val DarkColorScheme =
     darkColorScheme(
@@ -47,6 +48,13 @@ private val LightColorScheme =
         onSurfaceVariant = Color(0xFF49454F),
     )
 
+private tailrec fun Context.findContextActivity(): androidx.activity.ComponentActivity? =
+    when (this) {
+        is androidx.activity.ComponentActivity -> this
+        is ContextWrapper -> baseContext.findContextActivity()
+        else -> null
+    }
+
 @Composable
 fun ObdScannerAppTheme(
     darkTheme: Boolean = true,
@@ -63,13 +71,20 @@ fun ObdScannerAppTheme(
             else -> LightColorScheme
         }
 
-    val view = LocalView.current
-    if (!view.isInEditMode) {
-        SideEffect {
-            val window = (view.context as Activity).window
-            window.statusBarColor = colorScheme.background.toArgb()
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
-        }
+    val context = LocalContext.current
+    SideEffect {
+        context.findContextActivity()?.enableEdgeToEdge(
+            statusBarStyle =
+                SystemBarStyle.auto(
+                    lightScrim = colorScheme.background.toArgb(),
+                    darkScrim = colorScheme.background.toArgb(),
+                ) { darkTheme },
+            navigationBarStyle =
+                SystemBarStyle.auto(
+                    lightScrim = colorScheme.background.toArgb(),
+                    darkScrim = colorScheme.background.toArgb(),
+                ) { darkTheme },
+        )
     }
 
     MaterialTheme(
