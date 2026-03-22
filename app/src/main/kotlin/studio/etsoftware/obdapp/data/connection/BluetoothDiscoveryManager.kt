@@ -28,7 +28,7 @@ import kotlinx.coroutines.flow.asStateFlow
 class BluetoothDiscoveryManager
     @Inject
     constructor(
-        @ApplicationContext private val appContext: Context,
+        @param:ApplicationContext private val appContext: Context,
         private val logManager: LogManager,
     ) {
         private val discoveredDevices = linkedMapOf<String, DeviceInfo>()
