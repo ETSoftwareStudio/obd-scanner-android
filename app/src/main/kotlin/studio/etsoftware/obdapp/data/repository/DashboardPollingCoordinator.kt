@@ -135,6 +135,7 @@ class DashboardPollingCoordinator
 
                     val connection = sessionManager.currentConnection()
                     if (connection == null || !sessionManager.isTransportConnected()) {
+                        sessionManager.disconnect()
                         break
                     }
 
@@ -230,13 +231,104 @@ class DashboardPollingCoordinator
             metricId: DashboardMetricId,
         ): Boolean {
             return when (metricId) {
-                DashboardMetricId.SPEED -> pollTypedMetric(cycleId, metricId, "010D", "010D (Speed)", "SpeedCommand", { connection.run(SpeedCommand()) }, { it.value }, { it.rawResponse.value }, { it.unit }, 0f, 200f)
-                DashboardMetricId.RPM -> pollTypedMetric(cycleId, metricId, "010C", "010C (RPM)", "RPMCommand", { connection.run(RPMCommand()) }, { it.value }, { it.rawResponse.value }, { it.unit }, 0f, 8000f)
-                DashboardMetricId.THROTTLE -> pollTypedMetric(cycleId, metricId, "0111", "0111 (Throttle)", "ThrottlePositionCommand", { connection.run(ThrottlePositionCommand()) }, { it.value }, { it.rawResponse.value }, { it.unit }, 0f, 100f)
-                DashboardMetricId.MAF -> pollTypedMetric(cycleId, metricId, "0110", "0110 (MAF)", "MassAirFlowCommand", { connection.run(MassAirFlowCommand()) }, { it.value }, { it.rawResponse.value }, { it.unit }, 0f, 655.35f)
-                DashboardMetricId.COOLANT -> pollTypedMetric(cycleId, metricId, "0105", "0105 (Coolant)", "EngineCoolantTemperatureCommand", { connection.run(EngineCoolantTemperatureCommand()) }, { it.value }, { it.rawResponse.value }, { it.unit }, -40f, 215f)
-                DashboardMetricId.INTAKE -> pollTypedMetric(cycleId, metricId, "010F", "010F (Intake Air)", "AirIntakeTemperatureCommand", { connection.run(AirIntakeTemperatureCommand()) }, { it.value }, { it.rawResponse.value }, { it.unit }, -40f, 215f)
-                DashboardMetricId.FUEL -> pollTypedMetric(cycleId, metricId, "012F", "012F (Fuel Level)", "FuelLevelCommand", { connection.run(FuelLevelCommand()) }, { it.value }, { it.rawResponse.value }, { it.unit }, 0f, 100f)
+                DashboardMetricId.SPEED ->
+                    pollTypedMetric(
+                        cycleId = cycleId,
+                        metricId = metricId,
+                        rawPid = "010D",
+                        commandLabel = "010D (Speed)",
+                        commandName = "SpeedCommand",
+                        read = { connection.run(SpeedCommand()) },
+                        valueOf = { it.value },
+                        rawValueOf = { it.rawResponse.value },
+                        unitOf = { it.unit },
+                        minValue = 0f,
+                        maxValue = 200f,
+                    )
+                DashboardMetricId.RPM ->
+                    pollTypedMetric(
+                        cycleId = cycleId,
+                        metricId = metricId,
+                        rawPid = "010C",
+                        commandLabel = "010C (RPM)",
+                        commandName = "RPMCommand",
+                        read = { connection.run(RPMCommand()) },
+                        valueOf = { it.value },
+                        rawValueOf = { it.rawResponse.value },
+                        unitOf = { it.unit },
+                        minValue = 0f,
+                        maxValue = 8000f,
+                    )
+                DashboardMetricId.THROTTLE ->
+                    pollTypedMetric(
+                        cycleId = cycleId,
+                        metricId = metricId,
+                        rawPid = "0111",
+                        commandLabel = "0111 (Throttle)",
+                        commandName = "ThrottlePositionCommand",
+                        read = { connection.run(ThrottlePositionCommand()) },
+                        valueOf = { it.value },
+                        rawValueOf = { it.rawResponse.value },
+                        unitOf = { it.unit },
+                        minValue = 0f,
+                        maxValue = 100f,
+                    )
+                DashboardMetricId.MAF ->
+                    pollTypedMetric(
+                        cycleId = cycleId,
+                        metricId = metricId,
+                        rawPid = "0110",
+                        commandLabel = "0110 (MAF)",
+                        commandName = "MassAirFlowCommand",
+                        read = { connection.run(MassAirFlowCommand()) },
+                        valueOf = { it.value },
+                        rawValueOf = { it.rawResponse.value },
+                        unitOf = { it.unit },
+                        minValue = 0f,
+                        maxValue = 655.35f,
+                    )
+                DashboardMetricId.COOLANT ->
+                    pollTypedMetric(
+                        cycleId = cycleId,
+                        metricId = metricId,
+                        rawPid = "0105",
+                        commandLabel = "0105 (Coolant)",
+                        commandName = "EngineCoolantTemperatureCommand",
+                        read = { connection.run(EngineCoolantTemperatureCommand()) },
+                        valueOf = { it.value },
+                        rawValueOf = { it.rawResponse.value },
+                        unitOf = { it.unit },
+                        minValue = -40f,
+                        maxValue = 215f,
+                    )
+                DashboardMetricId.INTAKE ->
+                    pollTypedMetric(
+                        cycleId = cycleId,
+                        metricId = metricId,
+                        rawPid = "010F",
+                        commandLabel = "010F (Intake Air)",
+                        commandName = "AirIntakeTemperatureCommand",
+                        read = { connection.run(AirIntakeTemperatureCommand()) },
+                        valueOf = { it.value },
+                        rawValueOf = { it.rawResponse.value },
+                        unitOf = { it.unit },
+                        minValue = -40f,
+                        maxValue = 215f,
+                    )
+                DashboardMetricId.FUEL ->
+                    pollTypedMetric(
+                        cycleId = cycleId,
+                        metricId = metricId,
+                        rawPid = "012F",
+                        commandLabel = "012F (Fuel Level)",
+                        commandName = "FuelLevelCommand",
+                        read = { connection.run(FuelLevelCommand()) },
+                        valueOf = { it.value },
+                        rawValueOf = { it.rawResponse.value },
+                        unitOf = { it.unit },
+                        minValue = 0f,
+                        maxValue = 100f,
+                    )
             }
         }
 
