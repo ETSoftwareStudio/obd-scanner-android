@@ -10,14 +10,9 @@ import studio.etsoftware.obdapp.domain.model.DiagnosticInfo
 import studio.etsoftware.obdapp.domain.model.DiscoveryState
 import studio.etsoftware.obdapp.domain.model.PairingState
 import studio.etsoftware.obdapp.domain.model.TelemetryContext
-import studio.etsoftware.obdapp.domain.model.TroubleCode
-import studio.etsoftware.obdapp.domain.model.TroubleCodeType
 import studio.etsoftware.obdapp.domain.model.VehicleMetric
 import studio.etsoftware.obdapp.domain.repository.ObdRepository
 import studio.etsoftware.obdapp.util.LogManager
-import com.github.eltonvs.obd.command.control.ResetTroubleCodesCommand
-import com.github.eltonvs.obd.command.control.TroubleCodesCommand
-import com.github.eltonvs.obd.command.control.VINCommand
 import com.github.eltonvs.obd.command.engine.MassAirFlowCommand
 import com.github.eltonvs.obd.command.engine.RPMCommand
 import com.github.eltonvs.obd.command.engine.SpeedCommand
@@ -50,10 +45,10 @@ class ObdRepositoryImpl
         private val discoveryManager: BluetoothDiscoveryManager,
         private val logManager: LogManager,
         private val telemetryRecorder: TelemetryRecorder,
-        private val dtcParser: DtcParser,
         private val metricsStore: DashboardMetricsStore,
         private val commandExecutor: ObdCommandExecutor,
         private val sessionManager: ObdSessionManager,
+        private val diagnosticsService: DiagnosticsService,
     ) : ObdRepository {
         private data class PollingCycleStats(
             val commandCount: Int,
@@ -108,39 +103,7 @@ class ObdRepositoryImpl
                     reason = "diagnostics read",
                     resumeLabel = "diagnostics read",
                 ) { connection ->
-                    val vin =
-                        commandExecutor.execute(
-                            context = TelemetryContext.DIAGNOSTICS,
-                            cycleId = null,
-                            rawPid = "VIN",
-                            commandName = "VINCommand",
-                            block = { connection.run(VINCommand()) },
-                            preview = { response -> response.value },
-                        )
-
-                    val troubleCodes =
-                        commandExecutor.execute(
-                            context = TelemetryContext.DIAGNOSTICS,
-                            cycleId = null,
-                            rawPid = "03",
-                            commandName = "TroubleCodesCommand",
-                            block = { connection.run(TroubleCodesCommand()) },
-                            preview = { response -> response.value },
-                        )
-
-                    val codes = dtcParser.parse(troubleCodes.value)
-
-                    Result.success(
-                        DiagnosticInfo(
-                            vin = vin.value,
-                            troubleCodes =
-                                codes.map { code ->
-                                    TroubleCode(code, dtcParser.descriptionFor(code), TroubleCodeType.CURRENT)
-                                },
-                            milStatus = codes.isNotEmpty(),
-                            dtcCount = codes.size,
-                        ),
-                    )
+                    Result.success(diagnosticsService.readDiagnosticInfo(connection))
                 }
             }
 
@@ -151,15 +114,7 @@ class ObdRepositoryImpl
                     resumeLabel = "trouble code clear",
                     onFailure = { error -> logManager.error("Failed to clear trouble codes: ${error.message}") },
                 ) { connection ->
-                    logManager.command("04 (Clear trouble codes)")
-                    commandExecutor.execute(
-                        context = TelemetryContext.CLEAR_DTC,
-                        cycleId = null,
-                        rawPid = "04",
-                        commandName = "ResetTroubleCodesCommand",
-                        block = { connection.run(ResetTroubleCodesCommand()) },
-                    )
-                    logManager.success("Trouble codes clear command sent")
+                    diagnosticsService.clearTroubleCodes(connection)
                     Result.success(Unit)
                 }
             }
