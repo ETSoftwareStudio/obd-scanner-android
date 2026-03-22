@@ -1,10 +1,12 @@
-# obd-scanner-android
+# OBD Scanner Android
 
 ![Platform](https://img.shields.io/badge/platform-Android-3DDC84?logo=android&logoColor=white)
 ![Language](https://img.shields.io/badge/language-Kotlin-7F52FF?logo=kotlin&logoColor=white)
 ![UI](https://img.shields.io/badge/UI-Jetpack%20Compose-4285F4?logo=jetpackcompose&logoColor=white)
 ![Min SDK](https://img.shields.io/badge/minSdk-24-orange)
 ![Target SDK](https://img.shields.io/badge/targetSdk-36-blue)
+
+![OBD Scanner Android hero](docs/images/obd-scanner-android-hero.png)
 
 Open-source **Android OBD2 scanner** sample app showing a production-style integration of
 [`kotlin-obd-api`](https://github.com/eltonvs/kotlin-obd-api) with modern Android architecture.
@@ -545,12 +547,7 @@ Toolchain note:
 
 Contributions are welcome.
 
-Please:
-
-1. keep architecture boundaries clean (UI/domain/data)
-2. run `./gradlew check` before PR
-3. include tests for behavior changes
-4. prefer focused, small PRs
-
----
-
+- Open an issue to explain the problem you want to solve: [Open an issue](https://github.com/ETSoftwareStudio/obd-scanner-android/issues)
+- For larger changes, discuss the approach first, then open a PR (or draft PR): [Current PRs](https://github.com/ETSoftwareStudio/obd-scanner-android/pulls)
+- Run local verification before opening a PR: `./gradlew clean check`
+- Add or update tests for feature work and behavior changes
