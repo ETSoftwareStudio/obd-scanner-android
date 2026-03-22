@@ -7,23 +7,14 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import studio.etsoftware.obdapp.domain.model.DebugLogEntry
+import studio.etsoftware.obdapp.domain.model.DebugLogType
 import javax.inject.Inject
 import javax.inject.Singleton
 
-data class LogEntry(
-    val timestamp: String,
-    val type: LogType,
-    val message: String,
-)
+typealias LogEntry = DebugLogEntry
 
-enum class LogType {
-    INFO,
-    COMMAND,
-    RESPONSE,
-    ERROR,
-    SUCCESS,
-    TELEMETRY,
-}
+typealias LogType = DebugLogType
 
 @Singleton
 class LogManager

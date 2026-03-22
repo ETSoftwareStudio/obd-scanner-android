@@ -2,6 +2,7 @@ package studio.etsoftware.obdapp.util
 
 import studio.etsoftware.obdapp.domain.model.CommandTelemetry
 import studio.etsoftware.obdapp.domain.model.CycleTelemetry
+import studio.etsoftware.obdapp.domain.model.DebugLogEntry
 import studio.etsoftware.obdapp.domain.model.MetricEmissionTelemetry
 import studio.etsoftware.obdapp.domain.model.TelemetryEvent
 import java.text.SimpleDateFormat
@@ -30,7 +31,7 @@ class LogExportFormatter
             }
 
         fun buildExportText(
-            logs: List<LogEntry>,
+            logs: List<DebugLogEntry>,
             telemetryEvents: List<TelemetryEvent> = emptyList(),
             exportedAtMillis: Long = System.currentTimeMillis(),
         ): String {
