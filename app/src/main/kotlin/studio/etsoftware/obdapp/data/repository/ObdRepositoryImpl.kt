@@ -72,6 +72,7 @@ class ObdRepositoryImpl
         private val discoveryManager: BluetoothDiscoveryManager,
         private val logManager: LogManager,
         private val telemetryRecorder: TelemetryRecorder,
+        private val dtcParser: DtcParser,
     ) : ObdRepository {
         private data class PollingCycleStats(
             val commandCount: Int,
@@ -95,7 +96,6 @@ class ObdRepositoryImpl
 
         private val _metricsFlow = MutableSharedFlow<VehicleMetric>(replay = 1, extraBufferCapacity = 64)
         private val _dashboardMetrics = MutableStateFlow(DashboardMetricsSnapshot())
-        private val dtcRegex = Regex("[PCBU][0-3][0-9A-F]{3}")
 
         override val vehicleMetrics: Flow<VehicleMetric> = _metricsFlow.asSharedFlow()
         override val dashboardMetrics: StateFlow<DashboardMetricsSnapshot> = _dashboardMetrics.asStateFlow()
@@ -245,14 +245,14 @@ class ObdRepositoryImpl
                             preview = { response -> response.value },
                         )
 
-                    val codes = parseDTCs(troubleCodes.value)
+                    val codes = dtcParser.parse(troubleCodes.value)
 
                     Result.success(
                         DiagnosticInfo(
                             vin = vin.value,
                             troubleCodes =
                                 codes.map { code ->
-                                    TroubleCode(code, getDTCDescription(code), TroubleCodeType.CURRENT)
+                                    TroubleCode(code, dtcParser.descriptionFor(code), TroubleCodeType.CURRENT)
                                 },
                             milStatus = codes.isNotEmpty(),
                             dtcCount = codes.size,
@@ -759,75 +759,11 @@ class ObdRepositoryImpl
                 ?.take(40)
         }
 
-        private fun parseDTCs(rawValue: String): List<String> {
-            if (rawValue.isBlank()) return emptyList()
-
-            val normalized = rawValue.uppercase()
-            if (normalized.contains("NO DATA") || normalized.contains("NODATA")) {
-                return emptyList()
-            }
-
-            val directCodes =
-                dtcRegex
-                    .findAll(normalized)
-                    .map { it.value }
-                    .filterNot { it == "P0000" }
-                    .distinct()
-                    .toList()
-
-            if (directCodes.isNotEmpty()) {
-                return directCodes
-            }
-
-            val hexPayload = normalized.filter { it.isDigit() || it in 'A'..'F' }
-            if (hexPayload.length < 4) {
-                return emptyList()
-            }
-
-            return hexPayload
-                .chunked(4)
-                .mapNotNull { chunk ->
-                    if (chunk.length < 4 || chunk == "0000") {
-                        null
-                    } else {
-                        decodeDtcFromHex(chunk)
-                    }
-                }
-                .distinct()
-        }
-
-        private fun decodeDtcFromHex(rawCode: String): String? {
-            val value = rawCode.toIntOrNull(16) ?: return null
-
-            val system =
-                when ((value and 0xC000) shr 14) {
-                    0 -> 'P'
-                    1 -> 'C'
-                    2 -> 'B'
-                    else -> 'U'
-                }
-
-            val code =
-                buildString(5) {
-                    append(system)
-                    append((value and 0x3000) shr 12)
-                    append(((value and 0x0F00) shr 8).toString(16).uppercase())
-                    append(((value and 0x00F0) shr 4).toString(16).uppercase())
-                    append((value and 0x000F).toString(16).uppercase())
-                }
-
-            return code.takeIf { it != "P0000" && dtcRegex.matches(it) }
-        }
-
         private fun hasBluetoothConnectPermission(): Boolean {
             return Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
                 ContextCompat.checkSelfPermission(
                     appContext,
                     Manifest.permission.BLUETOOTH_CONNECT,
                 ) == PackageManager.PERMISSION_GRANTED
-        }
-
-        private fun getDTCDescription(code: String): String {
-            return "Diagnostic Trouble Code $code"
         }
     }
