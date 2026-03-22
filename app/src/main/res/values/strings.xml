@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">OBD Scanner Android</string>
+    <string name="app_name">OBD Scanner</string>
     <string name="debug_log_export">Export</string>
     <string name="debug_log_export_success">Logs exported successfully</string>
     <string name="debug_log_export_failed">Failed to export logs</string>
