@@ -1,12 +1,16 @@
 package studio.etsoftware.obdapp.ui.feature.settings
 
+import studio.etsoftware.obdapp.domain.repository.AppSettingsRepository
 import studio.etsoftware.obdapp.domain.repository.PollingSettingsRepository
 import studio.etsoftware.obdapp.domain.repository.TelemetryRepository
+import studio.etsoftware.obdapp.domain.usecase.ObserveAutoConnectUseCase
 import studio.etsoftware.obdapp.domain.usecase.ObservePollingIntervalUseCase
 import studio.etsoftware.obdapp.domain.usecase.ObserveTelemetryEnabledUseCase
+import studio.etsoftware.obdapp.domain.usecase.ObserveThemeUseCase
+import studio.etsoftware.obdapp.domain.usecase.SetAutoConnectUseCase
 import studio.etsoftware.obdapp.domain.usecase.SetPollingIntervalUseCase
 import studio.etsoftware.obdapp.domain.usecase.SetTelemetryEnabledUseCase
-import studio.etsoftware.obdapp.util.PreferencesManager
+import studio.etsoftware.obdapp.domain.usecase.SetThemeUseCase
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -27,7 +31,7 @@ import org.junit.Test
 class SettingsViewModelTest {
     private val testDispatcher = StandardTestDispatcher()
 
-    private val preferencesManager: PreferencesManager = mockk(relaxed = true)
+    private val appSettingsRepository: AppSettingsRepository = mockk(relaxed = true)
     private val pollingSettingsRepository: PollingSettingsRepository = mockk(relaxed = true)
     private val telemetryRepository: TelemetryRepository = mockk(relaxed = true)
 
@@ -38,13 +42,16 @@ class SettingsViewModelTest {
         Dispatchers.setMain(testDispatcher)
 
         every { pollingSettingsRepository.pollingInterval } returns MutableStateFlow(1000L)
-        every { preferencesManager.theme } returns MutableStateFlow("dark")
-        every { preferencesManager.autoConnect } returns MutableStateFlow(true)
+        every { appSettingsRepository.theme } returns MutableStateFlow("dark")
+        every { appSettingsRepository.autoConnect } returns MutableStateFlow(true)
         every { telemetryRepository.isEnabled } returns MutableStateFlow(true)
 
         viewModel =
             SettingsViewModel(
-                preferencesManager,
+                ObserveThemeUseCase(appSettingsRepository),
+                SetThemeUseCase(appSettingsRepository),
+                ObserveAutoConnectUseCase(appSettingsRepository),
+                SetAutoConnectUseCase(appSettingsRepository),
                 ObservePollingIntervalUseCase(pollingSettingsRepository),
                 SetPollingIntervalUseCase(pollingSettingsRepository),
                 ObserveTelemetryEnabledUseCase(telemetryRepository),
@@ -77,14 +84,14 @@ class SettingsViewModelTest {
         }
 
     @Test
-    fun `setTheme calls preferences manager`() =
+    fun `setTheme calls app settings repository`() =
         runTest {
-            coEvery { preferencesManager.setTheme(any()) } returns Unit
+            coEvery { appSettingsRepository.setTheme(any()) } returns Unit
 
             viewModel.setTheme("light")
             testDispatcher.scheduler.advanceUntilIdle()
 
-            coVerify { preferencesManager.setTheme("light") }
+            coVerify { appSettingsRepository.setTheme("light") }
         }
 
     @Test

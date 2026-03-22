@@ -2,11 +2,14 @@ package studio.etsoftware.obdapp.ui.feature.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import studio.etsoftware.obdapp.domain.usecase.ObserveAutoConnectUseCase
 import studio.etsoftware.obdapp.domain.usecase.ObservePollingIntervalUseCase
 import studio.etsoftware.obdapp.domain.usecase.ObserveTelemetryEnabledUseCase
+import studio.etsoftware.obdapp.domain.usecase.ObserveThemeUseCase
+import studio.etsoftware.obdapp.domain.usecase.SetAutoConnectUseCase
 import studio.etsoftware.obdapp.domain.usecase.SetPollingIntervalUseCase
 import studio.etsoftware.obdapp.domain.usecase.SetTelemetryEnabledUseCase
-import studio.etsoftware.obdapp.util.PreferencesManager
+import studio.etsoftware.obdapp.domain.usecase.SetThemeUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -28,7 +31,10 @@ data class SettingsUiState(
 class SettingsViewModel
     @Inject
     constructor(
-        private val preferencesManager: PreferencesManager,
+        private val observeThemeUseCase: ObserveThemeUseCase,
+        private val setThemeUseCase: SetThemeUseCase,
+        private val observeAutoConnectUseCase: ObserveAutoConnectUseCase,
+        private val setAutoConnectUseCase: SetAutoConnectUseCase,
         private val observePollingIntervalUseCase: ObservePollingIntervalUseCase,
         private val setPollingIntervalUseCase: SetPollingIntervalUseCase,
         private val observeTelemetryEnabledUseCase: ObserveTelemetryEnabledUseCase,
@@ -48,12 +54,12 @@ class SettingsViewModel
                 }
             }
             viewModelScope.launch {
-                preferencesManager.theme.collect { theme ->
+                observeThemeUseCase().collect { theme ->
                     _uiState.update { it.copy(theme = theme) }
                 }
             }
             viewModelScope.launch {
-                preferencesManager.autoConnect.collect { autoConnect ->
+                observeAutoConnectUseCase().collect { autoConnect ->
                     _uiState.update { it.copy(autoConnect = autoConnect) }
                 }
             }
@@ -72,13 +78,13 @@ class SettingsViewModel
 
         fun setTheme(theme: String) {
             viewModelScope.launch {
-                preferencesManager.setTheme(theme)
+                setThemeUseCase(theme)
             }
         }
 
         fun setAutoConnect(enabled: Boolean) {
             viewModelScope.launch {
-                preferencesManager.setAutoConnect(enabled)
+                setAutoConnectUseCase(enabled)
             }
         }
 
