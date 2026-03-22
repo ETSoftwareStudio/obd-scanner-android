@@ -1,4 +1,4 @@
-package studio.etsoftware.obdapp.data.repository
+package studio.etsoftware.obdapp.data.diagnostics
 
 import javax.inject.Inject
 
