@@ -28,7 +28,7 @@ import studio.etsoftware.obdapp.data.telemetry.TelemetryRecorder
 import studio.etsoftware.obdapp.domain.model.ConnectionState
 import studio.etsoftware.obdapp.domain.model.CycleTelemetry
 import studio.etsoftware.obdapp.domain.model.TelemetryContext
-import studio.etsoftware.obdapp.util.LogManager
+import studio.etsoftware.obdapp.data.logging.LogManager
 
 @Singleton
 class DashboardPollingCoordinator

@@ -26,7 +26,7 @@ import studio.etsoftware.obdapp.domain.model.ConnectionState
 import studio.etsoftware.obdapp.domain.model.DeviceInfo
 import studio.etsoftware.obdapp.domain.model.DeviceType
 import studio.etsoftware.obdapp.domain.model.TelemetryContext
-import studio.etsoftware.obdapp.util.LogManager
+import studio.etsoftware.obdapp.data.logging.LogManager
 
 @Singleton
 class ObdSessionManager

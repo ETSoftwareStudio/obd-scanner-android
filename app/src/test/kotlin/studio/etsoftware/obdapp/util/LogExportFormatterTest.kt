@@ -1,7 +1,9 @@
-package studio.etsoftware.obdapp.util
+package studio.etsoftware.obdapp.data.logging
 
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import studio.etsoftware.obdapp.domain.model.DebugLogEntry
+import studio.etsoftware.obdapp.domain.model.DebugLogType
 
 class LogExportFormatterTest {
     private val formatter = LogExportFormatter()
@@ -10,8 +12,8 @@ class LogExportFormatterTest {
     fun `buildExportText includes header and entries`() {
         val logs =
             listOf(
-                LogEntry("10:00:00.100", LogType.INFO, "Connected"),
-                LogEntry("10:00:01.100", LogType.ERROR, "Read timeout"),
+                DebugLogEntry("10:00:00.100", DebugLogType.INFO, "Connected"),
+                DebugLogEntry("10:00:01.100", DebugLogType.ERROR, "Read timeout"),
             )
 
         val output = formatter.buildExportText(logs, exportedAtMillis = 0L)
@@ -26,7 +28,7 @@ class LogExportFormatterTest {
     fun `buildExportText escapes multiline messages`() {
         val logs =
             listOf(
-                LogEntry("11:11:11.111", LogType.INFO, "line1\nline2"),
+                DebugLogEntry("11:11:11.111", DebugLogType.INFO, "line1\nline2"),
             )
 
         val output = formatter.buildExportText(logs)

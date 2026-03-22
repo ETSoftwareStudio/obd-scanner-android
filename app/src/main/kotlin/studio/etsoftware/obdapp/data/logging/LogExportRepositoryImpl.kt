@@ -6,8 +6,6 @@ import javax.inject.Singleton
 import studio.etsoftware.obdapp.domain.model.DebugLogEntry
 import studio.etsoftware.obdapp.domain.model.TelemetryEvent
 import studio.etsoftware.obdapp.domain.repository.LogExportRepository
-import studio.etsoftware.obdapp.util.LogExportFormatter
-import studio.etsoftware.obdapp.util.LogExporter
 
 @Singleton
 class LogExportRepositoryImpl

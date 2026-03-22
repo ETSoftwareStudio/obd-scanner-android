@@ -4,7 +4,7 @@ import studio.etsoftware.obdapp.domain.model.CommandTelemetry
 import studio.etsoftware.obdapp.domain.model.CycleTelemetry
 import studio.etsoftware.obdapp.domain.model.MetricEmissionTelemetry
 import studio.etsoftware.obdapp.domain.repository.TelemetryRepository
-import studio.etsoftware.obdapp.util.LogManager
+import studio.etsoftware.obdapp.data.logging.LogManager
 import javax.inject.Inject
 import javax.inject.Singleton
 

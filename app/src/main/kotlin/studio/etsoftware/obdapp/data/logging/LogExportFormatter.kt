@@ -1,4 +1,4 @@
-package studio.etsoftware.obdapp.util
+package studio.etsoftware.obdapp.data.logging
 
 import studio.etsoftware.obdapp.domain.model.CommandTelemetry
 import studio.etsoftware.obdapp.domain.model.CycleTelemetry

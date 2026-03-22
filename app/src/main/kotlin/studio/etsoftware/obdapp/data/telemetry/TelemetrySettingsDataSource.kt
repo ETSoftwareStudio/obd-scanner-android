@@ -1,6 +1,6 @@
 package studio.etsoftware.obdapp.data.telemetry
 
-import studio.etsoftware.obdapp.util.PreferencesManager
+import studio.etsoftware.obdapp.data.settings.PreferencesManager
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow

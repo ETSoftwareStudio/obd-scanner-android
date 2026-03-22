@@ -1,6 +1,9 @@
 package studio.etsoftware.obdapp.data.di
 
-import studio.etsoftware.obdapp.data.repository.ObdRepositoryImpl
+import studio.etsoftware.obdapp.data.repository.ConnectionRepositoryImpl
+import studio.etsoftware.obdapp.data.repository.DashboardRepositoryImpl
+import studio.etsoftware.obdapp.data.repository.DiagnosticsRepositoryImpl
+import studio.etsoftware.obdapp.data.repository.DiscoveryRepositoryImpl
 import studio.etsoftware.obdapp.domain.repository.ConnectionRepository
 import studio.etsoftware.obdapp.domain.repository.DashboardRepository
 import studio.etsoftware.obdapp.domain.repository.DiagnosticsRepository
@@ -16,17 +19,17 @@ import javax.inject.Singleton
 abstract class RepositoryModule {
     @Binds
     @Singleton
-    abstract fun bindConnectionRepository(impl: ObdRepositoryImpl): ConnectionRepository
+    abstract fun bindConnectionRepository(impl: ConnectionRepositoryImpl): ConnectionRepository
 
     @Binds
     @Singleton
-    abstract fun bindDiscoveryRepository(impl: ObdRepositoryImpl): DiscoveryRepository
+    abstract fun bindDiscoveryRepository(impl: DiscoveryRepositoryImpl): DiscoveryRepository
 
     @Binds
     @Singleton
-    abstract fun bindDashboardRepository(impl: ObdRepositoryImpl): DashboardRepository
+    abstract fun bindDashboardRepository(impl: DashboardRepositoryImpl): DashboardRepository
 
     @Binds
     @Singleton
-    abstract fun bindDiagnosticsRepository(impl: ObdRepositoryImpl): DiagnosticsRepository
+    abstract fun bindDiagnosticsRepository(impl: DiagnosticsRepositoryImpl): DiagnosticsRepository
 }
