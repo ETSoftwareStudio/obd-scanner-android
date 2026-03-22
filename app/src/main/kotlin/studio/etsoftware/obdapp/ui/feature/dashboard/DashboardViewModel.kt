@@ -4,20 +4,24 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import studio.etsoftware.obdapp.domain.model.ConnectionState
-import studio.etsoftware.obdapp.domain.model.DeviceInfo
-import studio.etsoftware.obdapp.domain.model.DeviceType
-import studio.etsoftware.obdapp.domain.repository.ObdRepository
+import studio.etsoftware.obdapp.domain.model.DebugLogEntry
+import studio.etsoftware.obdapp.domain.usecase.BuildLogExportTextUseCase
+import studio.etsoftware.obdapp.domain.usecase.ClearDebugLogsUseCase
 import studio.etsoftware.obdapp.domain.usecase.ClearTelemetryUseCase
 import studio.etsoftware.obdapp.domain.usecase.ConnectDeviceUseCase
 import studio.etsoftware.obdapp.domain.usecase.DisconnectUseCase
+import studio.etsoftware.obdapp.domain.usecase.ExportLogsUseCase
+import studio.etsoftware.obdapp.domain.usecase.GetSuggestedLogFileNameUseCase
+import studio.etsoftware.obdapp.domain.usecase.ObserveAutoConnectUseCase
+import studio.etsoftware.obdapp.domain.usecase.ObserveConnectionStateUseCase
+import studio.etsoftware.obdapp.domain.usecase.ObserveDashboardMetricsUseCase
+import studio.etsoftware.obdapp.domain.usecase.ObserveDebugLogsUseCase
+import studio.etsoftware.obdapp.domain.usecase.ObserveLastDeviceUseCase
 import studio.etsoftware.obdapp.domain.usecase.ObservePollingIntervalUseCase
 import studio.etsoftware.obdapp.domain.usecase.ObserveTelemetryEventsUseCase
-import studio.etsoftware.obdapp.domain.usecase.ReadMetricsUseCase
-import studio.etsoftware.obdapp.util.LogEntry
-import studio.etsoftware.obdapp.util.LogExportFormatter
-import studio.etsoftware.obdapp.util.LogExporter
-import studio.etsoftware.obdapp.util.LogManager
-import studio.etsoftware.obdapp.util.PreferencesManager
+import studio.etsoftware.obdapp.domain.usecase.ObserveWasConnectedUseCase
+import studio.etsoftware.obdapp.domain.usecase.StartDashboardPollingUseCase
+import studio.etsoftware.obdapp.domain.usecase.StopDashboardPollingUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -47,14 +51,20 @@ data class DashboardUiState(
 class DashboardViewModel
     @Inject
     constructor(
-        private val readMetricsUseCase: ReadMetricsUseCase,
+        private val observeDashboardMetricsUseCase: ObserveDashboardMetricsUseCase,
+        private val startDashboardPollingUseCase: StartDashboardPollingUseCase,
+        private val stopDashboardPollingUseCase: StopDashboardPollingUseCase,
         private val disconnectUseCase: DisconnectUseCase,
         private val connectDeviceUseCase: ConnectDeviceUseCase,
-        private val repository: ObdRepository,
-        private val preferencesManager: PreferencesManager,
-        private val logExportFormatter: LogExportFormatter,
-        private val logExporter: LogExporter,
-        private val logManager: LogManager,
+        private val observeConnectionStateUseCase: ObserveConnectionStateUseCase,
+        private val observeAutoConnectUseCase: ObserveAutoConnectUseCase,
+        private val observeWasConnectedUseCase: ObserveWasConnectedUseCase,
+        private val observeLastDeviceUseCase: ObserveLastDeviceUseCase,
+        private val observeDebugLogsUseCase: ObserveDebugLogsUseCase,
+        private val clearDebugLogsUseCase: ClearDebugLogsUseCase,
+        private val getSuggestedLogFileNameUseCase: GetSuggestedLogFileNameUseCase,
+        private val buildLogExportTextUseCase: BuildLogExportTextUseCase,
+        private val exportLogsUseCase: ExportLogsUseCase,
         private val observePollingIntervalUseCase: ObservePollingIntervalUseCase,
         private val observeTelemetryEventsUseCase: ObserveTelemetryEventsUseCase,
         private val clearTelemetryUseCase: ClearTelemetryUseCase,
@@ -62,7 +72,7 @@ class DashboardViewModel
         private val _uiState = MutableStateFlow(DashboardUiState())
         val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
 
-        val logs: StateFlow<List<LogEntry>> = logManager.logs
+        val logs: StateFlow<List<DebugLogEntry>> = observeDebugLogsUseCase()
         private val telemetryEvents = observeTelemetryEventsUseCase()
 
         private val _events = MutableSharedFlow<DashboardEvent>(extraBufferCapacity = 1)
@@ -84,11 +94,10 @@ class DashboardViewModel
             hasCheckedAutoConnect = true
 
             viewModelScope.launch {
-                val autoConnect = preferencesManager.autoConnect.first()
-                val wasConnected = preferencesManager.wasConnected.first()
-                val lastDeviceAddress = preferencesManager.lastDeviceAddress.first()
-                val lastDeviceName = preferencesManager.lastDeviceName.first()
-                val currentState = repository.connectionState.value
+                val autoConnect = observeAutoConnectUseCase().first()
+                val wasConnected = observeWasConnectedUseCase().first()
+                val lastDevice = observeLastDeviceUseCase().first()
+                val currentState = observeConnectionStateUseCase().value
 
                 _uiState.update { it.copy(autoConnectEnabled = autoConnect) }
 
@@ -97,16 +106,15 @@ class DashboardViewModel
                     return@launch
                 }
 
-                if (autoConnect && wasConnected && lastDeviceAddress != null && lastDeviceName != null) {
-                    val device = DeviceInfo(lastDeviceAddress, lastDeviceName, DeviceType.CLASSIC)
-                    connectDeviceUseCase(device)
+                if (autoConnect && wasConnected && lastDevice != null) {
+                    connectDeviceUseCase(lastDevice)
                 }
             }
         }
 
         private fun observeConnectionState() {
             viewModelScope.launch {
-                repository.connectionState.collect { state ->
+                observeConnectionStateUseCase().collect { state ->
                     _uiState.update {
                         it.copy(
                             connectionState = state,
@@ -125,7 +133,7 @@ class DashboardViewModel
 
         private fun observeMetrics() {
             viewModelScope.launch {
-                readMetricsUseCase().collect { snapshot ->
+                observeDashboardMetricsUseCase().collect { snapshot ->
                     _uiState.update {
                         it.copy(
                             speed = snapshot.speed,
@@ -147,7 +155,7 @@ class DashboardViewModel
                     latestPollingIntervalMs = interval
 
                     val shouldRestart =
-                        repository.connectionState.value is ConnectionState.Connected &&
+                        observeConnectionStateUseCase().value is ConnectionState.Connected &&
                             _uiState.value.isPolling &&
                             activePollingIntervalMs != null &&
                             activePollingIntervalMs != interval
@@ -181,14 +189,14 @@ class DashboardViewModel
         }
 
         fun clearLogs() {
-            logManager.clear()
             viewModelScope.launch {
+                clearDebugLogsUseCase()
                 clearTelemetryUseCase()
             }
         }
 
         fun getSuggestedLogFileName(): String {
-            return logExportFormatter.buildDefaultFileName()
+            return getSuggestedLogFileNameUseCase()
         }
 
         fun exportLogs(uri: Uri?) {
@@ -204,11 +212,11 @@ class DashboardViewModel
 
             viewModelScope.launch {
                 val exportText =
-                    logExportFormatter.buildExportText(
+                    buildLogExportTextUseCase(
                         logs = logSnapshot,
                         telemetryEvents = telemetryEvents.value,
                     )
-                logExporter.export(uri, exportText).fold(
+                exportLogsUseCase(uri.toString(), exportText).fold(
                     onSuccess = {
                         emitEvent(DashboardEvent.ExportSuccess)
                     },
@@ -220,13 +228,13 @@ class DashboardViewModel
         }
 
         private suspend fun startPolling(intervalMs: Long) {
-            readMetricsUseCase.startPolling(intervalMs)
+            startDashboardPollingUseCase(intervalMs)
             activePollingIntervalMs = intervalMs
             _uiState.update { it.copy(isPolling = true) }
         }
 
         private suspend fun stopPollingInternal() {
-            readMetricsUseCase.stopPolling()
+            stopDashboardPollingUseCase()
             activePollingIntervalMs = null
             _uiState.update { it.copy(isPolling = false) }
         }
