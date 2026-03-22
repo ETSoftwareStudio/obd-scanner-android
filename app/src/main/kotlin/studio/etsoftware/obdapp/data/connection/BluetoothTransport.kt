@@ -23,7 +23,7 @@ import kotlinx.coroutines.withContext
 class BluetoothTransport
     @Inject
     constructor(
-        @ApplicationContext private val appContext: Context,
+        @param:ApplicationContext private val appContext: Context,
     ) : ObdTransport {
         private var socket: BluetoothSocket? = null
         private var inputStream: InputStream? = null

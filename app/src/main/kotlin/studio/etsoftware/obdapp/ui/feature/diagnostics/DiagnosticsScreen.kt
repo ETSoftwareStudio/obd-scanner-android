@@ -1,5 +1,6 @@
 package studio.etsoftware.obdapp.ui.feature.diagnostics
 
+import android.content.ClipData
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -42,17 +43,19 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.platform.toClipEntry
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.launch
 import studio.etsoftware.obdapp.domain.model.ConnectionState
 import studio.etsoftware.obdapp.domain.model.DiagnosticInfo
 import studio.etsoftware.obdapp.domain.model.TroubleCode
@@ -182,16 +185,19 @@ private fun DiagnosticContent(info: DiagnosticInfo) {
 
 @Composable
 private fun VinCard(vin: String) {
-    val clipboardManager = LocalClipboardManager.current
+    val clipboard = LocalClipboard.current
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
 
     Card(
         modifier =
             Modifier
                 .fillMaxWidth()
                 .clickable(enabled = vin.isNotBlank()) {
-                    clipboardManager.setText(AnnotatedString(vin))
-                    Toast.makeText(context, "VIN copied to clipboard", Toast.LENGTH_SHORT).show()
+                    coroutineScope.launch {
+                        clipboard.setClipEntry(ClipData.newPlainText("VIN", vin).toClipEntry())
+                        Toast.makeText(context, "VIN copied to clipboard", Toast.LENGTH_SHORT).show()
+                    }
                 },
         colors =
             CardDefaults.cardColors(
