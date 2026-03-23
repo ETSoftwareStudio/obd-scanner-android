@@ -218,19 +218,28 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
     }
 }
 
-@Suppress("UNUSED_PARAMETER")
 @Composable
 private fun SettingsSection(
     title: String,
     icon: ImageVector,
     content: @Composable () -> Unit,
 ) {
-    Text(
-        text = title,
-        style = MaterialTheme.typography.titleMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    Row(
         modifier = Modifier.padding(bottom = 12.dp),
-    )
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
