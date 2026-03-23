@@ -128,14 +128,13 @@ class BluetoothDiscoveryManager
                 }
             }
 
-        fun isBluetoothEnabled(): Boolean {
-            return try {
+        fun isBluetoothEnabled(): Boolean =
+            try {
                 @Suppress("DEPRECATION")
                 BluetoothAdapter.getDefaultAdapter()?.isEnabled == true
             } catch (_: SecurityException) {
                 false
             }
-        }
 
         fun isLocationServicesEnabledForDiscovery(): Boolean {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -165,11 +164,12 @@ class BluetoothDiscoveryManager
                 return Result.failure(error)
             }
 
-            val adapter = BluetoothAdapter.getDefaultAdapter() ?: run {
-                val error = Exception("Bluetooth not available")
-                _discoveryState.value = DiscoveryState.Error(error.message ?: "Bluetooth not available")
-                return Result.failure(error)
-            }
+            val adapter =
+                BluetoothAdapter.getDefaultAdapter() ?: run {
+                    val error = Exception("Bluetooth not available")
+                    _discoveryState.value = DiscoveryState.Error(error.message ?: "Bluetooth not available")
+                    return Result.failure(error)
+                }
 
             if (!adapter.isEnabled) {
                 val error = Exception("Bluetooth is disabled")
@@ -243,8 +243,9 @@ class BluetoothDiscoveryManager
                 return Result.failure(error)
             }
 
-            val adapter = BluetoothAdapter.getDefaultAdapter()
-                ?: return Result.failure(Exception("Bluetooth not available"))
+            val adapter =
+                BluetoothAdapter.getDefaultAdapter()
+                    ?: return Result.failure(Exception("Bluetooth not available"))
 
             if (!adapter.isEnabled) {
                 return Result.failure(Exception("Bluetooth is disabled"))
@@ -366,29 +367,26 @@ class BluetoothDiscoveryManager
             unregisterReceiverIfNeeded()
         }
 
-        private fun hasDiscoveryPermission(): Boolean {
-            return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        private fun hasDiscoveryPermission(): Boolean =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 hasBluetoothScanPermission() && hasBluetoothConnectPermission()
             } else {
                 hasLocationPermission()
             }
-        }
 
-        private fun hasBluetoothScanPermission(): Boolean {
-            return Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
+        private fun hasBluetoothScanPermission(): Boolean =
+            Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
                 ContextCompat.checkSelfPermission(
                     appContext,
                     Manifest.permission.BLUETOOTH_SCAN,
                 ) == PackageManager.PERMISSION_GRANTED
-        }
 
-        private fun hasBluetoothConnectPermission(): Boolean {
-            return Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
+        private fun hasBluetoothConnectPermission(): Boolean =
+            Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
                 ContextCompat.checkSelfPermission(
                     appContext,
                     Manifest.permission.BLUETOOTH_CONNECT,
                 ) == PackageManager.PERMISSION_GRANTED
-        }
 
         private fun hasLocationPermission(): Boolean {
             val fineLocationGranted =
@@ -406,11 +404,10 @@ class BluetoothDiscoveryManager
         }
 
         @Suppress("DEPRECATION")
-        private fun Intent.extractBluetoothDevice(): BluetoothDevice? {
-            return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        private fun Intent.extractBluetoothDevice(): BluetoothDevice? =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 getParcelableExtra(BluetoothDevice.EXTRA_DEVICE, BluetoothDevice::class.java)
             } else {
                 getParcelableExtra(BluetoothDevice.EXTRA_DEVICE)
             }
-        }
     }

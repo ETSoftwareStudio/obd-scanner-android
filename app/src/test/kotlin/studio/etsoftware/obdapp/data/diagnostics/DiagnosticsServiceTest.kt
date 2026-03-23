@@ -66,7 +66,5 @@ class DiagnosticsServiceTest {
         value: String,
         rawValue: String,
         unit: String = "",
-    ): ObdResponse {
-        return ObdResponse(command, ObdRawResponse(rawValue, 0L), value, unit)
-    }
+    ): ObdResponse = ObdResponse(command, ObdRawResponse(rawValue, 0L), value, unit)
 }

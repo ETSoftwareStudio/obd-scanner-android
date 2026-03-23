@@ -173,7 +173,11 @@ class ConnectionViewModelTest {
             testDispatcher.scheduler.advanceUntilIdle()
 
             assertEquals(updatedPairedDevices, viewModel.uiState.value.pairedDevices)
-            assertEquals(discoveredDevice.address, viewModel.uiState.value.selectedDevice?.address)
+            assertEquals(
+                discoveredDevice.address,
+                viewModel.uiState.value.selectedDevice
+                    ?.address,
+            )
             assertEquals("${discoveredDevice.name} paired successfully", viewModel.uiState.value.message)
             verify { discoveryRepository.clearPairingState() }
         }

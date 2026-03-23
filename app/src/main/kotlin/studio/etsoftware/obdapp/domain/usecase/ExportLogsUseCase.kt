@@ -11,7 +11,5 @@ class ExportLogsUseCase
         suspend operator fun invoke(
             destination: String,
             content: String,
-        ): Result<Unit> {
-            return logExportRepository.export(destination, content)
-        }
+        ): Result<Unit> = logExportRepository.export(destination, content)
     }

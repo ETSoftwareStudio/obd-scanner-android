@@ -8,7 +8,5 @@ class GetSuggestedLogFileNameUseCase
     constructor(
         private val logExportRepository: LogExportRepository,
     ) {
-        operator fun invoke(nowMillis: Long = System.currentTimeMillis()): String {
-            return logExportRepository.buildDefaultFileName(nowMillis)
-        }
+        operator fun invoke(nowMillis: Long = System.currentTimeMillis()): String = logExportRepository.buildDefaultFileName(nowMillis)
     }

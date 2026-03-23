@@ -25,11 +25,10 @@ internal class DashboardPollingScheduler(
             .associateWith { startAtMs }
             .toMutableMap()
 
-    fun dueMetrics(nowMs: Long): List<DashboardMetricId> {
-        return ORDERED_METRICS.filter { metricId ->
+    fun dueMetrics(nowMs: Long): List<DashboardMetricId> =
+        ORDERED_METRICS.filter { metricId ->
             nextDueAtMs.getValue(metricId) <= nowMs
         }
-    }
 
     fun markExecuted(
         metricId: DashboardMetricId,
@@ -52,13 +51,12 @@ internal class DashboardPollingScheduler(
         return (nextDueAt - nowMs).coerceAtLeast(0L)
     }
 
-    private fun intervalFor(metricId: DashboardMetricId): Long {
-        return when (TIER_BY_METRIC.getValue(metricId)) {
+    private fun intervalFor(metricId: DashboardMetricId): Long =
+        when (TIER_BY_METRIC.getValue(metricId)) {
             MetricPollingTier.FAST -> baseIntervalMs.coerceAtLeast(MIN_FAST_INTERVAL_MS)
             MetricPollingTier.MEDIUM -> maxOf(baseIntervalMs * MEDIUM_INTERVAL_MULTIPLIER, MIN_MEDIUM_INTERVAL_MS)
             MetricPollingTier.SLOW -> maxOf(baseIntervalMs * SLOW_INTERVAL_MULTIPLIER, MIN_SLOW_INTERVAL_MS)
         }
-    }
 
     companion object {
         val ORDERED_METRICS: List<DashboardMetricId> =

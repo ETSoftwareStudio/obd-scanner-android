@@ -231,8 +231,8 @@ class DashboardPollingCoordinator
             connection: ObdDeviceConnection,
             cycleId: Long,
             metricId: DashboardMetricId,
-        ): Boolean {
-            return when (metricId) {
+        ): Boolean =
+            when (metricId) {
                 DashboardMetricId.SPEED ->
                     pollTypedMetric(
                         cycleId = cycleId,
@@ -332,7 +332,6 @@ class DashboardPollingCoordinator
                         maxValue = 100f,
                     )
             }
-        }
 
         private suspend fun <T> pollTypedMetric(
             cycleId: Long,

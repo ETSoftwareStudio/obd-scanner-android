@@ -306,12 +306,11 @@ private fun ThemeOption(
     }
 }
 
-private fun formatInterval(intervalMs: Long): String {
-    return when (intervalMs) {
+private fun formatInterval(intervalMs: Long): String =
+    when (intervalMs) {
         500L -> "500 ms (Fast)"
         1000L -> "1 second"
         2000L -> "2 seconds"
         5000L -> "5 seconds (Slow)"
         else -> "$intervalMs ms"
     }
-}

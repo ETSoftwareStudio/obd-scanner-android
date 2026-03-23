@@ -14,7 +14,5 @@ class BuildLogExportTextUseCase
             logs: List<DebugLogEntry>,
             telemetryEvents: List<TelemetryEvent> = emptyList(),
             exportedAtMillis: Long = System.currentTimeMillis(),
-        ): String {
-            return logExportRepository.buildExportText(logs, telemetryEvents, exportedAtMillis)
-        }
+        ): String = logExportRepository.buildExportText(logs, telemetryEvents, exportedAtMillis)
     }

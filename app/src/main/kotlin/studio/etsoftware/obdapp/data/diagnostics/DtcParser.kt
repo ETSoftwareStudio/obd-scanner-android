@@ -40,8 +40,7 @@ class DtcParser
                     } else {
                         decodeFromHex(chunk)
                     }
-                }
-                .distinct()
+                }.distinct()
         }
 
         fun descriptionFor(code: String): String = "Diagnostic Trouble Code $code"
