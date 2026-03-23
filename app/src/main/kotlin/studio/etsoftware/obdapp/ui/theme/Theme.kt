@@ -3,6 +3,7 @@ package studio.etsoftware.obdapp.ui.theme
 import android.content.Context
 import android.content.ContextWrapper
 import android.os.Build
+import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.material3.MaterialTheme
@@ -48,9 +49,9 @@ private val LightColorScheme =
         onSurfaceVariant = Color(0xFF49454F),
     )
 
-private tailrec fun Context.findContextActivity(): androidx.activity.ComponentActivity? =
+private tailrec fun Context.findContextActivity(): ComponentActivity? =
     when (this) {
-        is androidx.activity.ComponentActivity -> this
+        is ComponentActivity -> this
         is ContextWrapper -> baseContext.findContextActivity()
         else -> null
     }
@@ -61,17 +62,16 @@ fun ObdScannerAppTheme(
     dynamicColor: Boolean = false,
     content: @Composable () -> Unit,
 ) {
+    val context = LocalContext.current
     val colorScheme =
         when {
             dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-                val context = LocalContext.current
                 if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
             }
             darkTheme -> DarkColorScheme
             else -> LightColorScheme
         }
 
-    val context = LocalContext.current
     SideEffect {
         context.findContextActivity()?.enableEdgeToEdge(
             statusBarStyle =

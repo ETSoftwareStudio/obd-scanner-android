@@ -45,7 +45,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -69,7 +69,7 @@ fun DashboardScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val logs by viewModel.logs.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
-    val context = LocalContext.current
+    val resources = LocalResources.current
     var showDebugLog by rememberSaveable { mutableStateOf(false) }
     var isDisconnecting by rememberSaveable { mutableStateOf(false) }
 
@@ -84,13 +84,13 @@ fun DashboardScreen(
         viewModel.events.collect { event ->
             val message =
                 when (event) {
-                    DashboardEvent.ExportSuccess -> context.getString(R.string.debug_log_export_success)
-                    DashboardEvent.ExportSkippedNoLogs -> context.getString(R.string.debug_log_export_empty)
+                    DashboardEvent.ExportSuccess -> resources.getString(R.string.debug_log_export_success)
+                    DashboardEvent.ExportSkippedNoLogs -> resources.getString(R.string.debug_log_export_empty)
                     is DashboardEvent.ExportError -> {
                         if (event.reason.isNullOrBlank()) {
-                            context.getString(R.string.debug_log_export_failed)
+                            resources.getString(R.string.debug_log_export_failed)
                         } else {
-                            context.getString(R.string.debug_log_export_failed_with_reason, event.reason)
+                            resources.getString(R.string.debug_log_export_failed_with_reason, event.reason)
                         }
                     }
                 }
