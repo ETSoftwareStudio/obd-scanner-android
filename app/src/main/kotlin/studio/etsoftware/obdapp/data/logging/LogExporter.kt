@@ -17,8 +17,8 @@ class LogExporter
         suspend fun export(
             uri: Uri,
             content: String,
-        ): Result<Unit> {
-            return runCatching {
+        ): Result<Unit> =
+            runCatching {
                 withContext(Dispatchers.IO) {
                     val writer =
                         context.contentResolver
@@ -32,5 +32,4 @@ class LogExporter
                     }
                 }
             }
-        }
     }

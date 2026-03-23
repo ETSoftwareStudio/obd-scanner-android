@@ -148,11 +148,10 @@ class ObdSessionManager
 
         fun isTransportConnected(): Boolean = transport.isConnected()
 
-        suspend fun <T> withConnectionAccess(block: suspend () -> T): T {
-            return connectionAccessMutex.withLock {
+        suspend fun <T> withConnectionAccess(block: suspend () -> T): T =
+            connectionAccessMutex.withLock {
                 block()
             }
-        }
 
         private suspend fun cleanupConnection() {
             withConnectionAccess {
@@ -161,11 +160,10 @@ class ObdSessionManager
             }
         }
 
-        private fun hasBluetoothConnectPermission(): Boolean {
-            return Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
+        private fun hasBluetoothConnectPermission(): Boolean =
+            Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
                 ContextCompat.checkSelfPermission(
                     appContext,
                     Manifest.permission.BLUETOOTH_CONNECT,
                 ) == PackageManager.PERMISSION_GRANTED
-        }
     }

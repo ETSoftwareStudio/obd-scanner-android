@@ -9,7 +9,5 @@ class GetPairedDevicesUseCase
     constructor(
         private val connectionRepository: ConnectionRepository,
     ) {
-        suspend operator fun invoke(): List<DeviceInfo> {
-            return connectionRepository.getPairedDevices()
-        }
+        suspend operator fun invoke(): List<DeviceInfo> = connectionRepository.getPairedDevices()
     }

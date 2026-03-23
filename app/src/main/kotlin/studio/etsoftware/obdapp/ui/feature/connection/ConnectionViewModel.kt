@@ -274,8 +274,8 @@ class ConnectionViewModel
             return pairedDevices.firstOrNull { it.address == selectedAddress } ?: selectedDevice
         }
 
-        private fun DiscoveryState.devices(): List<DeviceInfo> {
-            return when (this) {
+        private fun DiscoveryState.devices(): List<DeviceInfo> =
+            when (this) {
                 is DiscoveryState.Discovering -> devices
                 is DiscoveryState.Error -> devices
                 is DiscoveryState.Finished -> devices
@@ -283,5 +283,4 @@ class ConnectionViewModel
                 DiscoveryState.Starting,
                 -> emptyList()
             }
-        }
     }

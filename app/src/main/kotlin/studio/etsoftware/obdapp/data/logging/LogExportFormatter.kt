@@ -72,24 +72,16 @@ class LogExportFormatter
             }
         }
 
-        fun buildDefaultFileName(nowMillis: Long = System.currentTimeMillis()): String {
-            return "obd-debug-log-${formatFileNameDate(nowMillis)}.txt"
-        }
+        fun buildDefaultFileName(nowMillis: Long = System.currentTimeMillis()): String = "obd-debug-log-${formatFileNameDate(nowMillis)}.txt"
 
-        private fun formatExportDate(timestampMillis: Long): String {
-            return exportDateFormat.get()?.format(Date(timestampMillis)).orEmpty()
-        }
+        private fun formatExportDate(timestampMillis: Long): String = exportDateFormat.get()?.format(Date(timestampMillis)).orEmpty()
 
-        private fun formatFileNameDate(timestampMillis: Long): String {
-            return fileNameDateFormat.get()?.format(Date(timestampMillis)).orEmpty()
-        }
+        private fun formatFileNameDate(timestampMillis: Long): String = fileNameDateFormat.get()?.format(Date(timestampMillis)).orEmpty()
 
-        private fun formatEventTime(timestampMillis: Long): String {
-            return eventTimeFormat.get()?.format(Date(timestampMillis)).orEmpty()
-        }
+        private fun formatEventTime(timestampMillis: Long): String = eventTimeFormat.get()?.format(Date(timestampMillis)).orEmpty()
 
-        private fun formatTelemetryEvent(event: TelemetryEvent): String {
-            return when (event) {
+        private fun formatTelemetryEvent(event: TelemetryEvent): String =
+            when (event) {
                 is CommandTelemetry ->
                     buildString {
                         append(formatEventTime(event.finishedAtMs))
@@ -124,9 +116,6 @@ class LogExportFormatter
                         append(" value=${sanitizeMessage(event.value)}")
                     }
             }
-        }
 
-        private fun sanitizeMessage(message: String): String {
-            return message.replace("\n", "\\n")
-        }
+        private fun sanitizeMessage(message: String): String = message.replace("\n", "\\n")
     }

@@ -18,18 +18,12 @@ class LogExportRepositoryImpl
             logs: List<DebugLogEntry>,
             telemetryEvents: List<TelemetryEvent>,
             exportedAtMillis: Long,
-        ): String {
-            return formatter.buildExportText(logs, telemetryEvents, exportedAtMillis)
-        }
+        ): String = formatter.buildExportText(logs, telemetryEvents, exportedAtMillis)
 
-        override fun buildDefaultFileName(nowMillis: Long): String {
-            return formatter.buildDefaultFileName(nowMillis)
-        }
+        override fun buildDefaultFileName(nowMillis: Long): String = formatter.buildDefaultFileName(nowMillis)
 
         override suspend fun export(
             destination: String,
             content: String,
-        ): Result<Unit> {
-            return exporter.export(Uri.parse(destination), content)
-        }
+        ): Result<Unit> = exporter.export(Uri.parse(destination), content)
     }

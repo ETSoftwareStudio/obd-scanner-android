@@ -58,8 +58,8 @@ class DashboardMetricsStore
         private fun updateDashboardSnapshot(
             metricId: DashboardMetricId,
             value: String,
-        ): DashboardMetricsSnapshot {
-            return when (metricId) {
+        ): DashboardMetricsSnapshot =
+            when (metricId) {
                 DashboardMetricId.SPEED -> dashboardState.value.copy(speed = value)
                 DashboardMetricId.RPM -> dashboardState.value.copy(rpm = value)
                 DashboardMetricId.THROTTLE -> dashboardState.value.copy(throttle = value)
@@ -68,10 +68,9 @@ class DashboardMetricsStore
                 DashboardMetricId.INTAKE -> dashboardState.value.copy(intakeTemp = value)
                 DashboardMetricId.FUEL -> dashboardState.value.copy(fuel = value)
             }
-        }
 
-        private fun metricDisplayName(metricId: DashboardMetricId): String {
-            return when (metricId) {
+        private fun metricDisplayName(metricId: DashboardMetricId): String =
+            when (metricId) {
                 DashboardMetricId.SPEED -> "Speed"
                 DashboardMetricId.RPM -> "RPM"
                 DashboardMetricId.THROTTLE -> "Throttle"
@@ -80,13 +79,11 @@ class DashboardMetricsStore
                 DashboardMetricId.INTAKE -> "Intake"
                 DashboardMetricId.FUEL -> "Fuel"
             }
-        }
 
-        private fun String.previewValue(): String? {
-            return replace('\n', ' ')
+        private fun String.previewValue(): String? =
+            replace('\n', ' ')
                 .replace('\r', ' ')
                 .trim()
                 .take(40)
                 .takeIf { it.isNotBlank() }
-        }
     }

@@ -69,11 +69,10 @@ class ObdCommandExecutor
             }
         }
 
-        fun previewValue(value: String?): String? {
-            return value
+        fun previewValue(value: String?): String? =
+            value
                 ?.replace('\n', ' ')
                 ?.replace('\r', ' ')
                 ?.trim()
                 ?.take(40)
-        }
     }
