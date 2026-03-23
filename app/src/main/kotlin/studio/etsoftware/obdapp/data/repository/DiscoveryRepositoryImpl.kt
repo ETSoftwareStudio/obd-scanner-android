@@ -3,7 +3,7 @@ package studio.etsoftware.obdapp.data.repository
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.flow.StateFlow
-import studio.etsoftware.obdapp.data.connection.BluetoothDiscoveryManager
+import studio.etsoftware.obdapp.data.connection.BluetoothDiscoveryDataSource
 import studio.etsoftware.obdapp.domain.model.DeviceInfo
 import studio.etsoftware.obdapp.domain.model.DiscoveryState
 import studio.etsoftware.obdapp.domain.model.PairingState
@@ -13,20 +13,20 @@ import studio.etsoftware.obdapp.domain.repository.DiscoveryRepository
 class DiscoveryRepositoryImpl
     @Inject
     constructor(
-        private val discoveryManager: BluetoothDiscoveryManager,
+        private val discoveryDataSource: BluetoothDiscoveryDataSource,
     ) : DiscoveryRepository {
-        override val discoveryState: StateFlow<DiscoveryState> = discoveryManager.discoveryState
-        override val pairingState: StateFlow<PairingState> = discoveryManager.pairingState
+        override val discoveryState: StateFlow<DiscoveryState> = discoveryDataSource.discoveryState
+        override val pairingState: StateFlow<PairingState> = discoveryDataSource.pairingState
 
-        override fun isBluetoothEnabled(): Boolean = discoveryManager.isBluetoothEnabled()
+        override fun isBluetoothEnabled(): Boolean = discoveryDataSource.isBluetoothEnabled()
 
-        override fun isLocationServicesEnabledForDiscovery(): Boolean = discoveryManager.isLocationServicesEnabledForDiscovery()
+        override fun isLocationServicesEnabledForDiscovery(): Boolean = discoveryDataSource.isLocationServicesEnabledForDiscovery()
 
-        override fun startDiscovery(): Result<Unit> = discoveryManager.startDiscovery()
+        override fun startDiscovery(): Result<Unit> = discoveryDataSource.startDiscovery()
 
-        override fun stopDiscovery() = discoveryManager.stopDiscovery()
+        override fun stopDiscovery() = discoveryDataSource.stopDiscovery()
 
-        override fun pairDevice(device: DeviceInfo): Result<Unit> = discoveryManager.pairDevice(device)
+        override fun pairDevice(device: DeviceInfo): Result<Unit> = discoveryDataSource.pairDevice(device)
 
-        override fun clearPairingState() = discoveryManager.clearPairingState()
+        override fun clearPairingState() = discoveryDataSource.clearPairingState()
     }

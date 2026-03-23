@@ -28,7 +28,7 @@ class BluetoothDiscoveryManager
     constructor(
         @param:ApplicationContext private val appContext: Context,
         private val logManager: LogManager,
-    ) {
+    ) : BluetoothDiscoveryDataSource {
         private val bluetoothAccess = BluetoothAccess(appContext)
 
         private val discoveredDevices = linkedMapOf<String, DeviceInfo>()
@@ -37,10 +37,10 @@ class BluetoothDiscoveryManager
         private var pairingDeviceAddress: String? = null
 
         private val _discoveryState = MutableStateFlow<DiscoveryState>(DiscoveryState.Idle)
-        val discoveryState: StateFlow<DiscoveryState> = _discoveryState.asStateFlow()
+        override val discoveryState: StateFlow<DiscoveryState> = _discoveryState.asStateFlow()
 
         private val _pairingState = MutableStateFlow<PairingState>(PairingState.Idle)
-        val pairingState: StateFlow<PairingState> = _pairingState.asStateFlow()
+        override val pairingState: StateFlow<PairingState> = _pairingState.asStateFlow()
 
         private val discoveryReceiver =
             object : BroadcastReceiver() {
@@ -126,14 +126,14 @@ class BluetoothDiscoveryManager
                 }
             }
 
-        fun isBluetoothEnabled(): Boolean =
+        override fun isBluetoothEnabled(): Boolean =
             try {
                 bluetoothAccess.adapter?.isEnabled == true
             } catch (_: SecurityException) {
                 false
             }
 
-        fun isLocationServicesEnabledForDiscovery(): Boolean {
+        override fun isLocationServicesEnabledForDiscovery(): Boolean {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 return true
             }
@@ -142,7 +142,7 @@ class BluetoothDiscoveryManager
             return LocationManagerCompat.isLocationEnabled(locationManager)
         }
 
-        fun startDiscovery(): Result<Unit> {
+        override fun startDiscovery(): Result<Unit> {
             if (discoveryState.value is DiscoveryState.Starting || discoveryState.value is DiscoveryState.Discovering) {
                 return Result.success(Unit)
             }
@@ -198,7 +198,7 @@ class BluetoothDiscoveryManager
             }
         }
 
-        fun stopDiscovery() {
+        override fun stopDiscovery() {
             val adapter = bluetoothAccess.adapter
 
             try {
@@ -215,13 +215,13 @@ class BluetoothDiscoveryManager
             }
         }
 
-        fun clearPairingState() {
+        override fun clearPairingState() {
             if (_pairingState.value !is PairingState.Pairing) {
                 _pairingState.value = PairingState.Idle
             }
         }
 
-        fun pairDevice(device: DeviceInfo): Result<Unit> {
+        override fun pairDevice(device: DeviceInfo): Result<Unit> {
             if (!bluetoothAccess.hasBluetoothConnectPermission()) {
                 val error = Exception("Bluetooth connect permission is required to pair devices")
                 return Result.failure(error)

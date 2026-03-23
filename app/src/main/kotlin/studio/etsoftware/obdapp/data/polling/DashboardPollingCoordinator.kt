@@ -23,7 +23,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeoutOrNull
 import studio.etsoftware.obdapp.data.session.ObdCommandExecutor
-import studio.etsoftware.obdapp.data.session.ObdSessionManager
+import studio.etsoftware.obdapp.data.session.ObdSessionDataSource
 import studio.etsoftware.obdapp.data.telemetry.TelemetryRecorder
 import studio.etsoftware.obdapp.domain.model.ConnectionState
 import studio.etsoftware.obdapp.domain.model.CycleTelemetry
@@ -38,7 +38,7 @@ class DashboardPollingCoordinator
         private val telemetryRecorder: TelemetryRecorder,
         private val metricsStore: DashboardMetricsStore,
         private val commandExecutor: ObdCommandExecutor,
-        private val sessionManager: ObdSessionManager,
+        private val sessionDataSource: ObdSessionDataSource,
     ) {
         private data class PollingCycleStats(
             val commandCount: Int,
@@ -89,14 +89,14 @@ class DashboardPollingCoordinator
 
                 try {
                     val result =
-                        sessionManager.withConnectionAccess {
+                        sessionDataSource.withConnectionAccess {
                             if (resumeInterval != null) {
                                 logManager.info("Pausing dashboard polling for $reason")
                                 pollingJob?.cancelAndJoin()
                                 pollingJob = null
                             }
 
-                            val connection = sessionManager.currentConnection() ?: return@withConnectionAccess Result.failure(Exception("Not connected"))
+                            val connection = sessionDataSource.currentConnection() ?: return@withConnectionAccess Result.failure(Exception("Not connected"))
                             block(connection)
                         }
 
@@ -108,9 +108,9 @@ class DashboardPollingCoordinator
                     Result.failure(e)
                 } finally {
                     if (resumeInterval != null) {
-                        if (sessionManager.currentConnection() != null &&
-                            sessionManager.isTransportConnected() &&
-                            sessionManager.connectionState.value is ConnectionState.Connected
+                        if (sessionDataSource.currentConnection() != null &&
+                            sessionDataSource.isTransportConnected() &&
+                            sessionDataSource.connectionState.value is ConnectionState.Connected
                         ) {
                             logManager.info("Resuming dashboard polling after $resumeLabel")
                             activePollingIntervalMs = resumeInterval
@@ -135,9 +135,9 @@ class DashboardPollingCoordinator
                         scheduler = DashboardPollingScheduler(currentIntervalMs, monotonicNowMs())
                     }
 
-                    val connection = sessionManager.currentConnection()
-                    if (connection == null || !sessionManager.isTransportConnected()) {
-                        sessionManager.disconnect()
+                    val connection = sessionDataSource.currentConnection()
+                    if (connection == null || !sessionDataSource.isTransportConnected()) {
+                        sessionDataSource.disconnect()
                         break
                     }
 
@@ -350,7 +350,7 @@ class DashboardPollingCoordinator
 
             return try {
                 val response =
-                    sessionManager.withConnectionAccess {
+                    sessionDataSource.withConnectionAccess {
                         commandExecutor.execute(
                             context = TelemetryContext.DASHBOARD,
                             cycleId = cycleId,

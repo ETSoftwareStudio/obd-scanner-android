@@ -31,16 +31,16 @@ class ObdSessionManager
         private val transport: ObdTransport,
         private val logManager: LogManager,
         private val commandExecutor: ObdCommandExecutor,
-    ) {
+    ) : ObdSessionDataSource {
         private val bluetoothAccess = BluetoothAccess(appContext)
 
         private var obdConnection: ObdDeviceConnection? = null
         private val connectionAccessMutex = Mutex()
         private val mutableConnectionState = MutableStateFlow<ConnectionState>(ConnectionState.Disconnected)
 
-        val connectionState: StateFlow<ConnectionState> = mutableConnectionState.asStateFlow()
+        override val connectionState: StateFlow<ConnectionState> = mutableConnectionState.asStateFlow()
 
-        suspend fun getPairedDevices(): List<DeviceInfo> =
+        override suspend fun getPairedDevices(): List<DeviceInfo> =
             withContext(Dispatchers.IO) {
                 if (!bluetoothAccess.hasBluetoothConnectPermission()) {
                     logManager.error("Missing BLUETOOTH_CONNECT permission")
@@ -67,7 +67,7 @@ class ObdSessionManager
                 }
             }
 
-        suspend fun connect(device: DeviceInfo): Result<Unit> {
+        override suspend fun connect(device: DeviceInfo): Result<Unit> {
             mutableConnectionState.value = ConnectionState.Connecting
             logManager.info("Connecting to ${device.name} (${device.address})...")
 
@@ -134,16 +134,16 @@ class ObdSessionManager
             }
         }
 
-        suspend fun disconnect() {
+        override suspend fun disconnect() {
             cleanupConnection()
             mutableConnectionState.value = ConnectionState.Disconnected
         }
 
-        fun currentConnection(): ObdDeviceConnection? = obdConnection
+        override fun currentConnection(): ObdDeviceConnection? = obdConnection
 
-        fun isTransportConnected(): Boolean = transport.isConnected()
+        override fun isTransportConnected(): Boolean = transport.isConnected()
 
-        suspend fun <T> withConnectionAccess(block: suspend () -> T): T =
+        override suspend fun <T> withConnectionAccess(block: suspend () -> T): T =
             connectionAccessMutex.withLock {
                 block()
             }
