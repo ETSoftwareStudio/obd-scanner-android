@@ -23,8 +23,8 @@ class DiagnosticsRepositoryImpl
                 pollingCoordinator.runWithPollingPaused(
                     reason = "diagnostics read",
                     resumeLabel = "diagnostics read",
-                ) { connection ->
-                    Result.success(diagnosticsService.readDiagnosticInfo(connection))
+                ) {
+                    diagnosticsService.readDiagnosticInfo()
                 }
             }
 
@@ -34,9 +34,8 @@ class DiagnosticsRepositoryImpl
                     reason = "trouble code clear",
                     resumeLabel = "trouble code clear",
                     onFailure = { error -> logManager.error("Failed to clear trouble codes: ${error.message}") },
-                ) { connection ->
-                    diagnosticsService.clearTroubleCodes(connection)
-                    Result.success(Unit)
+                ) {
+                    diagnosticsService.clearTroubleCodes()
                 }
             }
     }

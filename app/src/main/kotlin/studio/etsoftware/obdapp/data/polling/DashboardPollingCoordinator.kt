@@ -92,7 +92,7 @@ class DashboardPollingCoordinator
             )
 
         @Deprecated("Use the overload that does not expose ObdDeviceConnection")
-        suspend fun <T> runWithPollingPaused(
+        suspend fun <T> runWithPollingPausedUsingConnection(
             reason: String,
             resumeLabel: String,
             onFailure: (Exception) -> Unit = {},
