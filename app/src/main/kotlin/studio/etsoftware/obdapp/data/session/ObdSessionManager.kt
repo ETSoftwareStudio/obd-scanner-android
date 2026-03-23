@@ -1,7 +1,6 @@
 package studio.etsoftware.obdapp.data.session
 
 import android.Manifest
-import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
 import android.content.Context
 import android.content.pm.PackageManager
@@ -44,7 +43,6 @@ class ObdSessionManager
         val connectionState: StateFlow<ConnectionState> = mutableConnectionState.asStateFlow()
 
         @Suppress("DEPRECATION")
-        @SuppressLint("MissingPermission")
         suspend fun getPairedDevices(): List<DeviceInfo> =
             withContext(Dispatchers.IO) {
                 if (!hasBluetoothConnectPermission()) {
