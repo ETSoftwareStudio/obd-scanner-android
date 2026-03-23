@@ -1,14 +1,8 @@
 package studio.etsoftware.obdapp.data.connection
 
-import android.Manifest
-import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
-import android.bluetooth.BluetoothManager
 import android.bluetooth.BluetoothSocket
 import android.content.Context
-import android.content.pm.PackageManager
-import android.os.Build
-import androidx.core.content.ContextCompat
 import studio.etsoftware.obdapp.domain.model.DeviceInfo
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.InputStream
@@ -25,9 +19,7 @@ class BluetoothTransport
     constructor(
         @param:ApplicationContext private val appContext: Context,
     ) : ObdTransport {
-        private val bluetoothManager by lazy {
-            appContext.getSystemService(BluetoothManager::class.java)
-        }
+        private val bluetoothAccess = BluetoothAccess(appContext)
 
         private var socket: BluetoothSocket? = null
         private var inputStream: InputStream? = null
@@ -38,14 +30,14 @@ class BluetoothTransport
         override suspend fun connect(device: DeviceInfo): Result<Unit> =
             withContext(Dispatchers.IO) {
                 try {
-                    if (!hasBluetoothConnectPermission()) {
+                    if (!bluetoothAccess.hasBluetoothConnectPermission()) {
                         return@withContext Result.failure(Exception("BLUETOOTH_CONNECT permission is required"))
                     }
 
-                    val bluetoothAdapter = bluetoothManager?.adapter
+                    val bluetoothAdapter = bluetoothAccess.adapter
                         ?: return@withContext Result.failure(Exception("Bluetooth not available"))
 
-                    if (hasBluetoothScanPermission()) {
+                    if (bluetoothAccess.hasBluetoothScanPermission()) {
                         try {
                             if (bluetoothAdapter.isDiscovering) {
                                 bluetoothAdapter.cancelDiscovery()
@@ -85,20 +77,6 @@ class BluetoothTransport
                 }
             }
         }
-
-        private fun hasBluetoothConnectPermission(): Boolean =
-            Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
-                ContextCompat.checkSelfPermission(
-                    appContext,
-                    Manifest.permission.BLUETOOTH_CONNECT,
-                ) == PackageManager.PERMISSION_GRANTED
-
-        private fun hasBluetoothScanPermission(): Boolean =
-            Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
-                ContextCompat.checkSelfPermission(
-                    appContext,
-                    Manifest.permission.BLUETOOTH_SCAN,
-                ) == PackageManager.PERMISSION_GRANTED
 
         override fun isConnected(): Boolean = socket?.isConnected == true
 

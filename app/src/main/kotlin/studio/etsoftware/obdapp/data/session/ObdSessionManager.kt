@@ -1,11 +1,6 @@
 package studio.etsoftware.obdapp.data.session
 
-import android.Manifest
-import android.bluetooth.BluetoothManager
 import android.content.Context
-import android.content.pm.PackageManager
-import android.os.Build
-import androidx.core.content.ContextCompat
 import com.github.eltonvs.obd.command.Switcher
 import com.github.eltonvs.obd.command.at.ResetAdapterCommand
 import com.github.eltonvs.obd.command.at.SetEchoCommand
@@ -20,6 +15,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import studio.etsoftware.obdapp.data.connection.BluetoothAccess
 import studio.etsoftware.obdapp.data.connection.ObdTransport
 import studio.etsoftware.obdapp.data.logging.LogManager
 import studio.etsoftware.obdapp.domain.model.ConnectionState
@@ -36,9 +32,7 @@ class ObdSessionManager
         private val logManager: LogManager,
         private val commandExecutor: ObdCommandExecutor,
     ) {
-        private val bluetoothManager by lazy {
-            appContext.getSystemService(BluetoothManager::class.java)
-        }
+        private val bluetoothAccess = BluetoothAccess(appContext)
 
         private var obdConnection: ObdDeviceConnection? = null
         private val connectionAccessMutex = Mutex()
@@ -48,12 +42,12 @@ class ObdSessionManager
 
         suspend fun getPairedDevices(): List<DeviceInfo> =
             withContext(Dispatchers.IO) {
-                if (!hasBluetoothConnectPermission()) {
+                if (!bluetoothAccess.hasBluetoothConnectPermission()) {
                     logManager.error("Missing BLUETOOTH_CONNECT permission")
                     return@withContext emptyList()
                 }
 
-                val adapter = bluetoothManager?.adapter ?: return@withContext emptyList()
+                val adapter = bluetoothAccess.adapter ?: return@withContext emptyList()
                 if (!adapter.isEnabled) {
                     logManager.error("Bluetooth is disabled")
                     return@withContext emptyList()
@@ -77,7 +71,7 @@ class ObdSessionManager
             mutableConnectionState.value = ConnectionState.Connecting
             logManager.info("Connecting to ${device.name} (${device.address})...")
 
-            if (!hasBluetoothConnectPermission()) {
+            if (!bluetoothAccess.hasBluetoothConnectPermission()) {
                 val error = Exception("BLUETOOTH_CONNECT permission is required")
                 mutableConnectionState.value = ConnectionState.Error(error.message ?: "Missing permission")
                 logManager.error(error.message ?: "Missing BLUETOOTH_CONNECT permission")
@@ -160,11 +154,4 @@ class ObdSessionManager
                 transport.disconnect()
             }
         }
-
-        private fun hasBluetoothConnectPermission(): Boolean =
-            Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
-                ContextCompat.checkSelfPermission(
-                    appContext,
-                    Manifest.permission.BLUETOOTH_CONNECT,
-                ) == PackageManager.PERMISSION_GRANTED
     }
