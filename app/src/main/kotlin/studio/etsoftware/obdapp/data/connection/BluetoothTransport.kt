@@ -1,9 +1,9 @@
 package studio.etsoftware.obdapp.data.connection
 
 import android.Manifest
-import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothManager
 import android.bluetooth.BluetoothSocket
 import android.content.Context
 import android.content.pm.PackageManager
@@ -25,14 +25,16 @@ class BluetoothTransport
     constructor(
         @param:ApplicationContext private val appContext: Context,
     ) : ObdTransport {
+        private val bluetoothManager by lazy {
+            appContext.getSystemService(BluetoothManager::class.java)
+        }
+
         private var socket: BluetoothSocket? = null
         private var inputStream: InputStream? = null
         private var outputStream: OutputStream? = null
 
         private val uuid: UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
 
-        @Suppress("DEPRECATION")
-        @SuppressLint("MissingPermission")
         override suspend fun connect(device: DeviceInfo): Result<Unit> =
             withContext(Dispatchers.IO) {
                 try {
@@ -40,12 +42,17 @@ class BluetoothTransport
                         return@withContext Result.failure(Exception("BLUETOOTH_CONNECT permission is required"))
                     }
 
-                    val bluetoothAdapter =
-                        BluetoothAdapter.getDefaultAdapter()
-                            ?: return@withContext Result.failure(Exception("Bluetooth not available"))
+                    val bluetoothAdapter = bluetoothManager?.adapter
+                        ?: return@withContext Result.failure(Exception("Bluetooth not available"))
 
                     if (hasBluetoothScanPermission()) {
-                        bluetoothAdapter.cancelDiscovery()
+                        try {
+                            if (bluetoothAdapter.isDiscovering) {
+                                bluetoothAdapter.cancelDiscovery()
+                            }
+                        } catch (securityException: SecurityException) {
+                            return@withContext Result.failure(securityException)
+                        }
                     }
 
                     val bluetoothDevice: BluetoothDevice = bluetoothAdapter.getRemoteDevice(device.address)

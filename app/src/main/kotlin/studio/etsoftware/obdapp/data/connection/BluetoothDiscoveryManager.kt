@@ -1,22 +1,23 @@
 package studio.etsoftware.obdapp.data.connection
 
 import android.Manifest
-import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
-import android.location.LocationManager
 import android.os.Build
 import androidx.core.content.ContextCompat
+import androidx.core.content.IntentCompat
+import androidx.core.location.LocationManagerCompat
+import studio.etsoftware.obdapp.data.logging.LogManager
 import studio.etsoftware.obdapp.domain.model.DeviceInfo
 import studio.etsoftware.obdapp.domain.model.DeviceType
 import studio.etsoftware.obdapp.domain.model.DiscoveryState
 import studio.etsoftware.obdapp.domain.model.PairingState
-import studio.etsoftware.obdapp.data.logging.LogManager
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -31,6 +32,10 @@ class BluetoothDiscoveryManager
         @param:ApplicationContext private val appContext: Context,
         private val logManager: LogManager,
     ) {
+        private val bluetoothManager by lazy {
+            appContext.getSystemService(BluetoothManager::class.java)
+        }
+
         private val discoveredDevices = linkedMapOf<String, DeviceInfo>()
         private var receiverRegistered = false
         private var bondReceiverRegistered = false
@@ -44,7 +49,6 @@ class BluetoothDiscoveryManager
 
         private val discoveryReceiver =
             object : BroadcastReceiver() {
-                @SuppressLint("MissingPermission")
                 override fun onReceive(
                     context: Context?,
                     intent: Intent?,
@@ -78,7 +82,6 @@ class BluetoothDiscoveryManager
 
         private val bondStateReceiver =
             object : BroadcastReceiver() {
-                @SuppressLint("MissingPermission")
                 override fun onReceive(
                     context: Context?,
                     intent: Intent?,
@@ -120,7 +123,7 @@ class BluetoothDiscoveryManager
                                 }
                             }
                         }
-                    } catch (securityException: SecurityException) {
+                    } catch (_: SecurityException) {
                         pairingDeviceAddress = null
                         _pairingState.value = PairingState.Error("Bluetooth permissions were revoked during pairing")
                         unregisterBondReceiverIfNeeded()
@@ -130,8 +133,7 @@ class BluetoothDiscoveryManager
 
         fun isBluetoothEnabled(): Boolean =
             try {
-                @Suppress("DEPRECATION")
-                BluetoothAdapter.getDefaultAdapter()?.isEnabled == true
+                bluetoothAdapter?.isEnabled == true
             } catch (_: SecurityException) {
                 false
             }
@@ -141,18 +143,10 @@ class BluetoothDiscoveryManager
                 return true
             }
 
-            val locationManager = appContext.getSystemService(Context.LOCATION_SERVICE) as? LocationManager ?: return false
-            return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                locationManager.isLocationEnabled
-            } else {
-                @Suppress("DEPRECATION")
-                locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) ||
-                    locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
-            }
+            val locationManager = appContext.getSystemService(Context.LOCATION_SERVICE) as? android.location.LocationManager ?: return false
+            return LocationManagerCompat.isLocationEnabled(locationManager)
         }
 
-        @Suppress("DEPRECATION")
-        @SuppressLint("MissingPermission")
         fun startDiscovery(): Result<Unit> {
             if (discoveryState.value is DiscoveryState.Starting || discoveryState.value is DiscoveryState.Discovering) {
                 return Result.success(Unit)
@@ -164,12 +158,11 @@ class BluetoothDiscoveryManager
                 return Result.failure(error)
             }
 
-            val adapter =
-                BluetoothAdapter.getDefaultAdapter() ?: run {
-                    val error = Exception("Bluetooth not available")
-                    _discoveryState.value = DiscoveryState.Error(error.message ?: "Bluetooth not available")
-                    return Result.failure(error)
-                }
+            val adapter = bluetoothAdapter ?: run {
+                val error = Exception("Bluetooth not available")
+                _discoveryState.value = DiscoveryState.Error(error.message ?: "Bluetooth not available")
+                return Result.failure(error)
+            }
 
             if (!adapter.isEnabled) {
                 val error = Exception("Bluetooth is disabled")
@@ -184,8 +177,8 @@ class BluetoothDiscoveryManager
             }
 
             return try {
-                if (adapter.isDiscovering) {
-                    adapter.cancelDiscovery()
+                if (isDiscovering(adapter)) {
+                    cancelDiscovery(adapter)
                     unregisterReceiverIfNeeded()
                 }
 
@@ -210,14 +203,12 @@ class BluetoothDiscoveryManager
             }
         }
 
-        @Suppress("DEPRECATION")
-        @SuppressLint("MissingPermission")
         fun stopDiscovery() {
-            val adapter = BluetoothAdapter.getDefaultAdapter()
+            val adapter = bluetoothAdapter
 
             try {
-                if (adapter?.isDiscovering == true && hasDiscoveryPermission()) {
-                    adapter.cancelDiscovery()
+                if (adapter != null && hasDiscoveryPermission() && isDiscovering(adapter)) {
+                    cancelDiscovery(adapter)
                 }
 
                 if (discoveryState.value is DiscoveryState.Starting || discoveryState.value is DiscoveryState.Discovering) {
@@ -235,17 +226,13 @@ class BluetoothDiscoveryManager
             }
         }
 
-        @Suppress("DEPRECATION")
-        @SuppressLint("MissingPermission")
         fun pairDevice(device: DeviceInfo): Result<Unit> {
             if (!hasBluetoothConnectPermission()) {
                 val error = Exception("Bluetooth connect permission is required to pair devices")
                 return Result.failure(error)
             }
 
-            val adapter =
-                BluetoothAdapter.getDefaultAdapter()
-                    ?: return Result.failure(Exception("Bluetooth not available"))
+            val adapter = bluetoothAdapter ?: return Result.failure(Exception("Bluetooth not available"))
 
             if (!adapter.isEnabled) {
                 return Result.failure(Exception("Bluetooth is disabled"))
@@ -254,7 +241,7 @@ class BluetoothDiscoveryManager
             return try {
                 stopDiscovery()
                 val bluetoothDevice = adapter.getRemoteDevice(device.address)
-                if (bluetoothDevice.bondState == BluetoothDevice.BOND_BONDED) {
+                if (bondState(bluetoothDevice) == BluetoothDevice.BOND_BONDED) {
                     _pairingState.value = PairingState.Paired(mapDevice(bluetoothDevice))
                     Result.success(Unit)
                 } else {
@@ -279,17 +266,15 @@ class BluetoothDiscoveryManager
             }
         }
 
+        private val bluetoothAdapter: BluetoothAdapter?
+            get() = bluetoothManager?.adapter
+
         private fun currentDevices(): List<DeviceInfo> = discoveredDevices.values.toList()
 
         private fun mapDevice(device: BluetoothDevice): DeviceInfo =
             DeviceInfo(
                 address = device.address,
-                name =
-                    try {
-                        device.name ?: "Unknown Device"
-                    } catch (_: SecurityException) {
-                        "Unknown Device"
-                    },
+                name = deviceName(device) ?: "Unknown Device",
                 type = DeviceType.CLASSIC,
             )
 
@@ -303,16 +288,12 @@ class BluetoothDiscoveryManager
                     addAction(BluetoothDevice.ACTION_FOUND)
                 }
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                appContext.registerReceiver(
-                    discoveryReceiver,
-                    intentFilter,
-                    Context.RECEIVER_NOT_EXPORTED,
-                )
-            } else {
-                @Suppress("DEPRECATION")
-                appContext.registerReceiver(discoveryReceiver, intentFilter)
-            }
+            ContextCompat.registerReceiver(
+                appContext,
+                discoveryReceiver,
+                intentFilter,
+                ContextCompat.RECEIVER_NOT_EXPORTED,
+            )
 
             receiverRegistered = true
         }
@@ -333,16 +314,12 @@ class BluetoothDiscoveryManager
             if (bondReceiverRegistered) return
 
             val intentFilter = IntentFilter(BluetoothDevice.ACTION_BOND_STATE_CHANGED)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                appContext.registerReceiver(
-                    bondStateReceiver,
-                    intentFilter,
-                    Context.RECEIVER_NOT_EXPORTED,
-                )
-            } else {
-                @Suppress("DEPRECATION")
-                appContext.registerReceiver(bondStateReceiver, intentFilter)
-            }
+            ContextCompat.registerReceiver(
+                appContext,
+                bondStateReceiver,
+                intentFilter,
+                ContextCompat.RECEIVER_NOT_EXPORTED,
+            )
             bondReceiverRegistered = true
         }
 
@@ -403,11 +380,50 @@ class BluetoothDiscoveryManager
             return fineLocationGranted || coarseLocationGranted
         }
 
-        @Suppress("DEPRECATION")
         private fun Intent.extractBluetoothDevice(): BluetoothDevice? =
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                getParcelableExtra(BluetoothDevice.EXTRA_DEVICE, BluetoothDevice::class.java)
-            } else {
-                getParcelableExtra(BluetoothDevice.EXTRA_DEVICE)
+            IntentCompat.getParcelableExtra(this, BluetoothDevice.EXTRA_DEVICE, BluetoothDevice::class.java)
+
+        private fun deviceName(device: BluetoothDevice): String? {
+            if (!hasBluetoothConnectPermission()) {
+                throw SecurityException("BLUETOOTH_CONNECT permission is required")
             }
+            return try {
+                device.name
+            } catch (exception: SecurityException) {
+                throw exception
+            }
+        }
+
+        private fun bondState(device: BluetoothDevice): Int {
+            if (!hasBluetoothConnectPermission()) {
+                throw SecurityException("BLUETOOTH_CONNECT permission is required")
+            }
+            return try {
+                device.bondState
+            } catch (exception: SecurityException) {
+                throw exception
+            }
+        }
+
+        private fun isDiscovering(adapter: BluetoothAdapter): Boolean {
+            if (!hasBluetoothScanPermission()) {
+                throw SecurityException("BLUETOOTH_SCAN permission is required")
+            }
+            return try {
+                adapter.isDiscovering
+            } catch (exception: SecurityException) {
+                throw exception
+            }
+        }
+
+        private fun cancelDiscovery(adapter: BluetoothAdapter) {
+            if (!hasBluetoothScanPermission()) {
+                throw SecurityException("BLUETOOTH_SCAN permission is required")
+            }
+            try {
+                adapter.cancelDiscovery()
+            } catch (exception: SecurityException) {
+                throw exception
+            }
+        }
     }

@@ -1,7 +1,7 @@
 package studio.etsoftware.obdapp.data.session
 
 import android.Manifest
-import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothManager
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
@@ -21,11 +21,11 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import studio.etsoftware.obdapp.data.connection.ObdTransport
+import studio.etsoftware.obdapp.data.logging.LogManager
 import studio.etsoftware.obdapp.domain.model.ConnectionState
 import studio.etsoftware.obdapp.domain.model.DeviceInfo
 import studio.etsoftware.obdapp.domain.model.DeviceType
 import studio.etsoftware.obdapp.domain.model.TelemetryContext
-import studio.etsoftware.obdapp.data.logging.LogManager
 
 @Singleton
 class ObdSessionManager
@@ -36,13 +36,16 @@ class ObdSessionManager
         private val logManager: LogManager,
         private val commandExecutor: ObdCommandExecutor,
     ) {
+        private val bluetoothManager by lazy {
+            appContext.getSystemService(BluetoothManager::class.java)
+        }
+
         private var obdConnection: ObdDeviceConnection? = null
         private val connectionAccessMutex = Mutex()
         private val mutableConnectionState = MutableStateFlow<ConnectionState>(ConnectionState.Disconnected)
 
         val connectionState: StateFlow<ConnectionState> = mutableConnectionState.asStateFlow()
 
-        @Suppress("DEPRECATION")
         suspend fun getPairedDevices(): List<DeviceInfo> =
             withContext(Dispatchers.IO) {
                 if (!hasBluetoothConnectPermission()) {
@@ -50,20 +53,20 @@ class ObdSessionManager
                     return@withContext emptyList()
                 }
 
-                val adapter = BluetoothAdapter.getDefaultAdapter() ?: return@withContext emptyList()
+                val adapter = bluetoothManager?.adapter ?: return@withContext emptyList()
                 if (!adapter.isEnabled) {
                     logManager.error("Bluetooth is disabled")
                     return@withContext emptyList()
                 }
 
                 try {
-                    adapter.bondedDevices?.map { bluetoothDevice ->
+                    adapter.bondedDevices.map { bluetoothDevice ->
                         DeviceInfo(
                             address = bluetoothDevice.address,
                             name = bluetoothDevice.name ?: "Unknown Device",
                             type = DeviceType.CLASSIC,
                         )
-                    } ?: emptyList()
+                    }
                 } catch (_: SecurityException) {
                     logManager.error("Unable to read paired devices without BLUETOOTH_CONNECT permission")
                     emptyList()
