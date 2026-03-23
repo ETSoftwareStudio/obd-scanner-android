@@ -5,23 +5,24 @@ import com.github.eltonvs.obd.command.ObdResponse
 import com.github.eltonvs.obd.command.control.ResetTroubleCodesCommand
 import com.github.eltonvs.obd.command.control.TroubleCodesCommand
 import com.github.eltonvs.obd.command.control.VINCommand
-import com.github.eltonvs.obd.connection.ObdDeviceConnection
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import studio.etsoftware.obdapp.data.session.ObdCommandExecutor
-import studio.etsoftware.obdapp.domain.model.TelemetryContext
 import studio.etsoftware.obdapp.data.logging.LogManager
+import studio.etsoftware.obdapp.data.session.ObdCommandSession
+import studio.etsoftware.obdapp.data.session.ObdSessionDataSource
+import studio.etsoftware.obdapp.domain.model.TelemetryContext
 
 class DiagnosticsServiceTest {
-    private val commandExecutor = mockk<ObdCommandExecutor>()
-    private val connection = mockk<ObdDeviceConnection>()
+    private val sessionDataSource = mockk<ObdSessionDataSource>()
+    private val session = mockk<ObdCommandSession>()
     private val logManager = mockk<LogManager>(relaxed = true)
-    private val service = DiagnosticsService(commandExecutor, DtcParser(), logManager)
+    private val service = DiagnosticsService(DtcParser(), logManager, sessionDataSource)
 
     @Test
     fun `readDiagnosticInfo maps VIN and parsed trouble codes`() =
@@ -30,35 +31,49 @@ class DiagnosticsServiceTest {
             val troubleCodesResponse = response(TroubleCodesCommand(), value = "P0301 P0420 P0000", rawValue = "43 01 02")
 
             coEvery {
-                commandExecutor.execute<ObdResponse>(TelemetryContext.DIAGNOSTICS, null, "VIN", "VINCommand", any(), any())
+                sessionDataSource.withConnectedSession<studio.etsoftware.obdapp.domain.model.DiagnosticInfo>(any())
+            } coAnswers {
+                firstArg<suspend (ObdCommandSession) -> Result<studio.etsoftware.obdapp.domain.model.DiagnosticInfo>>().invoke(session)
+            }
+            coEvery {
+                session.run(TelemetryContext.DIAGNOSTICS, null, match { it is VINCommand }, any())
             } returns vinResponse
             coEvery {
-                commandExecutor.execute<ObdResponse>(TelemetryContext.DIAGNOSTICS, null, "03", "TroubleCodesCommand", any(), any())
+                session.run(TelemetryContext.DIAGNOSTICS, null, match { it is TroubleCodesCommand }, any())
             } returns troubleCodesResponse
 
-            val result = service.readDiagnosticInfo(connection)
+            val result = service.readDiagnosticInfo()
 
-            assertEquals("1HGCM82633A004352", result.vin)
-            assertEquals(listOf("P0301", "P0420"), result.troubleCodes.map { it.code })
-            assertTrue(result.milStatus)
-            assertEquals(2, result.dtcCount)
+            assertTrue(result.isSuccess)
+            val diagnosticInfo = result.getOrThrow()
+            assertEquals("1HGCM82633A004352", diagnosticInfo.vin)
+            assertEquals(listOf("P0301", "P0420"), diagnosticInfo.troubleCodes.map { it.code })
+            assertTrue(diagnosticInfo.milStatus)
+            assertEquals(2, diagnosticInfo.dtcCount)
         }
 
     @Test
     fun `clearTroubleCodes executes reset command and logs success`() =
         runTest {
             val clearResponse = response(ResetTroubleCodesCommand(), value = "OK", rawValue = "44")
+
             coEvery {
-                commandExecutor.execute<ObdResponse>(TelemetryContext.CLEAR_DTC, null, "04", "ResetTroubleCodesCommand", any(), any())
+                sessionDataSource.withConnectedSession<Unit>(any())
+            } coAnswers {
+                firstArg<suspend (ObdCommandSession) -> Result<Unit>>().invoke(session)
+            }
+            coEvery {
+                session.run(TelemetryContext.CLEAR_DTC, null, match { it is ResetTroubleCodesCommand }, any())
             } returns clearResponse
 
-            service.clearTroubleCodes(connection)
+            val result = service.clearTroubleCodes()
 
+            assertTrue(result.isSuccess)
             coVerify(exactly = 1) {
-                commandExecutor.execute<ObdResponse>(TelemetryContext.CLEAR_DTC, null, "04", "ResetTroubleCodesCommand", any(), any())
+                session.run(TelemetryContext.CLEAR_DTC, null, match { it is ResetTroubleCodesCommand }, any())
             }
-            io.mockk.verify(exactly = 1) { logManager.command("04 (Clear trouble codes)") }
-            io.mockk.verify(exactly = 1) { logManager.success("Trouble codes clear command sent") }
+            verify(exactly = 1) { logManager.command("04 (Clear trouble codes)") }
+            verify(exactly = 1) { logManager.success("Trouble codes clear command sent") }
         }
 
     private fun response(
