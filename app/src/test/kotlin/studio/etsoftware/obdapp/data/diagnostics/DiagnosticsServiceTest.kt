@@ -76,6 +76,19 @@ class DiagnosticsServiceTest {
             verify(exactly = 1) { logManager.success("Trouble codes clear command sent") }
         }
 
+    @Test
+    fun `readDiagnosticInfo returns failure when session is unavailable`() =
+        runTest {
+            coEvery {
+                sessionDataSource.withConnectedSession<studio.etsoftware.obdapp.domain.model.DiagnosticInfo>(any())
+            } returns Result.failure(Exception("Not connected"))
+
+            val result = service.readDiagnosticInfo()
+
+            assertTrue(result.isFailure)
+            assertEquals("Not connected", result.exceptionOrNull()?.message)
+        }
+
     private fun response(
         command: com.github.eltonvs.obd.command.ObdCommand,
         value: String,
