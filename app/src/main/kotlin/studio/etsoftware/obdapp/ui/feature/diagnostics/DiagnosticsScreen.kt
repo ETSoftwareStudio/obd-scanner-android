@@ -47,9 +47,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.toClipEntry
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -195,7 +195,7 @@ private fun VinCard(vin: String) {
                 .fillMaxWidth()
                 .clickable(enabled = vin.isNotBlank()) {
                     coroutineScope.launch {
-                        clipboard.setClipEntry(ClipData.newPlainText("VIN", vin).toClipEntry())
+                        clipboard.setClipEntry(ClipEntry(ClipData.newPlainText("VIN", vin)))
                         Toast.makeText(context, "VIN copied to clipboard", Toast.LENGTH_SHORT).show()
                     }
                 },

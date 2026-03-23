@@ -1,6 +1,6 @@
 package studio.etsoftware.obdapp.data.logging
 
-import android.net.Uri
+import androidx.core.net.toUri
 import javax.inject.Inject
 import javax.inject.Singleton
 import studio.etsoftware.obdapp.domain.model.DebugLogEntry
@@ -25,5 +25,5 @@ class LogExportRepositoryImpl
         override suspend fun export(
             destination: String,
             content: String,
-        ): Result<Unit> = exporter.export(Uri.parse(destination), content)
+        ): Result<Unit> = exporter.export(destination.toUri(), content)
     }
