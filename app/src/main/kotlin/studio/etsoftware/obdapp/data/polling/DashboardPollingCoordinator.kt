@@ -82,25 +82,47 @@ class DashboardPollingCoordinator
             reason: String,
             resumeLabel: String,
             onFailure: (Exception) -> Unit = {},
+            block: suspend () -> Result<T>,
+        ): Result<T> =
+            runWhilePollingPaused(
+                reason = reason,
+                resumeLabel = resumeLabel,
+                onFailure = onFailure,
+                block = block,
+            )
+
+        @Deprecated("Use the overload that does not expose ObdDeviceConnection")
+        suspend fun <T> runWithPollingPaused(
+            reason: String,
+            resumeLabel: String,
+            onFailure: (Exception) -> Unit = {},
             block: suspend (ObdDeviceConnection) -> Result<T>,
+        ): Result<T> =
+            runWhilePollingPaused(
+                reason = reason,
+                resumeLabel = resumeLabel,
+                onFailure = onFailure,
+            ) {
+                sessionDataSource.withConnectedSession(block)
+            }
+
+        private suspend fun <T> runWhilePollingPaused(
+            reason: String,
+            resumeLabel: String,
+            onFailure: (Exception) -> Unit,
+            block: suspend () -> Result<T>,
         ): Result<T> =
             pollingLifecycleMutex.withLock {
                 val resumeInterval = (pendingPollingIntervalMs ?: activePollingIntervalMs).takeIf { pollingJob?.isActive == true }
 
                 try {
-                    val result =
-                        sessionDataSource.withConnectionAccess {
-                            if (resumeInterval != null) {
-                                logManager.info("Pausing dashboard polling for $reason")
-                                pollingJob?.cancelAndJoin()
-                                pollingJob = null
-                            }
+                    if (resumeInterval != null) {
+                        logManager.info("Pausing dashboard polling for $reason")
+                        pollingJob?.cancelAndJoin()
+                        pollingJob = null
+                    }
 
-                            val connection = sessionDataSource.currentConnection() ?: return@withConnectionAccess Result.failure(Exception("Not connected"))
-                            block(connection)
-                        }
-
-                    result
+                    block()
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
@@ -108,10 +130,14 @@ class DashboardPollingCoordinator
                     Result.failure(e)
                 } finally {
                     if (resumeInterval != null) {
-                        if (sessionDataSource.currentConnection() != null &&
-                            sessionDataSource.isTransportConnected() &&
-                            sessionDataSource.connectionState.value is ConnectionState.Connected
-                        ) {
+                        val canResumePolling =
+                            sessionDataSource.withConnectedSession {
+                                Result.success(Unit)
+                            }.isSuccess &&
+                                sessionDataSource.isTransportConnected() &&
+                                sessionDataSource.connectionState.value is ConnectionState.Connected
+
+                        if (canResumePolling) {
                             logManager.info("Resuming dashboard polling after $resumeLabel")
                             activePollingIntervalMs = resumeInterval
                             pendingPollingIntervalMs = null
