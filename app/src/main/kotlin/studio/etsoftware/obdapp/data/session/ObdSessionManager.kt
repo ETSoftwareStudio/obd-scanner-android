@@ -139,10 +139,21 @@ class ObdSessionManager
             mutableConnectionState.value = ConnectionState.Disconnected
         }
 
+        override suspend fun <T> withConnectedSession(block: suspend (ObdDeviceConnection) -> Result<T>): Result<T> =
+            connectionAccessMutex.withLock {
+                val connection = obdConnection ?: return@withLock Result.failure(Exception("Not connected"))
+                if (!transport.isConnected()) {
+                    return@withLock Result.failure(Exception("Transport is disconnected"))
+                }
+                block(connection)
+            }
+
+        @Deprecated("Use withConnectedSession instead to keep connection ownership inside the session layer")
         override fun currentConnection(): ObdDeviceConnection? = obdConnection
 
         override fun isTransportConnected(): Boolean = transport.isConnected()
 
+        @Deprecated("Use withConnectedSession instead to keep connection ownership inside the session layer")
         override suspend fun <T> withConnectionAccess(block: suspend () -> T): T =
             connectionAccessMutex.withLock {
                 block()

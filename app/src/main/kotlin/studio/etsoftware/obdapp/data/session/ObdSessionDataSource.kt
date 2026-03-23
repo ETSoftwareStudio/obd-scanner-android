@@ -14,9 +14,13 @@ interface ObdSessionDataSource {
 
     suspend fun disconnect()
 
+    suspend fun <T> withConnectedSession(block: suspend (ObdDeviceConnection) -> Result<T>): Result<T>
+
+    @Deprecated("Use withConnectedSession instead to keep connection ownership inside the session layer")
     fun currentConnection(): ObdDeviceConnection?
 
     fun isTransportConnected(): Boolean
 
+    @Deprecated("Use withConnectedSession instead to keep connection ownership inside the session layer")
     suspend fun <T> withConnectionAccess(block: suspend () -> T): T
 }
