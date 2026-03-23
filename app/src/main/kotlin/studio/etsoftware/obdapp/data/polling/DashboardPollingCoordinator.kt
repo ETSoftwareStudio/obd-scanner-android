@@ -1,7 +1,6 @@
 package studio.etsoftware.obdapp.data.polling
 
 import android.os.SystemClock
-import com.github.eltonvs.obd.connection.ObdDeviceConnection
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
@@ -75,21 +74,6 @@ class DashboardPollingCoordinator
                 block = block,
             )
 
-        @Deprecated("Use the overload that does not expose ObdDeviceConnection")
-        suspend fun <T> runWithPollingPausedUsingConnection(
-            reason: String,
-            resumeLabel: String,
-            onFailure: (Exception) -> Unit = {},
-            block: suspend (ObdDeviceConnection) -> Result<T>,
-        ): Result<T> =
-            runWhilePollingPaused(
-                reason = reason,
-                resumeLabel = resumeLabel,
-                onFailure = onFailure,
-            ) {
-                sessionDataSource.withConnectedSession(block)
-            }
-
         private suspend fun <T> runWhilePollingPaused(
             reason: String,
             resumeLabel: String,
@@ -118,7 +102,6 @@ class DashboardPollingCoordinator
                             sessionDataSource.withConnectedSession {
                                 Result.success(Unit)
                             }.isSuccess &&
-                                sessionDataSource.isTransportConnected() &&
                                 sessionDataSource.connectionState.value is ConnectionState.Connected
 
                         if (canResumePolling) {
@@ -145,8 +128,11 @@ class DashboardPollingCoordinator
                         scheduler = DashboardPollingScheduler(currentIntervalMs, monotonicNowMs())
                     }
 
-                    val connection = sessionDataSource.currentConnection()
-                    if (connection == null || !sessionDataSource.isTransportConnected()) {
+                    val hasActiveSession =
+                        sessionDataSource.withConnectedSession {
+                            Result.success(Unit)
+                        }.isSuccess
+                    if (!hasActiveSession) {
                         sessionDataSource.disconnect()
                         break
                     }

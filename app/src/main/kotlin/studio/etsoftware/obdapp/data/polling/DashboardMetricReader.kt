@@ -1,5 +1,7 @@
 package studio.etsoftware.obdapp.data.polling
 
+import com.github.eltonvs.obd.command.ObdCommand
+import com.github.eltonvs.obd.command.ObdResponse
 import com.github.eltonvs.obd.command.engine.MassAirFlowCommand
 import com.github.eltonvs.obd.command.engine.RPMCommand
 import com.github.eltonvs.obd.command.engine.SpeedCommand
@@ -11,7 +13,6 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
 import studio.etsoftware.obdapp.data.logging.LogManager
-import studio.etsoftware.obdapp.data.session.ObdCommandExecutor
 import studio.etsoftware.obdapp.data.session.ObdSessionDataSource
 import studio.etsoftware.obdapp.domain.model.TelemetryContext
 
@@ -27,7 +28,6 @@ class DashboardMetricReader
     constructor(
         private val logManager: LogManager,
         private val metricsStore: DashboardMetricsStore,
-        private val commandExecutor: ObdCommandExecutor,
         private val sessionDataSource: ObdSessionDataSource,
     ) {
         internal suspend fun readDueMetrics(
@@ -67,10 +67,8 @@ class DashboardMetricReader
                     pollTypedMetric(
                         cycleId = cycleId,
                         metricId = metricId,
-                        rawPid = "010D",
                         commandLabel = "010D (Speed)",
-                        commandName = "SpeedCommand",
-                        read = { connection -> connection.run(SpeedCommand()) },
+                        command = SpeedCommand(),
                         valueOf = { it.value },
                         rawValueOf = { it.rawResponse.value },
                         unitOf = { it.unit },
@@ -81,10 +79,8 @@ class DashboardMetricReader
                     pollTypedMetric(
                         cycleId = cycleId,
                         metricId = metricId,
-                        rawPid = "010C",
                         commandLabel = "010C (RPM)",
-                        commandName = "RPMCommand",
-                        read = { connection -> connection.run(RPMCommand()) },
+                        command = RPMCommand(),
                         valueOf = { it.value },
                         rawValueOf = { it.rawResponse.value },
                         unitOf = { it.unit },
@@ -95,10 +91,8 @@ class DashboardMetricReader
                     pollTypedMetric(
                         cycleId = cycleId,
                         metricId = metricId,
-                        rawPid = "0111",
                         commandLabel = "0111 (Throttle)",
-                        commandName = "ThrottlePositionCommand",
-                        read = { connection -> connection.run(ThrottlePositionCommand()) },
+                        command = ThrottlePositionCommand(),
                         valueOf = { it.value },
                         rawValueOf = { it.rawResponse.value },
                         unitOf = { it.unit },
@@ -109,10 +103,8 @@ class DashboardMetricReader
                     pollTypedMetric(
                         cycleId = cycleId,
                         metricId = metricId,
-                        rawPid = "0110",
                         commandLabel = "0110 (MAF)",
-                        commandName = "MassAirFlowCommand",
-                        read = { connection -> connection.run(MassAirFlowCommand()) },
+                        command = MassAirFlowCommand(),
                         valueOf = { it.value },
                         rawValueOf = { it.rawResponse.value },
                         unitOf = { it.unit },
@@ -123,10 +115,8 @@ class DashboardMetricReader
                     pollTypedMetric(
                         cycleId = cycleId,
                         metricId = metricId,
-                        rawPid = "0105",
                         commandLabel = "0105 (Coolant)",
-                        commandName = "EngineCoolantTemperatureCommand",
-                        read = { connection -> connection.run(EngineCoolantTemperatureCommand()) },
+                        command = EngineCoolantTemperatureCommand(),
                         valueOf = { it.value },
                         rawValueOf = { it.rawResponse.value },
                         unitOf = { it.unit },
@@ -137,10 +127,8 @@ class DashboardMetricReader
                     pollTypedMetric(
                         cycleId = cycleId,
                         metricId = metricId,
-                        rawPid = "010F",
                         commandLabel = "010F (Intake Air)",
-                        commandName = "AirIntakeTemperatureCommand",
-                        read = { connection -> connection.run(AirIntakeTemperatureCommand()) },
+                        command = AirIntakeTemperatureCommand(),
                         valueOf = { it.value },
                         rawValueOf = { it.rawResponse.value },
                         unitOf = { it.unit },
@@ -151,10 +139,8 @@ class DashboardMetricReader
                     pollTypedMetric(
                         cycleId = cycleId,
                         metricId = metricId,
-                        rawPid = "012F",
                         commandLabel = "012F (Fuel Level)",
-                        commandName = "FuelLevelCommand",
-                        read = { connection -> connection.run(FuelLevelCommand()) },
+                        command = FuelLevelCommand(),
                         valueOf = { it.value },
                         rawValueOf = { it.rawResponse.value },
                         unitOf = { it.unit },
@@ -163,41 +149,43 @@ class DashboardMetricReader
                     )
             }
 
-        private suspend fun <T> pollTypedMetric(
+        private suspend fun pollTypedMetric(
             cycleId: Long,
             metricId: DashboardMetricId,
-            rawPid: String,
             commandLabel: String,
-            commandName: String,
-            read: suspend (com.github.eltonvs.obd.connection.ObdDeviceConnection) -> T,
-            valueOf: (T) -> String,
-            rawValueOf: (T) -> String,
-            unitOf: (T) -> String,
+            command: ObdCommand,
+            valueOf: (ObdResponse) -> String,
+            rawValueOf: (ObdResponse) -> String,
+            unitOf: (ObdResponse) -> String,
             minValue: Float,
             maxValue: Float,
         ): Boolean {
             logManager.command(commandLabel)
 
             return try {
-                val responseResult =
-                    sessionDataSource.withConnectedSession { connection ->
-                        Result.success(
-                            commandExecutor.execute(
+                val commandOutput =
+                    sessionDataSource.withConnectedSession { session ->
+                        val response =
+                            session.run(
                                 context = TelemetryContext.DASHBOARD,
                                 cycleId = cycleId,
-                                rawPid = rawPid,
-                                commandName = commandName,
-                                block = { read(connection) },
-                                preview = { valueOf(it) },
+                                command = command,
+                                preview = valueOf,
+                            )
+                        val rawValue = rawValueOf(response)
+                        Result.success(
+                            Triple(
+                                response,
+                                rawValue,
+                                session.previewValue(rawValue) ?: rawValue,
                             ),
                         )
-                    }
-                val response = responseResult.getOrThrow()
+                    }.getOrThrow()
+                val (response, _, previewValue) = commandOutput
 
                 val value = valueOf(response)
                 val unit = unitOf(response)
-                val rawValue = commandExecutor.previewValue(rawValueOf(response)) ?: rawValueOf(response)
-                logManager.response("$rawPid: $value (raw=$rawValue)")
+                logManager.response("${command.rawCommand.replace(" ", "")}: $value (raw=$previewValue)")
 
                 metricsStore.publish(cycleId, metricId, value, unit, minValue, maxValue)
                 true
@@ -205,7 +193,7 @@ class DashboardMetricReader
                 throw e
             } catch (e: Exception) {
                 val errorMsg = e.message?.takeIf { it.isNotBlank() } ?: e::class.simpleName ?: "Unknown error"
-                logManager.error("Read error for $rawPid: $errorMsg")
+                logManager.error("Read error for ${command.rawCommand.replace(" ", "")}: $errorMsg")
                 false
             }
         }

@@ -1,6 +1,8 @@
 package studio.etsoftware.obdapp.data.session
 
 import android.content.Context
+import com.github.eltonvs.obd.command.ObdCommand
+import com.github.eltonvs.obd.command.ObdResponse
 import com.github.eltonvs.obd.command.Switcher
 import com.github.eltonvs.obd.command.at.ResetAdapterCommand
 import com.github.eltonvs.obd.command.at.SetEchoCommand
@@ -101,14 +103,16 @@ class ObdSessionManager
             obdConnection = ObdDeviceConnection(inputStream, outputStream)
 
             return try {
-                withConnectionAccess {
+                connectionAccessMutex.withLock {
+                    val connection = obdConnection ?: error("No OBD connection")
+
                     logManager.command("ATZ (Reset adapter)")
                     commandExecutor.execute(
                         context = TelemetryContext.INIT,
                         cycleId = null,
                         rawPid = "ATZ",
                         commandName = "ResetAdapterCommand",
-                        block = { obdConnection?.run(ResetAdapterCommand()) ?: error("No OBD connection") },
+                        block = { connection.run(ResetAdapterCommand()) },
                         preview = { it.value },
                     )
 
@@ -118,7 +122,7 @@ class ObdSessionManager
                         cycleId = null,
                         rawPid = "ATE0",
                         commandName = "SetEchoCommand",
-                        block = { obdConnection?.run(SetEchoCommand(Switcher.OFF)) ?: error("No OBD connection") },
+                        block = { connection.run(SetEchoCommand(Switcher.OFF)) },
                         preview = { it.value },
                     )
                 }
@@ -139,28 +143,48 @@ class ObdSessionManager
             mutableConnectionState.value = ConnectionState.Disconnected
         }
 
-        override suspend fun <T> withConnectedSession(block: suspend (ObdDeviceConnection) -> Result<T>): Result<T> =
+        override suspend fun <T> withConnectedSession(block: suspend (ObdCommandSession) -> Result<T>): Result<T> =
             connectionAccessMutex.withLock {
                 val connection = obdConnection ?: return@withLock Result.failure(Exception("Not connected"))
                 if (!transport.isConnected()) {
                     return@withLock Result.failure(Exception("Transport is disconnected"))
                 }
-                block(connection)
+                block(ConnectedCommandSession(connection))
             }
 
-        @Deprecated("Use withConnectedSession instead to keep connection ownership inside the session layer")
-        override fun currentConnection(): ObdDeviceConnection? = obdConnection
+        private inner class ConnectedCommandSession(
+            private val connection: ObdDeviceConnection,
+        ) : ObdCommandSession {
+            override suspend fun run(
+                context: TelemetryContext,
+                cycleId: Long?,
+                command: ObdCommand,
+                preview: ((ObdResponse) -> String)?,
+            ): ObdResponse =
+                if (preview != null) {
+                    commandExecutor.execute(
+                        context = context,
+                        cycleId = cycleId,
+                        rawPid = command.rawCommand.replace(" ", ""),
+                        commandName = command::class.simpleName ?: command.name,
+                        block = { connection.run(command) },
+                        preview = { response -> preview(response) },
+                    )
+                } else {
+                    commandExecutor.execute(
+                        context = context,
+                        cycleId = cycleId,
+                        rawPid = command.rawCommand.replace(" ", ""),
+                        commandName = command::class.simpleName ?: command.name,
+                        block = { connection.run(command) },
+                    )
+                }
 
-        override fun isTransportConnected(): Boolean = transport.isConnected()
-
-        @Deprecated("Use withConnectedSession instead to keep connection ownership inside the session layer")
-        override suspend fun <T> withConnectionAccess(block: suspend () -> T): T =
-            connectionAccessMutex.withLock {
-                block()
-            }
+            override fun previewValue(rawValue: String): String? = commandExecutor.previewValue(rawValue)
+        }
 
         private suspend fun cleanupConnection() {
-            withConnectionAccess {
+            connectionAccessMutex.withLock {
                 obdConnection = null
                 transport.disconnect()
             }
