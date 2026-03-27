@@ -99,9 +99,10 @@ class DashboardPollingCoordinator
                 } finally {
                     if (resumeInterval != null) {
                         val canResumePolling =
-                            sessionDataSource.withConnectedSession {
-                                Result.success(Unit)
-                            }.isSuccess &&
+                            sessionDataSource
+                                .withConnectedSession {
+                                    Result.success(Unit)
+                                }.isSuccess &&
                                 sessionDataSource.connectionState.value is ConnectionState.Connected
 
                         if (canResumePolling) {
@@ -129,9 +130,10 @@ class DashboardPollingCoordinator
                     }
 
                     val hasActiveSession =
-                        sessionDataSource.withConnectedSession {
-                            Result.success(Unit)
-                        }.isSuccess
+                        sessionDataSource
+                            .withConnectedSession {
+                                Result.success(Unit)
+                            }.isSuccess
                     if (!hasActiveSession) {
                         sessionDataSource.disconnect()
                         break

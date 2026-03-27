@@ -164,23 +164,24 @@ class DashboardMetricReader
 
             return try {
                 val commandOutput =
-                    sessionDataSource.withConnectedSession { session ->
-                        val response =
-                            session.run(
-                                context = TelemetryContext.DASHBOARD,
-                                cycleId = cycleId,
-                                command = command,
-                                preview = valueOf,
+                    sessionDataSource
+                        .withConnectedSession { session ->
+                            val response =
+                                session.run(
+                                    context = TelemetryContext.DASHBOARD,
+                                    cycleId = cycleId,
+                                    command = command,
+                                    preview = valueOf,
+                                )
+                            val rawValue = rawValueOf(response)
+                            Result.success(
+                                Triple(
+                                    response,
+                                    rawValue,
+                                    session.previewValue(rawValue) ?: rawValue,
+                                ),
                             )
-                        val rawValue = rawValueOf(response)
-                        Result.success(
-                            Triple(
-                                response,
-                                rawValue,
-                                session.previewValue(rawValue) ?: rawValue,
-                            ),
-                        )
-                    }.getOrThrow()
+                        }.getOrThrow()
                 val (response, _, previewValue) = commandOutput
 
                 val value = valueOf(response)

@@ -34,8 +34,9 @@ class BluetoothTransport
                         return@withContext Result.failure(Exception("BLUETOOTH_CONNECT permission is required"))
                     }
 
-                    val bluetoothAdapter = bluetoothAccess.adapter
-                        ?: return@withContext Result.failure(Exception("Bluetooth not available"))
+                    val bluetoothAdapter =
+                        bluetoothAccess.adapter
+                            ?: return@withContext Result.failure(Exception("Bluetooth not available"))
 
                     if (bluetoothAccess.hasBluetoothScanPermission()) {
                         try {

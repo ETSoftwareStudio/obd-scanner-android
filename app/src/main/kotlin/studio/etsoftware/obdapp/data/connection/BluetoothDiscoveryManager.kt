@@ -153,11 +153,12 @@ class BluetoothDiscoveryManager
                 return Result.failure(error)
             }
 
-            val adapter = bluetoothAccess.adapter ?: run {
-                val error = Exception("Bluetooth not available")
-                _discoveryState.value = DiscoveryState.Error(error.message ?: "Bluetooth not available")
-                return Result.failure(error)
-            }
+            val adapter =
+                bluetoothAccess.adapter ?: run {
+                    val error = Exception("Bluetooth not available")
+                    _discoveryState.value = DiscoveryState.Error(error.message ?: "Bluetooth not available")
+                    return Result.failure(error)
+                }
 
             if (!adapter.isEnabled) {
                 val error = Exception("Bluetooth is disabled")
@@ -343,8 +344,7 @@ class BluetoothDiscoveryManager
                 bluetoothAccess.hasLocationPermission()
             }
 
-        private fun Intent.extractBluetoothDevice(): BluetoothDevice? =
-            IntentCompat.getParcelableExtra(this, BluetoothDevice.EXTRA_DEVICE, BluetoothDevice::class.java)
+        private fun Intent.extractBluetoothDevice(): BluetoothDevice? = IntentCompat.getParcelableExtra(this, BluetoothDevice.EXTRA_DEVICE, BluetoothDevice::class.java)
 
         private fun deviceName(device: BluetoothDevice): String? {
             if (!bluetoothAccess.hasBluetoothConnectPermission()) {

@@ -30,6 +30,5 @@ internal class BluetoothAccess(
         isPermissionGranted(Manifest.permission.ACCESS_FINE_LOCATION) ||
             isPermissionGranted(Manifest.permission.ACCESS_COARSE_LOCATION)
 
-    private fun isPermissionGranted(permission: String): Boolean =
-        ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
+    private fun isPermissionGranted(permission: String): Boolean = ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
 }
