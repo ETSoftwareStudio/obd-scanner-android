@@ -33,7 +33,7 @@ jobs:
         uses: gradle/actions/wrapper-validation@v5
 
       - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v5
